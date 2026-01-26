@@ -243,7 +243,7 @@ export function WorkflowTimeline({
           <div className="mt-6 space-y-2">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-foreground">
-                {allDocumentsComplete ? "Subdocumentos procesados" : "Extrayendo documentos..."}
+                {allDocumentsComplete ? "Extracción finalizada" : "Extrayendo datos..."}
               </h4>
               {allDocumentsComplete ? (
                 <Check className="h-4 w-4 text-green-600" />
