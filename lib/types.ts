@@ -28,7 +28,7 @@ export interface ExtractedField {
 export interface Document {
   id: string
   pageIds: string[]
-  status: "creating" | "classifying" | "classified" | "extracting" | "complete"
+  status: "creating" | "classifying" | "extracting" | "complete"
   documentType?: DocumentType
   fields?: Field[]
   extractedData?: Record<string, ExtractedField>
@@ -63,5 +63,4 @@ export interface SegmentationStatus {
   isSegmenting: boolean
   documentsGenerated: number
   processingDocuments: boolean
-  waitingForExtraction?: boolean
 }

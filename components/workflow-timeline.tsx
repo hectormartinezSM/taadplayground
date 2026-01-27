@@ -1,11 +1,10 @@
 "use client"
 
-import { Download, Check, Loader2, FileArchive, Play } from "lucide-react"
+import { Download, Check, Loader2 } from "lucide-react"
 import type { Page, Document, ActivityLogEntry, SegmentationStatus } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { prepareExportData, downloadJSON, downloadCSV } from "@/lib/export-utils"
 import { Progress } from "@/components/ui/progress"
-import JSZip from "jszip"
 
 interface WorkflowTimelineProps {
   currentStep: string
@@ -14,7 +13,6 @@ interface WorkflowTimelineProps {
   activityLog?: ActivityLogEntry[]
   processedPages?: number
   segmentationStatus?: SegmentationStatus
-  onStartExtraction?: () => void
 }
 
 export function WorkflowTimeline({
@@ -24,7 +22,6 @@ export function WorkflowTimeline({
   activityLog = [],
   processedPages = 0,
   segmentationStatus = { isSegmenting: false, documentsGenerated: 0, processingDocuments: false },
-  onStartExtraction,
 }: WorkflowTimelineProps) {
   const hasData = pages.length > 0 && documents.length > 0
 
@@ -44,60 +41,6 @@ export function WorkflowTimeline({
   const handleExportCSV = () => {
     const data = prepareExportData(pages, documents, activityLog)
     downloadCSV(data)
-  }
-
-  const handleExportZIP = async () => {
-    const zip = new JSZip()
-
-    for (let i = 0; i < documents.length; i++) {
-      const doc = documents[i]
-      const docPages = pages.filter((p) => doc.pageIds.includes(p.id))
-
-      if (docPages.length === 0) continue
-
-      // Get document type for filename
-      const docType = doc.documentType?.type || `documento_${i + 1}`
-      const sanitizedType = docType.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]/g, "_")
-
-      // Create PDF from images using jsPDF
-      const { jsPDF } = await import("jspdf")
-      const pdf = new jsPDF()
-
-      for (let j = 0; j < docPages.length; j++) {
-        const page = docPages[j]
-        if (j > 0) pdf.addPage()
-
-        // Load image and add to PDF
-        const img = new Image()
-        img.crossOrigin = "anonymous"
-
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => {
-            const imgWidth = pdf.internal.pageSize.getWidth()
-            const imgHeight = (img.height * imgWidth) / img.width
-            pdf.addImage(img, "JPEG", 0, 0, imgWidth, imgHeight)
-            resolve()
-          }
-          img.onerror = reject
-          img.src = page.imageUrl
-        })
-      }
-
-      // Add PDF to ZIP
-      const pdfBlob = pdf.output("blob")
-      zip.file(`${sanitizedType}_doc${i + 1}.pdf`, pdfBlob)
-    }
-
-    // Generate and download ZIP
-    const zipBlob = await zip.generateAsync({ type: "blob" })
-    const url = URL.createObjectURL(zipBlob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "documentos_segmentados.zip"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
   }
 
   const scrollToDocument = (docId: string) => {
@@ -179,14 +122,11 @@ export function WorkflowTimeline({
           </div>
         )}
 
-        {/* Phase 1: Classification - Show documents being classified */}
-        {documents.length > 0 && (segmentationStatus.processingDocuments || segmentationStatus.waitingForExtraction) && (
+        {documents.length > 0 && (
           <div className="mt-6 space-y-2">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-foreground">
-                {segmentationStatus.processingDocuments 
-                  ? "Clasificando subdocumentos..." 
-                  : "Fase 1: Clasificación completada"}
+                {segmentationStatus.processingDocuments ? "Procesando subdocumentos..." : "Subdocumentos generados"}
               </h4>
               {segmentationStatus.processingDocuments ? (
                 <Loader2 className="h-4 w-4 text-primary animate-spin" />
@@ -196,64 +136,6 @@ export function WorkflowTimeline({
             </div>
             <div className="space-y-1">
               {documents.map((doc, index) => {
-                const isClassifying = doc.status === "classifying" || doc.status === "creating"
-                const isClassified = doc.status === "classified"
-
-                return (
-                  <div
-                    key={doc.id}
-                    className="w-full rounded-md px-3 py-2 text-left text-xs flex items-center justify-between"
-                  >
-                    <div className="flex-1">
-                      <span className="font-medium">Documento {index + 1}</span>
-                      {doc.documentType && (
-                        <span className="text-muted-foreground">
-                          {" - "}
-                          {doc.documentType.type}
-                        </span>
-                      )}
-                    </div>
-                    {isClassifying ? (
-                      <Loader2 className="h-3.5 w-3.5 text-primary animate-spin ml-2 flex-shrink-0" />
-                    ) : isClassified ? (
-                      <Check className="h-3.5 w-3.5 text-green-600 ml-2 flex-shrink-0" />
-                    ) : null}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {segmentationStatus.waitingForExtraction && onStartExtraction && (
-          <div className="mt-6">
-            <Button
-              onClick={onStartExtraction}
-              className="w-full gap-2"
-              style={{ backgroundColor: "#FF6200" }}
-            >
-              <Play className="h-4 w-4" />
-              Comenzar Fase 2: Extracción
-            </Button>
-          </div>
-        )}
-
-        {/* Phase 2: Extraction started - Show documents with extraction progress */}
-        {documents.length > 0 && !segmentationStatus.processingDocuments && !segmentationStatus.waitingForExtraction && (
-          <div className="mt-6 space-y-2">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-foreground">
-                {allDocumentsComplete ? "Extracción finalizada" : "Extrayendo datos..."}
-              </h4>
-              {allDocumentsComplete ? (
-                <Check className="h-4 w-4 text-green-600" />
-              ) : (
-                <Loader2 className="h-4 w-4 text-primary animate-spin" />
-              )}
-            </div>
-            <div className="space-y-1">
-              {documents.map((doc, index) => {
-                const isExtracting = doc.status === "extracting" || doc.status === "classified"
                 const isDocComplete =
                   doc.status === "complete" &&
                   doc.extractedData &&
@@ -274,11 +156,7 @@ export function WorkflowTimeline({
                         </span>
                       )}
                     </div>
-                    {isExtracting ? (
-                      <Loader2 className="h-3.5 w-3.5 text-primary animate-spin ml-2 flex-shrink-0" />
-                    ) : isDocComplete ? (
-                      <Check className="h-3.5 w-3.5 text-green-600 ml-2 flex-shrink-0" />
-                    ) : null}
+                    {isDocComplete && <Check className="h-3.5 w-3.5 text-green-600 ml-2 flex-shrink-0" />}
                   </button>
                 )
               })}
@@ -307,15 +185,6 @@ export function WorkflowTimeline({
               >
                 <Download className="h-3.5 w-3.5" />
                 Descargar CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportZIP}
-                className="w-full justify-start gap-2 text-xs bg-transparent"
-              >
-                <FileArchive className="h-3.5 w-3.5" />
-                Descargar PDFs (ZIP)
               </Button>
             </div>
           </div>

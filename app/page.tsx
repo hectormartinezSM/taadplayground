@@ -25,7 +25,6 @@ export default function Home() {
     documentsGenerated: 0,
     processingDocuments: false,
   })
-  const [startExtraction, setStartExtraction] = useState(false)
   const [canScrollUp, setCanScrollUp] = useState(false)
   const [canScrollDown, setCanScrollDown] = useState(false)
 
@@ -39,17 +38,8 @@ export default function Home() {
     setRightSidebarOpen(false)
     setProcessedPages(0)
     setSegmentationStatus({ isSegmenting: false, documentsGenerated: 0, processingDocuments: false })
-    setStartExtraction(false)
     setCanScrollUp(false)
     setCanScrollDown(false)
-  }
-
-  const handleStartExtraction = () => {
-    setStartExtraction(true)
-    setSegmentationStatus(prev => ({
-      ...prev,
-      waitingForExtraction: false,
-    }))
   }
 
   const handleFileUpload = (uploadedPages: Page[]) => {
@@ -112,28 +102,42 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <button
               onClick={handleReset}
-              className="hover:opacity-80 transition-opacity flex items-center gap-3"
+              className="hover:opacity-80 transition-opacity"
               aria-label="Volver a la página inicial"
             >
               <Image
                 src="/images/design-mode/Serimag_logo_color-1-scaled.png"
                 alt="Serimag"
-                width={120}
-                height={40}
-                className="h-8 w-auto object-contain"
+                width={150}
+                height={50}
+                className="h-10 w-auto object-contain"
                 priority
-              />
-              <span className="text-muted-foreground text-xl">×</span>
-              <img
-                src="https://www.ing.es/binaries/content/gallery/hipposp/ContentBlockImageSet/comunes/ing_leon-01.svg"
-                alt="ING"
-                className="h-8 w-auto object-contain relative -top-1"
-                style={{ display: "block", verticalAlign: "middle" }}
               />
             </button>
             <div className="border-l pl-4">
-              <h1 className="text-2xl font-bold text-foreground">Demo DOCMA ING</h1>
+              <h1 className="text-3xl font-bold text-foreground">playground</h1>
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="default"
+              className="border-2 hover:bg-accent/50 font-medium bg-transparent"
+              asChild
+            >
+              <a href="https://serimag.com/contacto" target="_blank" rel="noopener noreferrer">
+                Hablemos
+              </a>
+            </Button>
+            <Button
+              size="default"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              asChild
+            >
+              <a href="https://serimag.com" target="_blank" rel="noopener noreferrer">
+                Volver a la Home
+              </a>
+            </Button>
           </div>
         </div>
       </header>
@@ -161,7 +165,6 @@ export default function Home() {
                 activityLog={activityLog}
                 processedPages={processedPages}
                 segmentationStatus={segmentationStatus}
-                onStartExtraction={handleStartExtraction}
               />
             </div>
           </div>
@@ -194,7 +197,6 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-8 p-6 md:p-8">
-              {/* PageGrid always mounted for extraction logic, but hides UI when startExtraction is true */}
               <PageGrid
                 pages={pages}
                 documents={documents}
@@ -207,11 +209,9 @@ export default function Home() {
                 processedPages={processedPages}
                 setProcessedPages={setProcessedPages}
                 setSegmentationStatus={setSegmentationStatus}
-                startExtraction={startExtraction}
               />
 
-              {/* Show DocumentList only after Phase 2 starts */}
-              {startExtraction && documents.length > 0 && (
+              {documents.length > 0 && (
                 <DocumentList
                   documents={documents}
                   pages={pages}

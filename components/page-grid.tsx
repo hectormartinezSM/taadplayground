@@ -21,7 +21,6 @@ interface PageGridProps {
   processedPages: number
   setProcessedPages: (count: number) => void
   setSegmentationStatus: (status: SegmentationStatus) => void
-  startExtraction?: boolean
 }
 
 const documentColors = [
@@ -44,7 +43,6 @@ export function PageGrid({
   processedPages,
   setProcessedPages,
   setSegmentationStatus,
-  startExtraction = false,
 }: PageGridProps) {
   const processingStarted = useRef(false)
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -276,11 +274,11 @@ export function PageGrid({
 
         updateDocuments(newDocuments)
 
-        console.log("[v0] Starting Phase 1: Classification for all documents")
+        console.log("[v0] Starting classification and extraction for all documents")
         updateCurrentStep("classification")
 
-        // Phase 1: Classify all documents in parallel
-        const classificationPromises = newDocuments.map((doc, docIdx) => {
+        // Process all documents in parallel
+        const processingPromises = newDocuments.map((doc, docIdx) => {
           const segment = segments[docIdx]
           const startPageInNonBlank = segment.start_page - 1
           const endPageInNonBlank = segment.end_page - 1
@@ -289,24 +287,20 @@ export function PageGrid({
           // Get the pages for this document
           const docPages = docPageIndices.map((idx) => pages[idx]).filter(Boolean)
 
-          return classifyDocument(doc, docPages, newDocuments, updateDocuments, addActivityLog, markdownResults.current)
+          return processDocument(doc, docPages, newDocuments, updateDocuments, addActivityLog, markdownResults.current)
         })
 
-        // Wait for all documents to be classified
-        await Promise.all(classificationPromises)
+        // Wait for all documents to be processed
+        await Promise.all(processingPromises)
 
-        console.log("[v0] Phase 1 complete - All documents classified. Waiting for user to start Phase 2.")
+        console.log("[v0] All documents processed")
         setSegmentationStatus({
           isSegmenting: false,
           documentsGenerated: segments.length,
           processingDocuments: false,
-          waitingForExtraction: true,
         })
-        
-        addActivityLog({
-          type: "info",
-          message: "Fase 1 completada. Pulse 'Comenzar Fase 2: Extracción' para continuar.",
-        })
+        updateCurrentStep("complete")
+        updateProcessing(false)
       } catch (error) {
         console.error("[v0] Error in processing:", error)
         setSegmentationProgress((prev) => (prev ? { ...prev, status: "error" } : null))
@@ -321,8 +315,7 @@ export function PageGrid({
     processInParallel()
   }, [pages, isProcessing])
 
-  // Phase 1: Only classify documents
-  const classifyDocument = async (
+  const processDocument = async (
     doc: Document,
     docPages: Page[],
     allDocs: Document[],
@@ -331,7 +324,7 @@ export function PageGrid({
     markdownsMap: Map<number, { markdown: string; isBlank: boolean }>,
   ) => {
     if (!doc || !doc.id) {
-      console.error("[v0] Invalid document passed to classifyDocument:", doc)
+      console.error("[v0] Invalid document passed to processDocument:", doc)
       return
     }
 
@@ -361,6 +354,7 @@ export function PageGrid({
 
     allDocs[docIndex] = { ...allDocs[docIndex], status: "classifying" }
     updateDocs([...allDocs])
+    updateCurrentStep("classification")
 
     await new Promise((resolve) => setTimeout(resolve, 300))
 
@@ -389,7 +383,6 @@ export function PageGrid({
       allDocs[docIndex] = {
         ...allDocs[docIndex],
         documentType: documentType,
-        status: "classified",
       }
       updateDocs([...allDocs])
 
@@ -403,7 +396,6 @@ export function PageGrid({
       allDocs[docIndex] = {
         ...allDocs[docIndex],
         documentType: documentType,
-        status: "classified",
       }
       updateDocs([...allDocs])
 
@@ -413,29 +405,7 @@ export function PageGrid({
       })
     }
 
-    console.log("[v0] Document", docIndex + 1, "classified (Phase 1 complete)")
-  }
-
-  // Phase 2: Extract fields from classified documents
-  const extractDocument = async (
-    doc: Document,
-    allDocs: Document[],
-    updateDocs: (docs: Document[]) => void,
-    log: (entry: { type: string; message: string }) => void,
-  ) => {
-    if (!doc || !doc.id) {
-      console.error("[v0] Invalid document passed to extractDocument:", doc)
-      return
-    }
-
-    const docIndex = allDocs.findIndex((d) => d.id === doc.id)
-    if (docIndex === -1) {
-      console.error("[v0] Document not found in allDocs array:", doc.id)
-      return
-    }
-
-    const combinedMarkdown = sessionStorage.getItem(`doc-${doc.id}-markdown`) || ""
-    const documentType = doc.documentType || { type: "undefined" }
+    await new Promise((resolve) => setTimeout(resolve, 400))
 
     const fields = await mockGetRelevantFields(documentType.type, combinedMarkdown)
     allDocs[docIndex] = {
@@ -445,6 +415,7 @@ export function PageGrid({
       extractedData: {},
     }
     updateDocs([...allDocs])
+    updateCurrentStep("extraction")
 
     log({
       type: "fields_detected",
@@ -516,50 +487,8 @@ export function PageGrid({
     }
     updateDocs([...allDocs])
 
-    console.log("[v0] Document", docIndex + 1, "extraction complete (Phase 2)")
+    console.log("[v0] Document", docIndex + 1, "fully processed")
   }
-
-  // Effect for Phase 2: Run extraction when startExtraction becomes true
-  const extractionStartedRef = useRef(false)
-  
-  useEffect(() => {
-    if (!startExtraction || documents.length === 0 || extractionStartedRef.current) return
-    
-    const allClassified = documents.every(doc => doc.status === "classified" || doc.status === "extracting" || doc.status === "complete")
-    if (!allClassified) return
-
-    extractionStartedRef.current = true
-
-    const runExtraction = async () => {
-      console.log("[v0] Starting Phase 2: Extraction")
-      updateCurrentStep("extraction")
-      
-      addActivityLog({
-        type: "info",
-        message: "Iniciando Fase 2: Extracción de datos...",
-      })
-
-      // Process all documents in parallel
-      const docsToProcess = [...documents]
-      const extractionPromises = docsToProcess
-        .filter(doc => doc.status === "classified")
-        .map(doc => extractDocument(doc, docsToProcess, updateDocuments, addActivityLog))
-      
-      await Promise.all(extractionPromises)
-
-      console.log("[v0] All documents extracted - Phase 2 complete")
-      setSegmentationStatus({
-        isSegmenting: false,
-        documentsGenerated: documents.length,
-        processingDocuments: false,
-        waitingForExtraction: false,
-      })
-      updateCurrentStep("complete")
-      updateProcessing(false)
-    }
-
-    runExtraction()
-  }, [startExtraction, documents])
 
   const getPageDocumentColor = (page: Page) => {
     if (!page.documentId || !documents || documents.length === 0) return ""
@@ -570,11 +499,6 @@ export function PageGrid({
   const handlePageClick = (index: number) => {
     setViewerIndex(index)
     setViewerOpen(true)
-  }
-
-  // Hide UI when Phase 2 extraction has started, but keep component mounted for extraction logic
-  if (startExtraction) {
-    return null
   }
 
   return (
@@ -607,7 +531,7 @@ export function PageGrid({
                       src={page.imageUrl || "/placeholder.svg"}
                       alt={`Página ${page.index + 1}`}
                       className={`h-full w-full object-cover transition-all ${
-                        !isProcessed && !page.isBlank ? "brightness-[0.3] grayscale" : ""
+                        !isProcessed ? "brightness-[0.3] grayscale" : ""
                       }`}
                     />
 
@@ -622,6 +546,12 @@ export function PageGrid({
                         <span className="text-[0.5rem] xs:text-xs sm:text-sm font-bold text-gray-400/70 rotate-[-30deg] select-none whitespace-nowrap">
                           BLANCA
                         </span>
+                      </div>
+                    )}
+
+                    {isBeingSegmented && (
+                      <div className="absolute top-1 left-1 bg-primary/90 backdrop-blur-sm text-primary-foreground px-1.5 py-0.5 rounded text-[0.5rem] xs:text-[0.6rem] font-semibold shadow-sm">
+                        Analizando
                       </div>
                     )}
 
