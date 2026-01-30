@@ -3,81 +3,14 @@
 import type React from "react"
 import type { UploadAreaProps } from "./upload-area.types" // Declare UploadAreaProps type
 import { useCallback, useState, useEffect } from "react"
-import { Upload, Loader2, FileText, Wallet, Scale, Building2, Plane, Home } from "lucide-react"
+import { Upload, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { Page } from "@/lib/types"
 import { extractPagesFromPDF, convertImageToDataURL } from "@/lib/pdf-utils"
 import { apiRateLimiter } from "@/lib/rate-limiter"
 
-const EXAMPLE_DOCUMENTS = [
-  {
-    id: "expediente-activo",
-    name: "Expediente activo",
-    description: "Justificante solicitud préstamo hipotecario",
-    type: "Documento Bancario",
-    url: "/examples/expediente_activo.pdf",
-    thumbnail: "/examples/thumbnails/expediente_activo_thumb.jpg",
-    icon: Building2,
-    iconColor: "text-blue-600",
-    bgColor: "bg-blue-50",
-  },
-  {
-    id: "testamentaria",
-    name: "Testamentaría",
-    description: "Documentación sobre procesos hereditarios",
-    type: "Documento Notarial",
-    url: "/examples/testamentaria.pdf",
-    thumbnail: "/examples/thumbnails/testamentaria_thumb.jpg",
-    icon: Scale,
-    iconColor: "text-purple-600",
-    bgColor: "bg-purple-50",
-  },
-  {
-    id: "pasaporte",
-    name: "Pasaporte",
-    description: "Documento identificativo internacional",
-    type: "Documento de Identidad",
-    url: "/examples/pasaporte.pdf",
-    thumbnail: "/examples/thumbnails/pasaporte_thumb.jpg",
-    icon: Plane,
-    iconColor: "text-emerald-600",
-    bgColor: "bg-emerald-50",
-  },
-  {
-    id: "nominas",
-    name: "Nóminas",
-    description: "Recibos de salario",
-    type: "Documento Laboral",
-    url: "/examples/nominas.pdf",
-    thumbnail: "/examples/thumbnails/nominas_thumb.jpg",
-    icon: Wallet,
-    iconColor: "text-amber-600",
-    bgColor: "bg-amber-50",
-  },
-  {
-    id: "factura",
-    name: "Factura",
-    description: "Factura con desglose completo",
-    type: "Documento Fiscal",
-    url: "/examples/factura.pdf",
-    thumbnail: "/examples/thumbnails/factura_thumb.jpg",
-    icon: FileText,
-    iconColor: "text-rose-600",
-    bgColor: "bg-rose-50",
-  },
-  {
-    id: "contrato-alquiler",
-    name: "Contrato de alquiler",
-    description: "Contrato de arrendamiento de vivienda",
-    type: "Documento Legal",
-    url: "/examples/contrato_alquiler.pdf",
-    thumbnail: "/examples/thumbnails/contrato_alquiler_thumb.jpg",
-    icon: Home,
-    iconColor: "text-cyan-600",
-    bgColor: "bg-cyan-50",
-  },
-]
+
 
 export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }: UploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false)
@@ -87,61 +20,6 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
   const [isPolling, setIsPolling] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null)
-
-  const handleExampleDocument = useCallback(
-    async (exampleId: string) => {
-      const example = EXAMPLE_DOCUMENTS.find((doc) => doc.id === exampleId)
-      if (!example) return
-
-      console.log("[v0] Loading example document:", exampleId, "from", example.url)
-      setIsLoading(true)
-      setError(null)
-      updateWorkflowStep("splitting")
-
-      addActivityLog({
-        type: "info",
-        message: `Cargando documento de ejemplo: ${example.name}`,
-        details: example.description,
-      })
-
-      try {
-        const response = await fetch(example.url)
-        if (!response.ok) {
-          throw new Error(`No se pudo cargar el documento: ${response.status} ${response.statusText}`)
-        }
-
-        const contentType = response.headers.get("content-type")
-        console.log("[v0] Response content-type:", contentType)
-
-        const blob = await response.blob()
-        console.log("[v0] Downloaded blob, size:", blob.size, "type:", blob.type)
-
-        const pdfBlob = new Blob([blob], { type: "application/pdf" })
-        const file = new File([pdfBlob], `${example.id}.pdf`, { type: "application/pdf" })
-
-        // Process the file using the same logic as user uploads
-        await handleFile(file)
-
-        addActivityLog({
-          type: "success",
-          message: `Documento de ejemplo cargado: ${example.name}`,
-          details: `${example.type} - ${example.description}`,
-        })
-      } catch (err) {
-        console.error("[v0] Error loading example document:", err)
-        setError("Error al cargar el documento de ejemplo. Verifica que el archivo exista.")
-        setIsLoading(false)
-        updateWorkflowStep("upload")
-
-        addActivityLog({
-          type: "error",
-          message: "Error al cargar documento de ejemplo",
-          details: err instanceof Error ? err.message : "Error desconocido",
-        })
-      }
-    },
-    [updateWorkflowStep, addActivityLog],
-  )
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -470,43 +348,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
             </div>
           </div>
 
-          <div className="mt-12 pt-12 border-t">
-            <div className="text-center mb-6">
-              <h3 className="text-base font-semibold text-foreground mb-1">Galerías de documentos</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">Prueba la demo con alguno de los ejemplos</p>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
-              {EXAMPLE_DOCUMENTS.map((doc) => {
-                const IconComponent = doc.icon
-                return (
-                  <Card
-                    key={doc.id}
-                    className="cursor-pointer transition-all hover:shadow-lg hover:border-primary group"
-                    onClick={() => !isLoading && handleExampleDocument(doc.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`${doc.bgColor} rounded-xl p-3 flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}
-                        >
-                          <IconComponent className={`h-8 w-8 ${doc.iconColor}`} strokeWidth={1.5} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1 mb-1">
-                            {doc.name}
-                          </h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                            {doc.description}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

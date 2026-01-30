@@ -99,46 +99,32 @@ export default function Home() {
       {/* Navbar - Full Width */}
       <header className="border-b bg-card px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <button
               onClick={handleReset}
               className="hover:opacity-80 transition-opacity"
               aria-label="Volver a la página inicial"
             >
               <Image
-                src="/images/design-mode/Serimag_logo_color-1-scaled.png"
-                alt="Serimag"
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-tHybcLCum2i79t8YYrA1YEHnuFZruW.png"
+                alt="Iberdrola"
                 width={150}
                 height={50}
                 className="h-10 w-auto object-contain"
                 priority
               />
             </button>
-            <div className="border-l pl-4">
-              <h1 className="text-3xl font-bold text-foreground">playground</h1>
+            <div className="border-l pl-6">
+              <Image
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mQhxahZ8U2kPxOJgT0f2c3IzteEDIA.png"
+                alt="NTT DATA"
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain"
+              />
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="default"
-              className="border-2 hover:bg-accent/50 font-medium bg-transparent"
-              asChild
-            >
-              <a href="https://serimag.com/contacto" target="_blank" rel="noopener noreferrer">
-                Hablemos
-              </a>
-            </Button>
-            <Button
-              size="default"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              asChild
-            >
-              <a href="https://serimag.com" target="_blank" rel="noopener noreferrer">
-                Volver a la Home
-              </a>
-            </Button>
-          </div>
+          <h1 className="text-2xl font-bold text-foreground">Document Processing</h1>
         </div>
       </header>
 
