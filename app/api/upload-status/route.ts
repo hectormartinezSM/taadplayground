@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { list } from "@vercel/blob"
+import { list, head } from "@vercel/blob"
 import { retryWithBackoff } from "@/lib/api-retry"
 
 export async function GET(request: Request) {
@@ -38,13 +38,22 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 })
     }
 
+    // Use downloadUrl which is publicly accessible, or fetch with token header
+    const blobUrl = blobs[0].downloadUrl || blobs[0].url
+    
     const data = await retryWithBackoff(async () => {
-      const response = await fetch(blobs[0].url)
+      const response = await fetch(blobUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      })
       if (!response.ok) {
         if (response.status === 429) {
           throw new Error("Rate limit on blob fetch")
         }
-        throw new Error("Blob fetch failed")
+        console.log(`[v0] Blob fetch failed with status: ${response.status}`)
+        throw new Error(`Blob fetch failed: ${response.status}`)
       }
       return response.json()
     })
