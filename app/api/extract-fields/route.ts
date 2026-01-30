@@ -153,12 +153,15 @@ REGLAS DE FORMATO (OBLIGATORIAS):
         for (const fieldName of fields) {
           const valor = extractionResult.extraction[fieldName]
 
-          if (valor && typeof valor === "string") {
+          // Handle different value types (string, number, etc.)
+          if (valor !== null && valor !== undefined && valor !== "") {
+            // Convert numbers to string for display, preserve string values
+            const valueStr = typeof valor === "number" ? valor.toString() : String(valor).trim()
             result[fieldName] = {
-              value: valor.trim(),
+              value: valueStr,
               confidence: 1,
             }
-            console.log("[v0] API: Field", fieldName, "extracted:", valor.trim())
+            console.log("[v0] API: Field", fieldName, "extracted:", valueStr)
           } else {
             result[fieldName] = {
               value: "N/D",
