@@ -21,30 +21,40 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
   const [showQR, setShowQR] = useState(false)
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null)
 
-  const handleFile = useCallback(
-    async (file: File) => {
-      console.log("[v0] Processing file:", file.name, "Type:", file.type)
+  const handleFiles = useCallback(
+    async (files: File[]) => {
+      console.log("[v0] Processing", files.length, "file(s)")
       setIsLoading(true)
       setError(null)
       updateWorkflowStep("splitting")
 
       try {
-        let pageImages: string[] = []
+        let allPageImages: string[] = []
 
-        if (file.type === "application/pdf") {
-          console.log("[v0] Extracting pages from PDF...")
-          pageImages = await extractPagesFromPDF(file)
-          console.log("[v0] Extracted", pageImages.length, "pages from PDF")
-        } else if (file.type.startsWith("image/")) {
-          console.log("[v0] Converting image to data URL...")
-          const imageUrl = await convertImageToDataURL(file)
-          pageImages = [imageUrl]
-          console.log("[v0] Image converted successfully")
-        } else {
-          throw new Error("Tipo de archivo no soportado")
+        // Process each file and collect all pages
+        for (const file of files) {
+          console.log("[v0] Processing file:", file.name, "Type:", file.type)
+          
+          if (file.type === "application/pdf") {
+            console.log("[v0] Extracting pages from PDF...")
+            const pageImages = await extractPagesFromPDF(file)
+            console.log("[v0] Extracted", pageImages.length, "pages from PDF:", file.name)
+            allPageImages = [...allPageImages, ...pageImages]
+          } else if (file.type.startsWith("image/")) {
+            console.log("[v0] Converting image to data URL...")
+            const imageUrl = await convertImageToDataURL(file)
+            allPageImages.push(imageUrl)
+            console.log("[v0] Image converted successfully:", file.name)
+          } else {
+            console.warn("[v0] Skipping unsupported file type:", file.type)
+          }
         }
 
-        const pages: Page[] = pageImages.map((imageUrl, index) => ({
+        if (allPageImages.length === 0) {
+          throw new Error("No se encontraron archivos válidos (PDF o imagen)")
+        }
+
+        const pages: Page[] = allPageImages.map((imageUrl, index) => ({
           id: `page-${index}`,
           index,
           imageUrl,
@@ -52,7 +62,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
           isBlank: false,
         }))
 
-        console.log("[v0] Created", pages.length, "page objects")
+        console.log("[v0] Created", pages.length, "page objects from", files.length, "file(s)")
 
         await new Promise((resolve) => setTimeout(resolve, 500))
 
@@ -60,8 +70,8 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         onFileUpload(pages)
         setIsLoading(false)
       } catch (err) {
-        console.error("[v0] Error processing file:", err)
-        setError(err instanceof Error ? err.message : "Error al procesar el archivo")
+        console.error("[v0] Error processing files:", err)
+        setError(err instanceof Error ? err.message : "Error al procesar los archivos")
         setIsLoading(false)
         updateWorkflowStep("upload")
       }
@@ -69,27 +79,43 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
     [onFileUpload, updateWorkflowStep],
   )
 
+  // Single file handler for backward compatibility
+  const handleFile = useCallback(
+    async (file: File) => {
+      await handleFiles([file])
+    },
+    [handleFiles],
+  )
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
       setIsDragging(false)
 
-      const file = e.dataTransfer.files[0]
-      if (file && (file.type === "application/pdf" || file.type.startsWith("image/"))) {
-        handleFile(file)
+      const droppedFiles = Array.from(e.dataTransfer.files).filter(
+        (file) => file.type === "application/pdf" || file.type.startsWith("image/")
+      )
+      
+      if (droppedFiles.length > 0) {
+        handleFiles(droppedFiles)
       }
     },
-    [handleFile],
+    [handleFiles],
   )
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (file) {
-        handleFile(file)
+      const files = e.target.files
+      if (files && files.length > 0) {
+        const validFiles = Array.from(files).filter(
+          (file) => file.type === "application/pdf" || file.type.startsWith("image/")
+        )
+        if (validFiles.length > 0) {
+          handleFiles(validFiles)
+        }
       }
     },
-    [handleFile],
+    [handleFiles],
   )
 
   useEffect(() => {
@@ -340,6 +366,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                     id="file-upload"
                     type="file"
                     accept=".pdf,image/*"
+                    multiple
                     onChange={handleFileInput}
                     className="hidden"
                   />
