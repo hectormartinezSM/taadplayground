@@ -83,6 +83,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ fields });
     }
 
+    // Campos predefinidos para Declaración Responsable de Ayudas
+    if (documentType === 'Declaración Responsable de Ayudas' || 
+        documentType.toLowerCase().includes('declaración responsable') && documentType.toLowerCase().includes('ayudas') ||
+        documentType.toLowerCase().includes('dr ayudas')) {
+      const fields = [
+        'Nombre Cliente',
+        'Apellidos Cliente',
+        'NIF Cliente',
+        'Dirección',
+        'Casillas Apartado 4',
+        'Firma Cliente'
+      ];
+      fieldsCache.set(documentType, fields);
+      return NextResponse.json({ fields });
+    }
+
     // Campos predefinidos para Recibo IBI y similares
     if (documentType === 'Recibo IBI' || documentType === 'Recibo contribución urbana' || documentType.toLowerCase().includes('ibi')) {
       const fields = [
