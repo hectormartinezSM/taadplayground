@@ -65,24 +65,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ fields });
     }
 
-    // Campos predefinidos para Recibo IBI y similares
-    if (documentType === 'Recibo IBI' || documentType === 'Recibo contribución urbana' || documentType.toLowerCase().includes('ibi')) {
-      const fields = [
-        'Contribuyente',
-        'Concepto del impuesto',
-        'Importe a pagar',
-        'Fecha límite de pago',
-        'Número de abonaré',
-        'Referencia del impuesto',
-        'Identificación del impuesto',
-        'Referencia catastral',
-        'Entidad emisora',
-        'Dirección inmueble'
-      ];
-      fieldsCache.set(documentType, fields);
-      return NextResponse.json({ fields });
-    }
-
     const schemaCampos = JSON.stringify({
       properties: {
         Campos: {

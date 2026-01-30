@@ -151,7 +151,7 @@ export default function MobileUploadPage() {
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b bg-background px-4 py-4">
         <Image
-          src="/images/design-mode/Serimag_logo_color-1-scaled(1).png"
+          src="https://dca.cat/wp-content/uploads/2025/10/Serimag_logo_color-1-scaled.png"
           alt="Serimag"
           width={120}
           height={40}

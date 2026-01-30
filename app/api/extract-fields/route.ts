@@ -53,51 +53,7 @@ export async function POST(request: NextRequest) {
 
       properties[fieldName] = {
         type: "string",
-        description: `Extrae el valor de ${fieldName} del documento tipo ${documentType}.
-
-Tu objetivo es devolver los campos solicitados de forma MUY CONCISA: cuanto más breve, resumida y sintetizada sea la respuesta, mejor, sin perder información clave.
-
-REGLAS DE FORMATO (OBLIGATORIAS):
-
-1) Brevedad extrema:
-   - Cada valor debe ser lo más corto posible.
-   - Objetivo: <= 50 caracteres por campo.
-   - Si te pasas de 50, reescribe y acorta (elimina palabras redundantes, abrevia lo obvio).
-   - Prohibido: frases completas, explicaciones, coletillas ("según el documento…", "parece…").
-   - Solo el dato final. Si falta: "N/D".
-
-2) Nombres de personas:
-   - Formato obligatorio: "Nombre Apellidos"
-   - Si el documento trae "Apellidos, Nombre" o "APELLIDOS, NOMBRE": invierte a "Nombre Apellidos".
-   - Capitalización normal: Primera letra en mayúscula y resto en minúsculas (respetando tildes).
-   - Elimina comas en el nombre final.
-   - Ejemplos:
-     - "PÉREZ GARCÍA, JUAN" → "Juan Pérez García"
-     - "GARCIA, ANA" → "Ana Garcia"
-     - "Juan Pérez García" → "Juan Pérez García"
-
-3) Nombres de empresas:
-   - Primera letra en MAYÚSCULA y el resto en minúsculas.
-   - Mantén siglas y formas societarias en mayúsculas cuando aplique (ej.: "S.A.", "S.L.", "S.L.U.", "U.T.E.", "B.V.", "GmbH").
-   - Ejemplo:
-     - "SERIMAG SOLUCIONES DIGITALES S.L." → "Serimag Soluciones Digitales S.L."
-
-4) Importes:
-   - Formato numérico: XX.XXX.XXX,XX
-   - Separador de miles: punto (.)
-   - Separador decimal: coma (,)
-   - Añade el símbolo de moneda (preferentemente detrás si no se indica lo contrario): "1.234,56 €"
-   - Si hay unidad adicional, usa formato simbólico (ej.: "%", "€/mes", "€/día", "u.").
-   - Ejemplos:
-     - "1234.5 EUR" → "1.234,50 €"
-     - "10 percent" → "10 %"
-
-5) Fechas:
-   - Formato: DD/MM/AAAA
-   - Si es un intervalo o periodo: DD/MM/AAAA - DD/MM/AAAA
-   - Ejemplos:
-     - "2025-01-08" → "08/01/2025"
-     - "del 1 de enero al 31 de marzo de 2025" → "01/01/2025 - 31/03/2025"`,
+        description: `Extrae el valor de ${fieldName}\nTen en cuenta que el documento es ${documentType}\nExtrae solo el valor solicitado, responde simplemente eso. Traduce la respuesta al castellano a no ser que sean nombres propios. Intenta compactar la respuesta en un maximo de 10-20 palabras aunque siempre el minimo. Los importe ponlos siempre en formato numerico con separacion de miles por punto y de decimales con coma además añade la unidad al final si toca. Las fechas siempre en formato DD/MM/AAAA`,
       }
       required.push(fieldName)
     }
@@ -128,7 +84,7 @@ REGLAS DE FORMATO (OBLIGATORIAS):
             console.log("[v0] API: Field", fieldName, "extracted:", valor.trim())
           } else {
             result[fieldName] = {
-              value: "N/D",
+              value: "N/A",
               confidence: 1,
             }
             console.log("[v0] API: No response for field:", fieldName)
@@ -136,20 +92,20 @@ REGLAS DE FORMATO (OBLIGATORIAS):
         }
       } else {
         console.log("[v0] API: No extraction results")
-        // Set all fields to N/D
+        // Set all fields to N/A
         for (const fieldName of fields) {
           result[fieldName] = {
-            value: "N/D",
+            value: "N/A",
             confidence: 1,
           }
         }
       }
     } catch (error) {
       console.log("[v0] API: Error extracting fields -", error)
-      // Set all fields to N/D on error
+      // Set all fields to N/A on error
       for (const fieldName of fields) {
         result[fieldName] = {
-          value: "N/D",
+          value: "N/A",
           confidence: 1,
         }
       }

@@ -6,7 +6,7 @@ import { WorkflowTimeline } from "@/components/workflow-timeline"
 import { PageGrid } from "@/components/page-grid"
 import { DocumentList } from "@/components/document-list"
 import { ActivityLog } from "@/components/activity-log"
-import type { Page, Document, ActivityLogEntry, WorkflowStep, SegmentationStatus } from "@/lib/types"
+import type { Page, Document, ActivityLogEntry, WorkflowStep } from "@/lib/types"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
@@ -20,27 +20,8 @@ export default function Home() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false)
   const [processedPages, setProcessedPages] = useState(0)
-  const [segmentationStatus, setSegmentationStatus] = useState<SegmentationStatus>({
-    isSegmenting: false,
-    documentsGenerated: 0,
-    processingDocuments: false,
-  })
   const [canScrollUp, setCanScrollUp] = useState(false)
   const [canScrollDown, setCanScrollDown] = useState(false)
-
-  const handleReset = () => {
-    setPages([])
-    setDocuments([])
-    setActivityLog([])
-    setCurrentStep("upload")
-    setIsProcessing(false)
-    setLeftSidebarOpen(false)
-    setRightSidebarOpen(false)
-    setProcessedPages(0)
-    setSegmentationStatus({ isSegmenting: false, documentsGenerated: 0, processingDocuments: false })
-    setCanScrollUp(false)
-    setCanScrollDown(false)
-  }
 
   const handleFileUpload = (uploadedPages: Page[]) => {
     setPages(uploadedPages)
@@ -100,20 +81,14 @@ export default function Home() {
       <header className="border-b bg-card px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleReset}
-              className="hover:opacity-80 transition-opacity"
-              aria-label="Volver a la página inicial"
-            >
-              <Image
-                src="/images/design-mode/Serimag_logo_color-1-scaled.png"
-                alt="Serimag"
-                width={150}
-                height={50}
-                className="h-10 w-auto object-contain"
-                priority
-              />
-            </button>
+            <Image
+              src="/images/design-mode/Serimag_logo_color-1-scaled.png"
+              alt="Serimag"
+              width={150}
+              height={50}
+              className="h-10 w-auto object-contain"
+              priority
+            />
             <div className="border-l pl-4">
               <h1 className="text-3xl font-bold text-foreground">playground</h1>
             </div>
@@ -164,7 +139,6 @@ export default function Home() {
                 documents={documents}
                 activityLog={activityLog}
                 processedPages={processedPages}
-                segmentationStatus={segmentationStatus}
               />
             </div>
           </div>
@@ -208,7 +182,6 @@ export default function Home() {
                 isProcessing={isProcessing}
                 processedPages={processedPages}
                 setProcessedPages={setProcessedPages}
-                setSegmentationStatus={setSegmentationStatus}
               />
 
               {documents.length > 0 && (
