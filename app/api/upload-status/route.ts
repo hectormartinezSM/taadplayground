@@ -38,23 +38,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 })
     }
 
-    // Vercel Blob URLs are public - no auth headers needed
-    const blobUrl = blobs[0].downloadUrl || blobs[0].url
+    // Use the main url property - it's publicly accessible for read
+    const blobUrl = blobs[0].url
     console.log(`[v0] Fetching blob from: ${blobUrl}`)
     
-    const data = await retryWithBackoff(async () => {
+    let data
+    try {
       const response = await fetch(blobUrl, {
         cache: 'no-store',
       })
       if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error("Rate limit on blob fetch")
-        }
-        console.log(`[v0] Blob fetch failed with status: ${response.status}, url: ${blobUrl}`)
-        throw new Error(`Blob fetch failed: ${response.status}`)
+        console.log(`[v0] Blob fetch failed with status: ${response.status}`)
+        // Return waiting instead of throwing - the session may not be ready
+        return NextResponse.json({ status: "waiting" })
       }
-      return response.json()
-    })
+      data = await response.json()
+    } catch (fetchError) {
+      console.log(`[v0] Blob fetch error:`, fetchError)
+      return NextResponse.json({ status: "waiting" })
+    }
 
     console.log(`[v0] Session data status: ${data.status || "undefined"}, has blobUrl: ${!!data.blobUrl}`)
 
