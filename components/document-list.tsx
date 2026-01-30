@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Document, Page } from "@/lib/types"
 import { FieldsTable } from "./fields-table"
-import { FileText, Loader2, Download } from "lucide-react"
+import { FileText, Loader2, Download, CheckCircle2, AlertCircle } from "lucide-react"
 import { ImageViewer } from "./image-viewer"
 import { Button } from "@/components/ui/button"
 import { jsPDF } from "jspdf"
@@ -17,7 +17,24 @@ interface DocumentListProps {
   addActivityLog: (entry: { type: string; message: string }) => void
 }
 
+// Helper function to check if a document has all required fields extracted
+const isDocumentComplete = (doc: Document): boolean => {
+  if (doc.status !== "complete" || !doc.extractedData || !doc.fields) return false
+  
+  for (const field of doc.fields) {
+    const fieldData = doc.extractedData[field.name]
+    if (!fieldData || fieldData.value === "N/D" || fieldData.value === "N/A" || fieldData.value === "") {
+      return false
+    }
+  }
+  return true
+}
+
 export function DocumentList({ documents, pages, updateDocuments, addActivityLog }: DocumentListProps) {
+  // Check if all documents are complete and have all fields
+  const allDocumentsComplete = documents.length > 0 && 
+    documents.every(doc => doc.status === "complete") &&
+    documents.every(isDocumentComplete)
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerImages, setViewerImages] = useState<string[]>([])
   const [viewerLabels, setViewerLabels] = useState<string[]>([])
@@ -203,24 +220,55 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
   return (
     <>
       <div className="space-y-6">
+        {/* Expediente OK Banner */}
+        {allDocumentsComplete && (
+          <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+            <CheckCircle2 className="h-6 w-6 text-green-600" />
+            <div>
+              <h3 className="font-semibold text-green-800 dark:text-green-200">Expediente OK</h3>
+              <p className="text-sm text-green-600 dark:text-green-400">Todos los documentos han sido procesados correctamente con todos los campos requeridos.</p>
+            </div>
+          </div>
+        )}
+
         <h2 className="text-2xl font-bold text-foreground">Documentos Procesados</h2>
 
         {documents.map((doc, index) => {
           const docPages = pages ? pages.filter((p) => doc.pageIds.includes(p.id)) : []
+          const docIsComplete = isDocumentComplete(doc)
 
           return (
-            <Card key={doc.id} id={`document-${doc.id}`} className="shadow-sm hover:shadow-md transition-shadow">
+            <Card key={doc.id} id={`document-${doc.id}`} className={`shadow-sm hover:shadow-md transition-shadow ${docIsComplete ? 'border-green-300 dark:border-green-700' : ''}`}>
               <CardHeader className="border-b px-6 py-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shadow-sm">
-                      <FileText className="h-6 w-6 text-primary" />
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ${docIsComplete ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary/10'}`}>
+                      {docIsComplete ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-600" />
+                      ) : (
+                        <FileText className="h-6 w-6 text-primary" />
+                      )}
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-semibold">
-                        Documento {index + 1}
-                        {doc.documentType && ` - ${doc.documentType.type}`}
-                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg font-semibold">
+                          Documento {index + 1}
+                          {doc.documentType && ` - ${doc.documentType.type}`}
+                        </CardTitle>
+                        {doc.status === "complete" && (
+                          docIsComplete ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                              <CheckCircle2 className="h-3 w-3" />
+                              OK
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                              <AlertCircle className="h-3 w-3" />
+                              Incompleto
+                            </span>
+                          )
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {docPages.length} {docPages.length === 1 ? "página" : "páginas"}
                       </p>
