@@ -1,4 +1,7 @@
-export async function extractPagesFromPDF(file: File): Promise<string[]> {
+export async function extractPagesFromPDF(
+  file: File, 
+  onPageRendered?: (pageIndex: number, imageUrl: string, totalPages: number) => void
+): Promise<string[]> {
   console.log('[v0] Starting REAL PDF extraction for:', file.name);
   
   try {
@@ -72,6 +75,11 @@ export async function extractPagesFromPDF(file: File): Promise<string[]> {
       // Convert to data URL
       const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
       pageImages.push(dataUrl);
+      
+      // Notify about the rendered page immediately
+      if (onPageRendered) {
+        onPageRendered(pageNum - 1, dataUrl, numPages);
+      }
       
       console.log(`[v0] Page ${pageNum} rendered successfully`);
     }

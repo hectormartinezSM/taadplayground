@@ -30,11 +30,45 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
 
       try {
         let pageImages: string[] = []
+        let initialPagesCreated = false
 
         if (file.type === "application/pdf") {
-          console.log("[v0] Extracting pages from PDF...")
-          pageImages = await extractPagesFromPDF(file)
+          console.log("[v0] Extracting pages from PDF with streaming...")
+          
+          // Stream pages as they're rendered for immediate visual feedback
+          pageImages = await extractPagesFromPDF(file, (pageIndex, imageUrl, totalPages) => {
+            console.log(`[v0] Page ${pageIndex + 1}/${totalPages} streamed`)
+            
+            // On first page, immediately create all page placeholders and start processing
+            if (!initialPagesCreated) {
+              initialPagesCreated = true
+              const initialPages: Page[] = Array.from({ length: totalPages }, (_, i) => ({
+                id: `page-${i}`,
+                index: i,
+                imageUrl: i === 0 ? imageUrl : "", // First page has image, others are placeholders
+                status: "processing" as const,
+                isBlank: false,
+              }))
+              
+              console.log("[v0] Created initial page placeholders, starting processing immediately")
+              updateWorkflowStep("blank_detection")
+              onFileUpload(initialPages)
+            }
+          })
+          
           console.log("[v0] Extracted", pageImages.length, "pages from PDF")
+          
+          // If streaming worked, update all pages with final images
+          if (initialPagesCreated) {
+            const finalPages: Page[] = pageImages.map((imageUrl, index) => ({
+              id: `page-${index}`,
+              index,
+              imageUrl,
+              status: "processing" as const,
+              isBlank: false,
+            }))
+            onFileUpload(finalPages)
+          }
         } else if (file.type.startsWith("image/")) {
           console.log("[v0] Converting image to data URL...")
           const imageUrl = await convertImageToDataURL(file)
@@ -44,20 +78,21 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
           throw new Error("Tipo de archivo no soportado")
         }
 
-        const pages: Page[] = pageImages.map((imageUrl, index) => ({
-          id: `page-${index}`,
-          index,
-          imageUrl,
-          status: "processing",
-          isBlank: false,
-        }))
+        // For non-PDF files or if streaming didn't happen, create pages normally
+        if (!initialPagesCreated) {
+          const pages: Page[] = pageImages.map((imageUrl, index) => ({
+            id: `page-${index}`,
+            index,
+            imageUrl,
+            status: "processing" as const,
+            isBlank: false,
+          }))
 
-        console.log("[v0] Created", pages.length, "page objects")
-
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        updateWorkflowStep("blank_detection")
-        onFileUpload(pages)
+          console.log("[v0] Created", pages.length, "page objects")
+          updateWorkflowStep("blank_detection")
+          onFileUpload(pages)
+        }
+        
         setIsLoading(false)
       } catch (err) {
         console.error("[v0] Error processing file:", err)

@@ -50,4 +50,7 @@ class RateLimiter {
 }
 
 // Global rate limiter instance for API calls
-export const apiRateLimiter = new RateLimiter(2, 800) // Max 2 concurrent, 800ms between calls
+export const apiRateLimiter = new RateLimiter(4, 300) // Max 4 concurrent, 300ms between calls
+
+// Faster rate limiter for non-LandingAI calls
+export const fastRateLimiter = new RateLimiter(6, 100) // Max 6 concurrent, 100ms between calls
