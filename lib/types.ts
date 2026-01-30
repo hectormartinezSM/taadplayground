@@ -1,66 +1,51 @@
 // Types for the document processing workflow
 
-export type PageStatus = "processing" | "blank" | "included" | "discarded"
+export type PageStatus = 'processing' | 'blank' | 'included' | 'discarded';
 
 export interface Page {
-  id: string
-  index: number
-  imageUrl: string
-  status: PageStatus
-  isBlank: boolean
-  documentId?: string
+  id: string;
+  index: number;
+  imageUrl: string;
+  status: PageStatus;
+  isBlank: boolean;
+  documentId?: string;
 }
 
 export interface DocumentType {
-  type: string
-  confidence: number
+  type: string;
+  confidence: number;
 }
 
 export interface Field {
-  name: string
+  name: string;
 }
 
 export interface ExtractedField {
-  value: string
-  confidence: number
+  value: string;
+  confidence: number;
 }
 
 export interface Document {
-  id: string
-  pageIds: string[]
-  status: "creating" | "classifying" | "extracting" | "complete"
-  documentType?: DocumentType
-  fields?: Field[]
-  extractedData?: Record<string, ExtractedField>
+  id: string;
+  pageIds: string[];
+  status: 'creating' | 'classifying' | 'extracting' | 'complete';
+  documentType?: DocumentType;
+  fields?: Field[];
+  extractedData?: Record<string, ExtractedField>;
 }
 
 export interface ActivityLogEntry {
-  id: string
-  timestamp: Date
-  type: "page_discarded" | "document_created" | "document_classified" | "fields_detected" | "field_extracted"
-  message: string
+  id: string;
+  timestamp: Date;
+  type: 'page_discarded' | 'document_created' | 'document_classified' | 'fields_detected' | 'field_extracted';
+  message: string;
 }
 
-export type WorkflowStep =
-  | "upload"
-  | "splitting"
-  | "blank_detection"
-  | "segmentation"
-  | "classification"
-  | "extraction"
-  | "complete"
-
-export interface SegmentationProgress {
-  phase: "segmentation"
-  status: "running" | "done" | "error"
-  pagesTotal: number
-  pagesDone: number
-  currentPage: number
-  segmentStarts: number[] // pages that are start of subdocument
-}
-
-export interface SegmentationStatus {
-  isSegmenting: boolean
-  documentsGenerated: number
-  processingDocuments: boolean
-}
+export type WorkflowStep = 
+  | 'upload'
+  | 'splitting'
+  | 'blank_detection'
+  | 'segmentation'
+  | 'classification'
+  | 'extraction'
+  | 'complete';

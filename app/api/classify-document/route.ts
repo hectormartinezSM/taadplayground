@@ -131,94 +131,8 @@ export async function POST(request: NextRequest) {
         Clasify: {
           anyOf: [{ type: "string" }, { type: "null" }],
           default: null,
-          description: `INSTRUCCIONES DE CLASIFICACIÓN (OBLIGATORIAS)
-
-Debes clasificar el documento usando IDEALMENTE una de las tipologías EXACTAS de la siguiente lista.
-- Si encaja con una de ellas, devuelve EL MISMO LITERAL (misma ortografía, mayúsculas y acentos).
-- No traduzcas, no reformules, no añadas aclaraciones.
-- Si NO puedes asignarlo con confianza a ninguna tipología de la lista, crea una tipología nueva:
-  - Debe ser lo MÁS CORTA POSIBLE (objetivo <= 25 caracteres).
-  - Sin artículos ("el/la"), sin frases, sin detalles redundantes.
-  - 2-4 palabras máximo.
-
-LISTA DE TIPOLOGÍAS PERMITIDAS (LITERAL EXACTO):
-DNI
-NIE
-Pasaporte
-ID No Español
-Libro de familia
-CIF
-Carnet conducir
-Certificado de nacimiento
-Certificado de matrimonio
-Certificado de defunción
-Sentencia de Separación
-Certificado últimas voluntades
-Certificado de empadronamiento
-Contrato laboral
-Finiquito laboral
-Nomina
-Vida laboral
-Certificado retenciones Seguridad Social
-Certificado corriente pago Seguridad social
-Certificado corriente pago Agencia Tributaria
-Pensión
-Toma posesión funcionario
-Escritura hipotecaria
-Escritura compraventa
-Testamento
-Repartición herencia
-Escritura de poder
-Escritura declaración de obra nueva
-Escritura constitución entidad
-Tasación
-Nota simple registro propiedad
-Contrato alquiler
-Resolución contra alquiler
-Certificado catastral
-Nota registro mercantil
-Declaración de Residencia Fiscal
-Modelo 100 AEAT
-Modelo 130 AEAT
-Modelo 131 AEAT
-Modelo 303 AEAT
-Modelo 200 AEAT
-Modelo 347 AEAT
-Otros modelos tributarios
-Contrato bancario
-Justificante bancario
-Certificado de titularidad de cuenta
-Factura
-Presupuesto
-Albarán
-Ticket
-Pagaré
-Cheque
-Parte médico
-Fotografía
-Póliza seguros
-Ficha técnica vehículo
-Atestado policial
-Permiso circulación vehículo
-Acta junta propietarios
-Declaración amistosa accidente
-Tarjeta embarque
-Reserva alojamiento
-Sanción
-Pago tasas
-CIRBE
-Auditoría anual empresa
-Licencia obras
-Balance
-Cuenta de pérdidas y ganancias
-Decreto
-Auto
-Denuncia
-Demanda
-Citación judicial
-Recibo IBI
-Recibo contribución urbana
-Recibo IVTM`,
+          description:
+            'Eres un clasificador de tipologías documentales. Elige una tipología del catálogo haciendo posible encajar el documento dentro. Si no encaja de ninguna forma, crear un nombre para la tipología siguiendo el mismo patrón que los nombres propuestos. Los tipos documentales están en cada línea de las próximas antes de los ":", lo que viene después es la descripción.\n\nDNI: Documento Nacional de Identidad español con foto, número DNI, fecha de caducidad y firma.\nNIE: Identidad de extranjero en España con letra inicial, número, fecha de caducidad y autoridad.\nPasaporte: Pasaporte con país emisor, número, foto, fechas de expedición/caducidad.\nID No Español: Documento oficial de identidad extranjero distinto de DNI/NIE, con foto y número.\nLibro de familia: Libro oficial con inscripciones de matrimonio y nacimientos/hijos.\nCIF: Identificador fiscal de entidad (NIF de persona jurídica) con razón social.\nCarnet conducir: Permiso de conducción con número, clases autorizadas, fechas y foto.\nCertificado de nacimiento: Certificación registral de nacimiento con datos de filiación y fecha.\nCertificado de matrimonio: Certificación registral de matrimonio con datos de contrayentes y fecha.\nCertificado de defunción: Certificación registral de fallecimiento con fecha y lugar.\nSentencia de Separación: Resolución judicial firme de separación/divorcio con juzgado, fecha y partes.\nCertificado últimas voluntades: Justificante del Registro de Últimas Voluntades con número y fecha.\nCertificado de empadronamiento: Certificado municipal de domicilio y convivencia con fecha de expedición.\nContrato laboral: Contrato de trabajo con empresa, trabajador, jornada, categoría y fechas.\nFiniquito laboral: Documento de liquidación/recibo de salarios pendientes al término de relación laboral.\nNómina: Recibo mensual de salarios con base, complementos, deducciones y líquido.\nCertificado de empresa: Certificado que detalla relación laboral, periodos trabajados y retribuciones.\nTarjeta Seguridad Social: Tarjeta con número de afiliación.',
           title: "Clasify",
         },
       },
@@ -247,7 +161,7 @@ Recibo IVTM`,
             anyOf: [{ type: "string" }, { type: "null" }],
             default: null,
             description:
-              "No pudiste clasificar el documento con las tipologías predefinidas. Crea una tipología nueva lo MÁS CORTA POSIBLE (objetivo <= 25 caracteres). Sin artículos, sin frases, 2-4 palabras máximo. Ejemplos: 'Contrato franquicia', 'Informe pericial', 'Recibo donación'.",
+              "Eres un clasificador de tipologías documentales. Dime el tipo de documento que es. Piensa que eres responsable de un banco, aseguradora para plantearte la tipología. El nombre de la tipología documental estará siempre en castellano. Intenta definirlo en el menor número de palabras posible.",
             title: "Clasify",
           },
         },

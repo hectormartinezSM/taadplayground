@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import type { Page, Document, ExtractedField, SegmentationProgress, SegmentationStatus } from "@/lib/types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { Page, Document, ExtractedField } from "@/lib/types"
 import { mockGetRelevantFields } from "@/lib/mock-api"
 import { FileX, CheckCircle2 } from "lucide-react"
 import { ImageViewer } from "./image-viewer"
@@ -20,7 +20,6 @@ interface PageGridProps {
   isProcessing: boolean
   processedPages: number
   setProcessedPages: (count: number) => void
-  setSegmentationStatus: (status: SegmentationStatus) => void
 }
 
 const documentColors = [
@@ -42,15 +41,12 @@ export function PageGrid({
   isProcessing,
   processedPages,
   setProcessedPages,
-  setSegmentationStatus,
 }: PageGridProps) {
   const processingStarted = useRef(false)
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerIndex, setViewerIndex] = useState(0)
   const processedPageIds = useRef<Set<string>>(new Set())
   const markdownResults = useRef<Map<number, { markdown: string; isBlank: boolean }>>(new Map())
-
-  const [segmentationProgress, setSegmentationProgress] = useState<SegmentationProgress | null>(null)
 
   useEffect(() => {
     const needsProcessing = pages.some((page) => !processedPageIds.current.has(page.id))
@@ -178,20 +174,6 @@ export function PageGrid({
           message: `Analizando segmentación de ${nonBlankIndices.length} páginas...`,
         })
 
-        setSegmentationStatus({
-          isSegmenting: true,
-          documentsGenerated: 0,
-        })
-
-        setSegmentationProgress({
-          phase: "segmentation",
-          status: "running",
-          pagesTotal: nonBlankIndices.length,
-          pagesDone: 0,
-          currentPage: nonBlankIndices[0],
-          segmentStarts: [],
-        })
-
         console.log("[v0] Calling batch segmentation API...")
         const segmentResponse = await fetch("/api/segment-documents", {
           method: "POST",
@@ -200,7 +182,6 @@ export function PageGrid({
         })
 
         if (!segmentResponse.ok) {
-          setSegmentationProgress((prev) => (prev ? { ...prev, status: "error" } : null))
           throw new Error("Batch segmentation failed")
         }
 
@@ -208,28 +189,6 @@ export function PageGrid({
         const segments = segmentData.segments || []
 
         console.log("[v0] Segmentation complete. Found", segments.length, "documents")
-
-        const segmentStartPages: number[] = []
-        for (const segment of segments) {
-          const startPageInNonBlank = segment.start_page - 1
-          const actualPageIndex = nonBlankIndices[startPageInNonBlank]
-          segmentStartPages.push(actualPageIndex)
-        }
-
-        setSegmentationProgress({
-          phase: "segmentation",
-          status: "done",
-          pagesTotal: nonBlankIndices.length,
-          pagesDone: nonBlankIndices.length,
-          currentPage: nonBlankIndices[nonBlankIndices.length - 1],
-          segmentStarts: segmentStartPages,
-        })
-
-        setSegmentationStatus({
-          isSegmenting: false,
-          documentsGenerated: segments.length,
-          processingDocuments: true,
-        })
 
         const newDocuments: Document[] = segments.map((segment, docIdx) => ({
           id: `doc-${docIdx}`,
@@ -274,40 +233,32 @@ export function PageGrid({
 
         updateDocuments(newDocuments)
 
-        console.log("[v0] Starting classification and extraction for all documents")
-        updateCurrentStep("classification")
+        console.log("[v0] All documents created, starting parallel processing...")
 
-        // Process all documents in parallel
-        const processingPromises = newDocuments.map((doc, docIdx) => {
-          const segment = segments[docIdx]
+        const documentProcessingPromises = segments.map(async (segment, docIdx) => {
+          const doc = newDocuments[docIdx]
+
+          if (!doc) {
+            console.error("[v0] Document at index", docIdx, "is undefined")
+            return
+          }
+
           const startPageInNonBlank = segment.start_page - 1
           const endPageInNonBlank = segment.end_page - 1
           const docPageIndices = nonBlankIndices.slice(startPageInNonBlank, endPageInNonBlank + 1)
 
-          // Get the pages for this document
-          const docPages = docPageIndices.map((idx) => pages[idx]).filter(Boolean)
+          const docPages: Page[] = docPageIndices.map((idx) => pages[idx])
 
-          return processDocument(doc, docPages, newDocuments, updateDocuments, addActivityLog, markdownResults.current)
+          await processDocument(doc, docPages, newDocuments, updateDocuments, addActivityLog, markdownResults.current)
         })
 
-        // Wait for all documents to be processed
-        await Promise.all(processingPromises)
+        await Promise.all(documentProcessingPromises)
 
         console.log("[v0] All documents processed")
-        setSegmentationStatus({
-          isSegmenting: false,
-          documentsGenerated: segments.length,
-          processingDocuments: false,
-        })
         updateCurrentStep("complete")
         updateProcessing(false)
       } catch (error) {
         console.error("[v0] Error in processing:", error)
-        setSegmentationProgress((prev) => (prev ? { ...prev, status: "error" } : null))
-        setSegmentationStatus({
-          isSegmenting: false,
-          documentsGenerated: 0,
-        })
         updateProcessing(false)
       }
     }
@@ -504,13 +455,16 @@ export function PageGrid({
   return (
     <>
       <Card className="shadow-sm">
+        <CardHeader className="border-b px-6 py-4">
+          <CardTitle className="text-lg font-semibold">Páginas del Documento</CardTitle>
+        </CardHeader>
         <CardContent className="p-6 space-y-4">
+          <div className="text-sm text-muted-foreground">
+            Procesadas {processedPages} de {pages.length} páginas
+          </div>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
             {pages.map((page, index) => {
               const isProcessed = index < processedPages
-              const isBeingSegmented = segmentationProgress?.status === "running" && !page.isBlank && isProcessed
-              const isSegmentStart = segmentationProgress?.segmentStarts.includes(index)
-              const segmentNumber = isSegmentStart ? segmentationProgress.segmentStarts.indexOf(index) + 1 : null
 
               return (
                 <div
@@ -520,13 +474,11 @@ export function PageGrid({
                       ? "border-muted bg-muted/50 opacity-50"
                       : page.documentId
                         ? getPageDocumentColor(page)
-                        : isBeingSegmented
-                          ? "border-primary shadow-lg shadow-primary/30 ring-2 ring-primary/50"
-                          : "border-border bg-card shadow-sm"
+                        : "border-border bg-card shadow-sm"
                   }`}
                   onClick={() => handlePageClick(index)}
                 >
-                  <div className="aspect-[2/3] overflow-hidden relative">
+                  <div className="aspect-[2/3] overflow-hidden">
                     <img
                       src={page.imageUrl || "/placeholder.svg"}
                       alt={`Página ${page.index + 1}`}
@@ -534,30 +486,11 @@ export function PageGrid({
                         !isProcessed ? "brightness-[0.3] grayscale" : ""
                       }`}
                     />
-
-                    {isBeingSegmented && (
-                      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                        <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan" />
-                      </div>
-                    )}
-
                     {page.isBlank && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
                         <span className="text-[0.5rem] xs:text-xs sm:text-sm font-bold text-gray-400/70 rotate-[-30deg] select-none whitespace-nowrap">
                           BLANCA
                         </span>
-                      </div>
-                    )}
-
-                    {isBeingSegmented && (
-                      <div className="absolute top-1 left-1 bg-primary/90 backdrop-blur-sm text-primary-foreground px-1.5 py-0.5 rounded text-[0.5rem] xs:text-[0.6rem] font-semibold shadow-sm">
-                        Analizando
-                      </div>
-                    )}
-
-                    {isSegmentStart && segmentNumber && (
-                      <div className="absolute top-1 right-1 bg-green-500 text-white text-[8px] font-bold py-0.5 px-1 rounded shadow-sm">
-                        Subdoc #{segmentNumber}
                       </div>
                     )}
                   </div>
