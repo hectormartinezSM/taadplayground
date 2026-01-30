@@ -21,6 +21,7 @@ interface PageGridProps {
   processedPages: number
   setProcessedPages: (count: number) => void
   setSegmentationStatus: (status: SegmentationStatus) => void
+  onProcessingComplete?: (documents: Document[], totalPages: number) => void
 }
 
 const documentColors = [
@@ -43,6 +44,7 @@ export function PageGrid({
   processedPages,
   setProcessedPages,
   setSegmentationStatus,
+  onProcessingComplete,
 }: PageGridProps) {
   const processingStarted = useRef(false)
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -301,6 +303,11 @@ export function PageGrid({
         })
         updateCurrentStep("complete")
         updateProcessing(false)
+        
+        // Notify parent that processing is complete for saving to history
+        if (onProcessingComplete) {
+          onProcessingComplete(newDocuments, pages.length)
+        }
       } catch (error) {
         console.error("[v0] Error in processing:", error)
         setSegmentationProgress((prev) => (prev ? { ...prev, status: "error" } : null))

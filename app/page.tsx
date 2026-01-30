@@ -2,12 +2,14 @@
 
 import { useState } from "react"
 import { UploadArea } from "@/components/upload-area"
+import { SubmissionHistory } from "@/components/submission-history"
+import type { Submission, SubmissionDocument } from "@/lib/submissions"
 import { WorkflowTimeline } from "@/components/workflow-timeline"
 import { PageGrid } from "@/components/page-grid"
 import { DocumentList } from "@/components/document-list"
 import { ActivityLog } from "@/components/activity-log"
 import type { Page, Document, ActivityLogEntry, WorkflowStep, SegmentationStatus } from "@/lib/types"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Home, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 
@@ -40,6 +42,35 @@ export default function Home() {
     setSegmentationStatus({ isSegmenting: false, documentsGenerated: 0, processingDocuments: false })
     setCanScrollUp(false)
     setCanScrollDown(false)
+  }
+
+  const handleProcessingComplete = async (completedDocs: Document[], totalPages: number) => {
+    try {
+      const submissionDocs: SubmissionDocument[] = completedDocs.map(doc => ({
+        type: doc.type || 'Desconocido',
+        pageCount: doc.pageIndices?.length || 1,
+        extractedFields: doc.extractedFields || {},
+      }))
+
+      await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documents: submissionDocs,
+          totalPages,
+          status: 'completed',
+        }),
+      })
+      
+      console.log('[v0] Submission saved to history')
+    } catch (error) {
+      console.error('[v0] Error saving submission:', error)
+    }
+  }
+
+  const handleViewSubmission = (submission: Submission) => {
+    // For now, just log - could expand to show historical results
+    console.log('[v0] Viewing submission:', submission)
   }
 
   const handleFileUpload = (uploadedPages: Page[]) => {
@@ -124,7 +155,20 @@ export default function Home() {
               />
             </div>
           </div>
-          <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">Agentic Workflow Demo</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">Agentic Workflow Demo</span>
+            {pages.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Nueva consulta
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -179,6 +223,7 @@ export default function Home() {
                   updateWorkflowStep={updateWorkflowStep}
                   addActivityLog={addActivityLog}
                 />
+                <SubmissionHistory onViewSubmission={handleViewSubmission} />
               </div>
             </div>
           ) : (
@@ -195,6 +240,7 @@ export default function Home() {
                 processedPages={processedPages}
                 setProcessedPages={setProcessedPages}
                 setSegmentationStatus={setSegmentationStatus}
+                onProcessingComplete={handleProcessingComplete}
               />
 
               {documents.length > 0 && (
