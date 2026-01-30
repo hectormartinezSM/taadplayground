@@ -361,6 +361,20 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                     onChange={handleFileInput}
                     className="hidden"
                   />
+                  
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <p className="text-sm font-medium text-foreground mb-3">Documentos admitidos:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                        Convenio CAE
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                        Declaración Responsable Ayudas
+                      </li>
+                    </ul>
+                  </div>
                 </>
               )}
             </div>
