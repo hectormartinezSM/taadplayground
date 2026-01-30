@@ -97,9 +97,9 @@ export default function Home() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Navbar - Full Width */}
-      <header className="border-b bg-card px-6 py-5 flex-shrink-0">
+      <header className="border-b bg-card px-8 py-6 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-10">
             <button
               onClick={handleReset}
               className="hover:opacity-80 transition-opacity"
@@ -108,19 +108,19 @@ export default function Home() {
               <Image
                 src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-tHybcLCum2i79t8YYrA1YEHnuFZruW.png"
                 alt="Iberdrola"
-                width={200}
-                height={60}
-                className="h-14 w-auto object-contain"
+                width={280}
+                height={80}
+                className="h-20 w-auto object-contain"
                 priority
               />
             </button>
-            <div className="border-l pl-8">
+            <div className="border-l pl-10">
               <Image
                 src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mQhxahZ8U2kPxOJgT0f2c3IzteEDIA.png"
                 alt="NTT DATA"
-                width={160}
-                height={50}
-                className="h-11 w-auto object-contain"
+                width={200}
+                height={60}
+                className="h-14 w-auto object-contain"
               />
             </div>
           </div>
