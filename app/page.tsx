@@ -9,7 +9,7 @@ import { PageGrid } from "@/components/page-grid"
 import { DocumentList } from "@/components/document-list"
 import { ActivityLog } from "@/components/activity-log"
 import type { Page, Document, ActivityLogEntry, WorkflowStep, SegmentationStatus } from "@/lib/types"
-import { ChevronLeft, ChevronRight, Home, RotateCcw } from "lucide-react"
+import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 
