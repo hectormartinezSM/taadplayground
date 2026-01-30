@@ -125,6 +125,38 @@ export async function POST(request: NextRequest) {
     console.log("[v0] API: All pages parsed, joining markdowns...")
 
     const joinedMarkdown = joinMarkdowns(markdowns)
+    const lowerMarkdown = joinedMarkdown.toLowerCase()
+
+    // Fast keyword-based pre-classification for Iberdrola documents
+    // This avoids unnecessary API calls when we can identify the document type directly
+    if (lowerMarkdown.includes('declaración responsable') && lowerMarkdown.includes('ayudas')) {
+      console.log("[v0] API: Fast classification - Declaración Responsable Ayudas detected by keywords")
+      return NextResponse.json({
+        type: "Declaración Responsable Ayudas",
+        confidence: 1,
+        markdown: joinedMarkdown,
+      })
+    }
+    
+    if (lowerMarkdown.includes('convenio') && lowerMarkdown.includes('cae')) {
+      console.log("[v0] API: Fast classification - Convenio CAE detected by keywords")
+      return NextResponse.json({
+        type: "Convenio CAE",
+        confidence: 1,
+        markdown: joinedMarkdown,
+      })
+    }
+
+    // Also check for specific Iberdrola document patterns
+    if (lowerMarkdown.includes('certificados de ahorro energético') || 
+        lowerMarkdown.includes('propietario inicial') && lowerMarkdown.includes('acción de ahorro')) {
+      console.log("[v0] API: Fast classification - Convenio CAE detected by content patterns")
+      return NextResponse.json({
+        type: "Convenio CAE",
+        confidence: 1,
+        markdown: joinedMarkdown,
+      })
+    }
 
     const schemaClasGeneral = JSON.stringify({
       properties: {
@@ -218,7 +250,9 @@ Demanda
 Citación judicial
 Recibo IBI
 Recibo contribución urbana
-Recibo IVTM`,
+Recibo IVTM
+Convenio CAE
+Declaración Responsable Ayudas`,
           title: "Clasify",
         },
       },
