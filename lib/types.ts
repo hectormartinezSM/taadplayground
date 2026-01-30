@@ -64,3 +64,34 @@ export interface SegmentationStatus {
   documentsGenerated: number
   processingDocuments: boolean
 }
+
+// Iberdrola CAE Document Extraction Types
+export interface IberdrolaCAEData {
+  "Nombre Cliente": string | null
+  "Apellidos Cliente": string | null
+  "NIF Cliente": string | null
+  "Dirección": string | null
+  "Referencia Catastral": string | null
+  "Coordenadas X": number | null
+  "Coordenadas Y": number | null
+  "Existe Valor €/kWh": "Sí" | "No" | null
+  "Firma Cliente": "Sí" | "No" | null
+  "Firma Iberdrola": "Sí" | "No" | null
+}
+
+export interface IberdrolaExtractionResult {
+  success: boolean
+  extraction: {
+    data: IberdrolaCAEData
+    confidence: number
+    warnings: string[]
+  }
+  pageNumber: number | null
+  documentType: string
+}
+
+export interface IberdrolaExtractionRequest {
+  pageText: string
+  pageNumber?: number
+  documentType?: string
+}
