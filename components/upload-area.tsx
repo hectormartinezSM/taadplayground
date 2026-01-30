@@ -336,21 +336,12 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
 
             <div className="text-center max-w-lg">
               <h3 className="mb-2 text-xl font-semibold text-foreground">
-                {isLoading ? "Procesando documento..." : "Cargar documento"}
+                {isLoading ? "Procesando documentos..." : "Cargar documentos"}
               </h3>
               <p className="mb-6 text-base text-muted-foreground leading-relaxed">
                 {isLoading
-                  ? "Extrayendo páginas del documento"
-                  : "Arrastra un archivo PDF o imagen aquí, o haz clic para seleccionar"}
-              </p>
-
-              <p className="mb-6">
-                <button
-                  onClick={() => setShowQR(!showQR)}
-                  className="text-sm text-primary underline hover:text-primary/80 transition-colors"
-                >
-                  Sube una foto directamente desde tu móvil
-                </button>
+                  ? "Extrayendo páginas de los documentos"
+                  : "Arrastra archivos PDF o imágenes aquí, o haz clic para seleccionar"}
               </p>
 
               {error && <p className="mb-4 text-sm text-red-600">Error: {error}</p>}
