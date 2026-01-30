@@ -56,14 +56,15 @@ export async function POST(request: NextRequest) {
     for (const fieldName of fields) {
       if (!fieldName) continue
 
-      // Special handling for Convenio CAE coordinate fields
+      // Special handling for Convenio CAE coordinate fields - use string to preserve all decimal places
       if (isConvenioCAE && (fieldName === 'Coordenadas X' || fieldName === 'Coordenadas Y')) {
         properties[fieldName] = {
-          type: "number",
+          type: "string",
           description: `Extrae la coordenada ${fieldName === 'Coordenadas X' ? 'X (primera)' : 'Y (segunda)'} del campo "Coordenadas" del documento.
 Las coordenadas aparecen en formato (X, Y) como por ejemplo (408381.490, 4535856.403).
-Devuelve SOLO el valor numérico correspondiente, sin paréntesis ni texto adicional.
-Si es Coordenadas X, devuelve el primer número. Si es Coordenadas Y, devuelve el segundo número.`
+Devuelve SOLO el valor numérico correspondiente como texto, preservando TODOS los decimales exactamente como aparecen.
+Si es Coordenadas X, devuelve el primer número. Si es Coordenadas Y, devuelve el segundo número.
+IMPORTANTE: Preserva todos los dígitos incluyendo ceros finales. Ejemplo: "408381.490" NO "408381.49".`
         }
         required.push(fieldName)
         continue
