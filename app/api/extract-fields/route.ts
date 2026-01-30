@@ -48,8 +48,41 @@ export async function POST(request: NextRequest) {
     const properties: Record<string, any> = {}
     const required: string[] = []
 
+    // Check if this is a Convenio CAE document for special field handling
+    const isConvenioCAE = documentType === 'Convenio CAE' || 
+      documentType.toLowerCase().includes('convenio cae') || 
+      documentType.toLowerCase().includes('cae iberdrola')
+
     for (const fieldName of fields) {
       if (!fieldName) continue
+
+      // Special handling for Convenio CAE coordinate fields
+      if (isConvenioCAE && (fieldName === 'Coordenadas X' || fieldName === 'Coordenadas Y')) {
+        properties[fieldName] = {
+          type: "number",
+          description: `Extrae la coordenada ${fieldName === 'Coordenadas X' ? 'X (primera)' : 'Y (segunda)'} del campo "Coordenadas" del documento.
+Las coordenadas aparecen en formato (X, Y) como por ejemplo (408381.490, 4535856.403).
+Devuelve SOLO el valor numérico correspondiente, sin paréntesis ni texto adicional.
+Si es Coordenadas X, devuelve el primer número. Si es Coordenadas Y, devuelve el segundo número.`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      // Special handling for Convenio CAE boolean fields (Sí/No)
+      if (isConvenioCAE && ['Existe Valor €/kWh', 'Firma Cliente', 'Firma Iberdrola'].includes(fieldName)) {
+        properties[fieldName] = {
+          type: "string",
+          enum: ["Sí", "No"],
+          description: `Extrae el valor del campo "${fieldName}" del documento.
+En el documento original aparece como "S" para Sí y "N" para No.
+Devuelve "Sí" si el valor es "S" o indica afirmativo.
+Devuelve "No" si el valor es "N" o indica negativo.
+Si no encuentras el campo o no está claro, devuelve "No".`
+        }
+        required.push(fieldName)
+        continue
+      }
 
       properties[fieldName] = {
         type: "string",

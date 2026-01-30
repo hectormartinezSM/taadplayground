@@ -65,6 +65,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ fields });
     }
 
+    // Campos predefinidos para Convenio CAE Iberdrola
+    if (documentType === 'Convenio CAE' || documentType.toLowerCase().includes('convenio cae') || documentType.toLowerCase().includes('cae iberdrola')) {
+      const fields = [
+        'Nombre Cliente',
+        'Apellidos Cliente',
+        'NIF Cliente',
+        'Dirección',
+        'Referencia Catastral',
+        'Coordenadas X',
+        'Coordenadas Y',
+        'Existe Valor €/kWh',
+        'Firma Cliente',
+        'Firma Iberdrola'
+      ];
+      fieldsCache.set(documentType, fields);
+      return NextResponse.json({ fields });
+    }
+
     // Campos predefinidos para Recibo IBI y similares
     if (documentType === 'Recibo IBI' || documentType === 'Recibo contribución urbana' || documentType.toLowerCase().includes('ibi')) {
       const fields = [
