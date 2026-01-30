@@ -74,13 +74,6 @@ export function PageGrid({
 
         console.log("[v0] Pages to process:", pagesToProcess.length, "out of", pages.length)
 
-        // Immediately mark all pages as "processing" for instant visual feedback
-        updatePages((prevPages) => 
-          prevPages.map((p) => 
-            processedPageIds.current.has(p.id) ? p : { ...p, status: "processing" as const }
-          )
-        )
-
         const parallelPromises = pagesToProcess.map(async (page) => {
           const index = pages.findIndex((p) => p.id === page.id)
 
@@ -363,6 +356,8 @@ export function PageGrid({
     updateDocs([...allDocs])
     updateCurrentStep("classification")
 
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
     let documentType = { type: "undefined" }
 
     try {
@@ -409,6 +404,8 @@ export function PageGrid({
         message: `Documento ${docIndex + 1} clasificado como ${documentType.type} (error en clasificación)`,
       })
     }
+
+    await new Promise((resolve) => setTimeout(resolve, 400))
 
     const fields = await mockGetRelevantFields(documentType.type, combinedMarkdown)
     allDocs[docIndex] = {
