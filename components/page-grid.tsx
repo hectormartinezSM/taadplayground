@@ -531,7 +531,7 @@ export function PageGrid({
                       src={page.imageUrl || "/placeholder.svg"}
                       alt={`Página ${page.index + 1}`}
                       className={`h-full w-full object-cover transition-all ${
-                        !isProcessed ? "brightness-[0.3] grayscale" : ""
+                        !isProcessed && !page.isBlank ? "brightness-[0.3] grayscale" : ""
                       }`}
                     />
 
@@ -546,12 +546,6 @@ export function PageGrid({
                         <span className="text-[0.5rem] xs:text-xs sm:text-sm font-bold text-gray-400/70 rotate-[-30deg] select-none whitespace-nowrap">
                           BLANCA
                         </span>
-                      </div>
-                    )}
-
-                    {isBeingSegmented && (
-                      <div className="absolute top-1 left-1 bg-primary/90 backdrop-blur-sm text-primary-foreground px-1.5 py-0.5 rounded text-[0.5rem] xs:text-[0.6rem] font-semibold shadow-sm">
-                        Analizando
                       </div>
                     )}
 

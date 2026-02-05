@@ -1,60 +1,322 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { Field, ExtractedField } from '@/lib/types';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import type React from "react"
+
+import { useState } from "react"
+import type { Field, ExtractedField } from "@/lib/types"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Plus, Loader2 } from "lucide-react"
 
 interface FieldsTableProps {
-  fields: Field[];
-  extractedData?: Record<string, ExtractedField>;
-  isExtracting: boolean;
-  onAddCustomField?: (fieldName: string) => Promise<void>;
-  isComplete?: boolean;
+  fields: Field[]
+  extractedData?: Record<string, ExtractedField>
+  isExtracting: boolean
+  onAddCustomField?: (fieldName: string) => Promise<void>
+  isComplete?: boolean
 }
 
-export function FieldsTable({ 
-  fields, 
-  extractedData, 
+interface Situacion {
+  empresa: string
+  fechaAlta: string
+  fechaBaja: string
+  diasCotizados?: number | string
+}
+
+interface Titularidad {
+  titular: string
+  dni: string
+  tipoDerecho: string
+  participacion: string
+}
+
+interface Retencion {
+  nombre: string
+  porcentaje: string
+  importe: string
+}
+
+interface Devengo {
+  concepto: string
+  tipo?: string
+  importe: string
+}
+
+function parseSituaciones(value: string): Situacion[] | null {
+  try {
+    // Try to parse as JSON
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].empresa) {
+      return parsed
+    }
+  } catch {
+    // If JSON parsing fails, try to parse the old pipe-separated format
+    const lines = value.split("\n").filter((line) => line.trim())
+    if (lines.length > 0 && lines[0].includes("|")) {
+      return lines.map((line) => {
+        const parts = line.split("|").map((p) => p.trim())
+        return {
+          empresa: parts[0] || "",
+          fechaAlta: parts[1] || "",
+          fechaBaja: parts[2] || "---",
+          diasCotizados: parts[3] || "",
+        }
+      })
+    }
+  }
+  return null
+}
+
+function parseTitularidades(value: string): Titularidad[] | null {
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].titular) {
+      return parsed
+    }
+  } catch {
+    // If JSON parsing fails, try pipe-separated format
+    const lines = value.split("\n").filter((line) => line.trim())
+    if (lines.length > 0 && lines[0].includes("|")) {
+      return lines.map((line) => {
+        const parts = line.split("|").map((p) => p.trim())
+        return {
+          titular: parts[0] || "",
+          dni: parts[1] || "N/D",
+          tipoDerecho: parts[2] || "",
+          participacion: parts[3] || "",
+        }
+      })
+    }
+  }
+  return null
+}
+
+function parseRetenciones(value: string): Retencion[] | null {
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].nombre) {
+      return parsed
+    }
+  } catch {
+    // If JSON parsing fails, try pipe-separated format
+    const lines = value.split("\n").filter((line) => line.trim())
+    if (lines.length > 0 && lines[0].includes("|")) {
+      return lines.map((line) => {
+        const parts = line.split("|").map((p) => p.trim())
+        return {
+          nombre: parts[0] || "",
+          porcentaje: parts[1] || "---",
+          importe: parts[2] || "",
+        }
+      })
+    }
+  }
+  return null
+}
+
+function parseDevengos(value: string): Devengo[] | null {
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].concepto) {
+      return parsed
+    }
+  } catch {
+    // If JSON parsing fails, try pipe-separated format
+    const lines = value.split("\n").filter((line) => line.trim())
+    if (lines.length > 0 && lines[0].includes("|")) {
+      return lines.map((line) => {
+        const parts = line.split("|").map((p) => p.trim())
+        return {
+          concepto: parts[0] || "",
+          tipo: parts[1] || "",
+          importe: parts[2] || "",
+        }
+      })
+    }
+  }
+  return null
+}
+
+function SituacionesTable({ situaciones }: { situaciones: Situacion[] }) {
+  const hasDias = situaciones.some((s) => s.diasCotizados !== undefined && s.diasCotizados !== "")
+
+  return (
+    <div className="rounded-md border border-border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-semibold">Empresa</TableHead>
+            <TableHead className="text-xs font-semibold w-28">Fecha Alta</TableHead>
+            <TableHead className="text-xs font-semibold w-28">Fecha Baja</TableHead>
+            {hasDias && <TableHead className="text-xs font-semibold w-24 text-right">Días Cotizados</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {situaciones.map((sit, idx) => (
+            <TableRow key={idx}>
+              <TableCell className="text-sm py-2">{sit.empresa}</TableCell>
+              <TableCell className="text-sm py-2">{sit.fechaAlta}</TableCell>
+              <TableCell className="text-sm py-2">{sit.fechaBaja}</TableCell>
+              {hasDias && <TableCell className="text-sm py-2 text-right">{sit.diasCotizados}</TableCell>}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function TitularidadesTable({ titularidades }: { titularidades: Titularidad[] }) {
+  return (
+    <div className="rounded-md border border-border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-semibold">Titular</TableHead>
+            <TableHead className="text-xs font-semibold w-28">DNI</TableHead>
+            <TableHead className="text-xs font-semibold w-32">Tipo de Derecho</TableHead>
+            <TableHead className="text-xs font-semibold w-24 text-right">Participación</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {titularidades.map((tit, idx) => (
+            <TableRow key={idx}>
+              <TableCell className="text-sm py-2">{tit.titular}</TableCell>
+              <TableCell className="text-sm py-2">{tit.dni}</TableCell>
+              <TableCell className="text-sm py-2">{tit.tipoDerecho}</TableCell>
+              <TableCell className="text-sm py-2 text-right">{tit.participacion}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function RetencionesTable({ retenciones }: { retenciones: Retencion[] }) {
+  return (
+    <div className="rounded-md border border-border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-semibold">Concepto</TableHead>
+            <TableHead className="text-xs font-semibold w-24 text-right">Porcentaje</TableHead>
+            <TableHead className="text-xs font-semibold w-28 text-right">Importe</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {retenciones.map((ret, idx) => (
+            <TableRow key={idx}>
+              <TableCell className="text-sm py-2">{ret.nombre}</TableCell>
+              <TableCell className="text-sm py-2 text-right">
+                {ret.porcentaje !== "---" ? `${ret.porcentaje}%` : "---"}
+              </TableCell>
+              <TableCell className="text-sm py-2 text-right">{ret.importe} €</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function DevengosTable({ devengos }: { devengos: Devengo[] }) {
+  const hasTipo = devengos.some((d) => d.tipo)
+
+  return (
+    <div className="rounded-md border border-border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-semibold">Concepto</TableHead>
+            {hasTipo && <TableHead className="text-xs font-semibold w-40">Tipo</TableHead>}
+            <TableHead className="text-xs font-semibold w-28 text-right">Importe</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {devengos.map((dev, idx) => (
+            <TableRow key={idx}>
+              <TableCell className="text-sm py-2">{dev.concepto}</TableCell>
+              {hasTipo && <TableCell className="text-sm py-2">{dev.tipo || "—"}</TableCell>}
+              <TableCell className="text-sm py-2 text-right">{dev.importe} €</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+export function FieldsTable({
+  fields,
+  extractedData,
   isExtracting,
   onAddCustomField,
   isComplete = false,
 }: FieldsTableProps) {
-  const [isAddingField, setIsAddingField] = useState(false);
-  const [newFieldName, setNewFieldName] = useState('');
-  const [isExtractingNewField, setIsExtractingNewField] = useState(false);
+  const [isAddingField, setIsAddingField] = useState(false)
+  const [newFieldName, setNewFieldName] = useState("")
+  const [isExtractingNewField, setIsExtractingNewField] = useState(false)
 
   const handleAddField = async () => {
-    if (!newFieldName.trim() || !onAddCustomField) return;
+    if (!newFieldName.trim() || !onAddCustomField) return
 
-    setIsExtractingNewField(true);
+    setIsExtractingNewField(true)
     try {
-      await onAddCustomField(newFieldName.trim());
-      setNewFieldName('');
-      setIsAddingField(false);
+      await onAddCustomField(newFieldName.trim())
+      setNewFieldName("")
+      setIsAddingField(false)
     } catch (error) {
-      console.error('[v0] Error adding custom field:', error);
+      console.error("[v0] Error adding custom field:", error)
     } finally {
-      setIsExtractingNewField(false);
+      setIsExtractingNewField(false)
     }
-  };
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleAddField();
+    if (e.key === "Enter") {
+      handleAddField()
     }
-  };
+  }
+
+  const renderFieldValue = (fieldName: string, extracted: ExtractedField | undefined) => {
+    if (!extracted) {
+      return <span className="text-muted-foreground">—</span>
+    }
+
+    // Check if this is the Situaciones field and try to parse it
+    if (fieldName.toLowerCase() === "situaciones") {
+      const situaciones = parseSituaciones(extracted.value)
+      if (situaciones && situaciones.length > 0) {
+        return <SituacionesTable situaciones={situaciones} />
+      }
+    }
+
+    if (fieldName.toLowerCase() === "titularidades") {
+      const titularidades = parseTitularidades(extracted.value)
+      if (titularidades && titularidades.length > 0) {
+        return <TitularidadesTable titularidades={titularidades} />
+      }
+    }
+
+    if (fieldName.toLowerCase() === "retenciones") {
+      const retenciones = parseRetenciones(extracted.value)
+      if (retenciones && retenciones.length > 0) {
+        return <RetencionesTable retenciones={retenciones} />
+      }
+    }
+
+    if (fieldName.toLowerCase() === "devengos") {
+      const devengos = parseDevengos(extracted.value)
+      if (devengos && devengos.length > 0) {
+        return <DevengosTable devengos={devengos} />
+      }
+    }
+
+    return <span className="animate-in fade-in duration-300">{extracted.value}</span>
+  }
 
   return (
     <div className="rounded-lg border border-border">
@@ -67,26 +329,30 @@ export function FieldsTable({
         </TableHeader>
         <TableBody>
           {fields.map((field) => {
-            const extracted = extractedData?.[field.name];
-            
+            const extracted = extractedData?.[field.name]
+            const isSituaciones =
+              field.name.toLowerCase() === "situaciones" && extracted && parseSituaciones(extracted.value)
+            const isTitularidades =
+              field.name.toLowerCase() === "titularidades" && extracted && parseTitularidades(extracted.value)
+            const isRetenciones =
+              field.name.toLowerCase() === "retenciones" && extracted && parseRetenciones(extracted.value)
+            const isDevengos = field.name.toLowerCase() === "devengos" && extracted && parseDevengos(extracted.value)
+            const isTableField = isSituaciones || isTitularidades || isRetenciones || isDevengos
+
             return (
               <TableRow key={field.name}>
-                <TableCell className="font-medium">{field.name}</TableCell>
-                <TableCell>
+                <TableCell className={`font-medium ${isTableField ? "align-top pt-4" : ""}`}>{field.name}</TableCell>
+                <TableCell className={isTableField ? "py-2" : ""}>
                   {isExtracting && !extracted ? (
                     <Skeleton className="h-5 w-full" />
-                  ) : extracted ? (
-                    <span className="animate-in fade-in duration-300">
-                      {extracted.value}
-                    </span>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    renderFieldValue(field.name, extracted)
                   )}
                 </TableCell>
               </TableRow>
-            );
+            )
           })}
-          
+
           {isComplete && onAddCustomField && (
             <>
               {isAddingField ? (
@@ -110,19 +376,15 @@ export function FieldsTable({
                       </div>
                     ) : (
                       <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleAddField}
-                          disabled={!newFieldName.trim()}
-                        >
+                        <Button size="sm" onClick={handleAddField} disabled={!newFieldName.trim()}>
                           Extraer
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setIsAddingField(false);
-                            setNewFieldName('');
+                            setIsAddingField(false)
+                            setNewFieldName("")
                           }}
                         >
                           Cancelar
@@ -151,5 +413,5 @@ export function FieldsTable({
         </TableBody>
       </Table>
     </div>
-  );
+  )
 }
