@@ -102,7 +102,7 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <button
               onClick={handleReset}
-              className="hover:opacity-80 transition-opacity flex items-center gap-3"
+              className="hover:opacity-80 transition-opacity flex items-center gap-4"
               aria-label="Volver a la página inicial"
             >
               <Image
@@ -110,13 +110,18 @@ export default function Home() {
                 alt="Serimag"
                 width={120}
                 height={40}
-                className="h-8 w-auto object-contain"
+                className="h-10 w-auto object-contain"
                 priority
               />
+              <span className="text-2xl font-bold text-foreground">X</span>
+              <Image
+                src="/alquiler-seguro-logo.png"
+                alt="Alquiler Seguro"
+                width={140}
+                height={45}
+                className="h-10 w-auto object-contain"
+              />
             </button>
-            <div className="border-l pl-4">
-              <h1 className="text-2xl font-bold text-foreground">Demo Expediente Activo</h1>
-            </div>
           </div>
         </div>
       </header>
