@@ -102,42 +102,21 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <button
               onClick={handleReset}
-              className="hover:opacity-80 transition-opacity"
+              className="hover:opacity-80 transition-opacity flex items-center gap-3"
               aria-label="Volver a la página inicial"
             >
               <Image
                 src="/images/design-mode/Serimag_logo_color-1-scaled.png"
                 alt="Serimag"
-                width={150}
-                height={50}
-                className="h-10 w-auto object-contain"
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain"
                 priority
               />
             </button>
             <div className="border-l pl-4">
-              <h1 className="text-3xl font-bold text-foreground">playground</h1>
+              <h1 className="text-2xl font-bold text-foreground">Demo Expediente Activo</h1>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="default"
-              className="border-2 hover:bg-accent/50 font-medium bg-transparent"
-              asChild
-            >
-              <a href="https://serimag.com/contacto" target="_blank" rel="noopener noreferrer">
-                Hablemos
-              </a>
-            </Button>
-            <Button
-              size="default"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              asChild
-            >
-              <a href="https://serimag.com" target="_blank" rel="noopener noreferrer">
-                Volver a la Home
-              </a>
-            </Button>
           </div>
         </div>
       </header>
