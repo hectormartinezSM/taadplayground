@@ -117,9 +117,9 @@ export default function Home() {
               <Image
                 src="/alquiler-seguro-logo.png"
                 alt="Alquiler Seguro"
-                width={160}
-                height={52}
-                className="h-12 w-auto object-contain"
+                width={140}
+                height={45}
+                className="h-10 w-auto object-contain"
               />
             </button>
           </div>

@@ -1,7 +1,7 @@
 "use client"
 import type { UploadAreaProps } from "./upload-area.types" // Declare UploadAreaProps type
 import { useCallback, useState } from "react"
-import { Landmark, Loader2, CheckCircle2, FileText, Play } from "lucide-react"
+import { Home, Loader2, CheckCircle2, FileText, Play } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { Page } from "@/lib/types"
@@ -91,7 +91,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
               {isLoading ? (
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
               ) : (
-                <Landmark className="h-12 w-12 text-primary" />
+                <Home className="h-12 w-12 text-primary" />
               )}
             </div>
 
