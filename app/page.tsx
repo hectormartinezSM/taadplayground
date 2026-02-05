@@ -108,18 +108,18 @@ export default function Home() {
               <Image
                 src="/images/design-mode/Serimag_logo_color-1-scaled.png"
                 alt="Serimag"
-                width={120}
-                height={40}
-                className="h-10 w-auto object-contain"
+                width={100}
+                height={32}
+                className="h-7 w-auto object-contain"
                 priority
               />
-              <span className="text-2xl font-bold text-foreground">X</span>
+              <span className="text-xl font-bold text-foreground">X</span>
               <Image
                 src="/alquiler-seguro-logo.png"
                 alt="Alquiler Seguro"
-                width={140}
-                height={45}
-                className="h-10 w-auto object-contain"
+                width={160}
+                height={52}
+                className="h-12 w-auto object-contain"
               />
             </button>
           </div>
