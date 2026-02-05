@@ -1,10 +1,11 @@
 "use client"
 
-import { Download, Check, Loader2 } from "lucide-react"
+import { Download, Check, Loader2, FileArchive } from "lucide-react"
 import type { Page, Document, ActivityLogEntry, SegmentationStatus } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { prepareExportData, downloadJSON, downloadCSV } from "@/lib/export-utils"
 import { Progress } from "@/components/ui/progress"
+import JSZip from "jszip"
 
 interface WorkflowTimelineProps {
   currentStep: string
@@ -41,6 +42,60 @@ export function WorkflowTimeline({
   const handleExportCSV = () => {
     const data = prepareExportData(pages, documents, activityLog)
     downloadCSV(data)
+  }
+
+  const handleExportZIP = async () => {
+    const zip = new JSZip()
+
+    for (let i = 0; i < documents.length; i++) {
+      const doc = documents[i]
+      const docPages = pages.filter((p) => doc.pageIds.includes(p.id))
+
+      if (docPages.length === 0) continue
+
+      // Get document type for filename
+      const docType = doc.documentType?.type || `documento_${i + 1}`
+      const sanitizedType = docType.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]/g, "_")
+
+      // Create PDF from images using jsPDF
+      const { jsPDF } = await import("jspdf")
+      const pdf = new jsPDF()
+
+      for (let j = 0; j < docPages.length; j++) {
+        const page = docPages[j]
+        if (j > 0) pdf.addPage()
+
+        // Load image and add to PDF
+        const img = new Image()
+        img.crossOrigin = "anonymous"
+
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            const imgWidth = pdf.internal.pageSize.getWidth()
+            const imgHeight = (img.height * imgWidth) / img.width
+            pdf.addImage(img, "JPEG", 0, 0, imgWidth, imgHeight)
+            resolve()
+          }
+          img.onerror = reject
+          img.src = page.imageUrl
+        })
+      }
+
+      // Add PDF to ZIP
+      const pdfBlob = pdf.output("blob")
+      zip.file(`${sanitizedType}_doc${i + 1}.pdf`, pdfBlob)
+    }
+
+    // Generate and download ZIP
+    const zipBlob = await zip.generateAsync({ type: "blob" })
+    const url = URL.createObjectURL(zipBlob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "documentos_segmentados.zip"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const scrollToDocument = (docId: string) => {
@@ -185,6 +240,15 @@ export function WorkflowTimeline({
               >
                 <Download className="h-3.5 w-3.5" />
                 Descargar CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportZIP}
+                className="w-full justify-start gap-2 text-xs bg-transparent"
+              >
+                <FileArchive className="h-3.5 w-3.5" />
+                Descargar PDFs (ZIP)
               </Button>
             </div>
           </div>
