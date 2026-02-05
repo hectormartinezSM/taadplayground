@@ -172,13 +172,13 @@ Escritura de poder
 Escritura declaración de obra nueva
 Escritura constitución entidad
 Tasación
-Nota simple registro propiedad
+Nota Simple
 Contrato alquiler
 Resolución contra alquiler
 Certificado catastral
 Nota registro mercantil
 Declaración de Residencia Fiscal
-Modelo 100 AEAT
+Modelo 100 - Declaración de IRPF
 Modelo 130 AEAT
 Modelo 131 AEAT
 Modelo 303 AEAT
@@ -215,10 +215,7 @@ Decreto
 Auto
 Denuncia
 Demanda
-Citación judicial
-Recibo IBI
-Recibo contribución urbana
-Recibo IVTM`,
+Citación judicial`,
           title: "Clasify",
         },
       },
