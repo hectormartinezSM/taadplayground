@@ -127,32 +127,29 @@ export async function POST(request: NextRequest) {
     const joinedMarkdown = joinMarkdowns(markdowns)
     const lowerMarkdown = joinedMarkdown.toLowerCase()
 
-    // Fast keyword-based pre-classification for Iberdrola documents
-    // This avoids unnecessary API calls when we can identify the document type directly
-    if (lowerMarkdown.includes('declaración responsable') && lowerMarkdown.includes('ayudas')) {
-      console.log("[v0] API: Fast classification - Declaración Responsable Ayudas detected by keywords")
+    // Fast keyword-based pre-classification for invoices
+    // Check for international invoice patterns (foreign currencies, incoterms, commercial invoice)
+    if (
+      (lowerMarkdown.includes('commercial invoice') || lowerMarkdown.includes('proforma invoice')) ||
+      (lowerMarkdown.includes('invoice') && (lowerMarkdown.includes('fob') || lowerMarkdown.includes('cif') || lowerMarkdown.includes('incoterm'))) ||
+      (lowerMarkdown.includes('invoice') && (lowerMarkdown.includes('usd') || lowerMarkdown.includes('gbp') || lowerMarkdown.includes('jpy') || lowerMarkdown.includes('cny')))
+    ) {
+      console.log("[v0] API: Fast classification - Factura Internacional detected by keywords")
       return NextResponse.json({
-        type: "Declaración Responsable Ayudas",
-        confidence: 1,
-        markdown: joinedMarkdown,
-      })
-    }
-    
-    if (lowerMarkdown.includes('convenio') && lowerMarkdown.includes('cae')) {
-      console.log("[v0] API: Fast classification - Convenio CAE detected by keywords")
-      return NextResponse.json({
-        type: "Convenio CAE",
+        type: "Factura Internacional",
         confidence: 1,
         markdown: joinedMarkdown,
       })
     }
 
-    // Also check for specific Iberdrola document patterns
-    if (lowerMarkdown.includes('certificados de ahorro energético') || 
-        lowerMarkdown.includes('propietario inicial') && lowerMarkdown.includes('acción de ahorro')) {
-      console.log("[v0] API: Fast classification - Convenio CAE detected by content patterns")
+    // Check for national invoice patterns (NIF/CIF, IVA, factura)
+    if (
+      (lowerMarkdown.includes('factura') && (lowerMarkdown.includes('iva') || lowerMarkdown.includes('nif') || lowerMarkdown.includes('cif'))) ||
+      (lowerMarkdown.includes('base imponible') && lowerMarkdown.includes('iva'))
+    ) {
+      console.log("[v0] API: Fast classification - Factura Nacional detected by keywords")
       return NextResponse.json({
-        type: "Convenio CAE",
+        type: "Factura Nacional",
         confidence: 1,
         markdown: joinedMarkdown,
       })
@@ -220,7 +217,8 @@ Otros modelos tributarios
 Contrato bancario
 Justificante bancario
 Certificado de titularidad de cuenta
-Factura
+Factura Nacional
+Factura Internacional
 Presupuesto
 Albarán
 Ticket

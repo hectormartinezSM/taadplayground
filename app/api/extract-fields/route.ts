@@ -48,80 +48,50 @@ export async function POST(request: NextRequest) {
     const properties: Record<string, any> = {}
     const required: string[] = []
 
-    // Check if this is a Convenio CAE document for special field handling
-    const isConvenioCAE = documentType === 'Convenio CAE' || 
-      documentType.toLowerCase().includes('convenio cae') || 
-      documentType.toLowerCase().includes('cae iberdrola')
+    // Check if this is an invoice document for special field handling
+    const isFacturaNacional = documentType === 'Factura Nacional' || 
+      (documentType.toLowerCase().includes('factura') && !documentType.toLowerCase().includes('internacional'))
 
-    // Check if this is a Declaración Responsable de Ayudas document
-    const isDRAyudas = documentType === 'Declaración Responsable de Ayudas' || 
-      (documentType.toLowerCase().includes('declaración responsable') && documentType.toLowerCase().includes('ayudas')) ||
-      documentType.toLowerCase().includes('dr ayudas')
+    const isFacturaInternacional = documentType === 'Factura Internacional' || 
+      (documentType.toLowerCase().includes('factura') && documentType.toLowerCase().includes('internacional')) ||
+      documentType.toLowerCase().includes('commercial invoice')
+
+    const isFactura = isFacturaNacional || isFacturaInternacional
 
     for (const fieldName of fields) {
       if (!fieldName) continue
 
-      // Special handling for Convenio CAE coordinate fields - use string to preserve all decimal places
-      if (isConvenioCAE && (fieldName === 'Coordenadas X' || fieldName === 'Coordenadas Y')) {
+      // Special handling for invoice line items / conceptos
+      if (isFactura && (fieldName === 'Conceptos / Líneas de Detalle')) {
         properties[fieldName] = {
           type: "string",
-          description: `Extrae la coordenada ${fieldName === 'Coordenadas X' ? 'X (primera)' : 'Y (segunda)'} del campo "Coordenadas" del documento.
-Las coordenadas aparecen en formato (X, Y) como por ejemplo (408381.490, 4535856.403).
-Devuelve SOLO el valor numérico correspondiente como texto, preservando TODOS los decimales exactamente como aparecen.
-Si es Coordenadas X, devuelve el primer número. Si es Coordenadas Y, devuelve el segundo número.
-IMPORTANTE: Preserva todos los dígitos incluyendo ceros finales. Ejemplo: "408381.490" NO "408381.49".`
+          description: `Extrae TODAS las líneas de detalle / conceptos de la factura.
+Para cada línea, extrae: descripción, cantidad, precio unitario e importe.
+Devuelve cada línea separada por " | " con el formato:
+"Descripción; Cantidad; Precio Unitario; Importe"
+
+Si hay múltiples líneas, sepáralas con " | ".
+Ejemplo: "Servicio consultoría; 10 horas; 50,00 €; 500,00 € | Material oficina; 3 uds; 12,00 €; 36,00 €"
+
+Si algún campo de la línea no existe, pon "-".
+Preserva TODOS los decimales y formatea importes con separador de miles punto y decimal coma.`
         }
         required.push(fieldName)
         continue
       }
 
-      // Special handling for Convenio CAE boolean fields (Sí/No)
-      if (isConvenioCAE && ['Existe Valor €/kWh', 'Firma Cliente', 'Firma Iberdrola'].includes(fieldName)) {
+      // Special handling for Tipo Impositivo (IVA, IGIC, VAT, GST, etc.)
+      if (isFactura && fieldName === 'Tipo Impositivo') {
         properties[fieldName] = {
           type: "string",
-          enum: ["Sí", "No"],
-          description: `Extrae el valor del campo "${fieldName}" del documento.
-En el documento original aparece como "S" para Sí y "N" para No.
-Devuelve "Sí" si el valor es "S" o indica afirmativo.
-Devuelve "No" si el valor es "N" o indica negativo.
-Si no encuentras el campo o no está claro, devuelve "No".`
-        }
-        required.push(fieldName)
-        continue
-      }
-
-      // Special handling for Declaración Responsable de Ayudas - Casillas Apartado 4
-      if (isDRAyudas && fieldName === 'Casillas Apartado 4') {
-        properties[fieldName] = {
-          type: "string",
-          description: `Extrae la opción seleccionada en el Apartado 4 del documento "Declaración Responsable de Ayudas".
-El apartado 4 contiene varias casillas de verificación sobre si se han solicitado/obtenido otras ayudas públicas:
-- "NO SE HA SOLICITADO ni se va a solicitar ninguna otra ayuda..."
-- "SE HA SOLICITADO y/o OBTENIDO las siguientes ayudas públicas..."
-  - "Se ha obtenido"
-  - "No se ha obtenido" 
-  - "Pendiente de resolución"
-
-Devuelve EXACTAMENTE el texto de la opción que esté marcada/seleccionada.
-Si está marcada la primera opción, devuelve: "NO SE HA SOLICITADO"
-Si está marcada la segunda opción con "Se ha obtenido", devuelve: "SE HA SOLICITADO - Se ha obtenido"
-Si está marcada la segunda opción con "No se ha obtenido", devuelve: "SE HA SOLICITADO - No se ha obtenido"
-Si está marcada la segunda opción con "Pendiente de resolución", devuelve: "SE HA SOLICITADO - Pendiente de resolución"
-Si no se puede determinar, devuelve "N/D".`
-        }
-        required.push(fieldName)
-        continue
-      }
-
-      // Special handling for Declaración Responsable de Ayudas - Firma Cliente (Sí/No)
-      if (isDRAyudas && fieldName === 'Firma Cliente') {
-        properties[fieldName] = {
-          type: "string",
-          enum: ["Sí", "No"],
-          description: `Extrae si el documento "Declaración Responsable de Ayudas" está firmado por el cliente.
-Busca la firma del declarante/propietario inicial en el documento.
-Devuelve "Sí" si hay una firma presente o el documento indica que está firmado.
-Devuelve "No" si no hay firma o el campo de firma está vacío.`
+          description: `Identifica el TIPO de impuesto aplicado en la factura.
+NO devuelvas el porcentaje, sino el NOMBRE del tipo impositivo.
+Ejemplos de tipos impositivos: "IVA", "IGIC", "IPSI", "VAT", "GST", "Sales Tax", "Consumption Tax", "HST", "Service Tax".
+- Para facturas españolas suele ser "IVA" (o "IGIC" en Canarias, "IPSI" en Ceuta/Melilla).
+- Para facturas internacionales puede ser "VAT", "GST", "Sales Tax", etc.
+- Si la factura está exenta de impuestos, devuelve "Exento".
+- Si no se identifica ningún impuesto, devuelve "N/D".
+Devuelve SOLO el nombre del tipo impositivo, sin porcentaje ni importe.`
         }
         required.push(fieldName)
         continue

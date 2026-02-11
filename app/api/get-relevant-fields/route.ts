@@ -65,53 +65,67 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ fields });
     }
 
-    // Campos predefinidos para Convenio CAE Iberdrola
-    if (documentType === 'Convenio CAE' || documentType.toLowerCase().includes('convenio cae') || documentType.toLowerCase().includes('cae iberdrola')) {
+    // Campos predefinidos para Factura Nacional
+    if (documentType === 'Factura Nacional' || 
+        (documentType.toLowerCase().includes('factura') && !documentType.toLowerCase().includes('internacional'))) {
       const fields = [
-        'Nombre Cliente',
-        'Apellidos Cliente',
-        'NIF Cliente',
-        'Dirección',
-        'Referencia Catastral',
-        'Coordenadas X',
-        'Coordenadas Y',
-        'Existe Valor €/kWh',
-        'Firma Cliente',
-        'Firma Iberdrola'
+        'Número de Factura',
+        'Fecha de Emisión',
+        'Fecha de Vencimiento',
+        'Periodo de Facturación',
+        'Emisor - Razón Social',
+        'Emisor - NIF/CIF',
+        'Emisor - Dirección',
+        'Receptor - Razón Social',
+        'Receptor - NIF/CIF',
+        'Receptor - Dirección',
+        'Conceptos / Líneas de Detalle',
+        'Base Imponible',
+        'Tipo Impositivo',
+        'Porcentaje Impuesto',
+        'Cuota Impuesto',
+        'Retención IRPF',
+        'Total Factura',
+        'Total a Percibir',
+        'Moneda',
+        'Forma de Pago',
+        'IBAN / Cuenta Bancaria'
       ];
       fieldsCache.set(documentType, fields);
       return NextResponse.json({ fields });
     }
 
-    // Campos predefinidos para Declaración Responsable de Ayudas
-    if (documentType === 'Declaración Responsable de Ayudas' || 
-        documentType.toLowerCase().includes('declaración responsable') && documentType.toLowerCase().includes('ayudas') ||
-        documentType.toLowerCase().includes('dr ayudas')) {
+    // Campos predefinidos para Factura Internacional
+    if (documentType === 'Factura Internacional' || 
+        (documentType.toLowerCase().includes('factura') && documentType.toLowerCase().includes('internacional')) ||
+        documentType.toLowerCase().includes('commercial invoice')) {
       const fields = [
-        'Nombre Cliente',
-        'Apellidos Cliente',
-        'NIF Cliente',
-        'Dirección',
-        'Casillas Apartado 4',
-        'Firma Cliente'
-      ];
-      fieldsCache.set(documentType, fields);
-      return NextResponse.json({ fields });
-    }
-
-    // Campos predefinidos para Recibo IBI y similares
-    if (documentType === 'Recibo IBI' || documentType === 'Recibo contribución urbana' || documentType.toLowerCase().includes('ibi')) {
-      const fields = [
-        'Contribuyente',
-        'Concepto del impuesto',
-        'Importe a pagar',
-        'Fecha límite de pago',
-        'Número de abonaré',
-        'Referencia del impuesto',
-        'Identificación del impuesto',
-        'Referencia catastral',
-        'Entidad emisora',
-        'Dirección inmueble'
+        'Invoice Number',
+        'Invoice Date',
+        'Shipment / Delivery Date',
+        'Seller - Company Name',
+        'Seller - Tax ID',
+        'Seller - Address',
+        'Seller - Country',
+        'Buyer - Company Name',
+        'Buyer - Tax ID',
+        'Buyer - Address',
+        'Buyer - Country',
+        'Delivery Address',
+        'Origin',
+        'Destination',
+        'Incoterm',
+        'Conceptos / Líneas de Detalle',
+        'Base Amount',
+        'Tipo Impositivo',
+        'Tax Rate (%)',
+        'Tax Amount',
+        'Total Amount',
+        'Currency',
+        'Payment Method',
+        'LC / Payment Reference',
+        'PO / Proforma Reference',
+        'Total in Words'
       ];
       fieldsCache.set(documentType, fields);
       return NextResponse.json({ fields });
