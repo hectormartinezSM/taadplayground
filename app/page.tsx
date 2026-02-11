@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import { UploadArea } from "@/components/upload-area"
-import { SubmissionHistory } from "@/components/submission-history"
-import type { Submission, SubmissionDocument } from "@/lib/submissions"
+import type { SubmissionDocument } from "@/lib/submissions"
 import { WorkflowTimeline } from "@/components/workflow-timeline"
 import { PageGrid } from "@/components/page-grid"
 import { DocumentList } from "@/components/document-list"
@@ -66,11 +65,6 @@ export default function Home() {
     } catch (error) {
       console.error('[v0] Error saving submission:', error)
     }
-  }
-
-  const handleViewSubmission = (submission: Submission) => {
-    // For now, just log - could expand to show historical results
-    console.log('[v0] Viewing submission:', submission)
   }
 
   const handleFileUpload = (uploadedPages: Page[]) => {
@@ -139,15 +133,24 @@ export default function Home() {
               <Image
                 src="/images/serimag-logo.png"
                 alt="Serimag"
-                width={280}
-                height={80}
-                className="h-16 w-auto object-contain"
+                width={200}
+                height={60}
+                className="h-10 w-auto object-contain"
                 priority
               />
             </button>
+            <div className="border-l pl-10">
+              <Image
+                src="/images/ntt-data-logo.png"
+                alt="NTT DATA"
+                width={200}
+                height={60}
+                className="h-10 w-auto object-contain"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">Demo Facturas</span>
+            <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">Agentic Workflow Demo</span>
             {pages.length > 0 && (
               <Button
                 variant="outline"
@@ -214,7 +217,7 @@ export default function Home() {
                   updateWorkflowStep={updateWorkflowStep}
                   addActivityLog={addActivityLog}
                 />
-                <SubmissionHistory onViewSubmission={handleViewSubmission} />
+
               </div>
             </div>
           ) : (
