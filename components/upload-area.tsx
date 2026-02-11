@@ -326,6 +326,8 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
               isDragging ? "border-primary bg-primary/5 shadow-inner" : "border-border bg-muted/30"
             }`}
           >
+            <h2 className="text-2xl font-bold text-foreground">Demo Facturas</h2>
+
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 shadow-sm">
               {isLoading ? (
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -367,11 +369,11 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li className="flex items-center gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
-                        Convenio CAE
+                        Facturas Nacionales
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
-                        Declaración Responsable Ayudas
+                        Facturas Internacionales
                       </li>
                     </ul>
                   </div>

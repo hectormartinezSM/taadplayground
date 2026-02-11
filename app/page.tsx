@@ -137,26 +137,17 @@ export default function Home() {
               aria-label="Volver a la página inicial"
             >
               <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-tHybcLCum2i79t8YYrA1YEHnuFZruW.png"
-                alt="Iberdrola"
+                src="/images/serimag-logo.png"
+                alt="Serimag"
                 width={280}
                 height={80}
-                className="h-20 w-auto object-contain"
+                className="h-16 w-auto object-contain"
                 priority
               />
             </button>
-            <div className="border-l pl-10">
-              <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-mQhxahZ8U2kPxOJgT0f2c3IzteEDIA.png"
-                alt="NTT DATA"
-                width={200}
-                height={60}
-                className="h-14 w-auto object-contain"
-              />
-            </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">Agentic Workflow Demo</span>
+            <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">Demo Facturas</span>
             {pages.length > 0 && (
               <Button
                 variant="outline"
