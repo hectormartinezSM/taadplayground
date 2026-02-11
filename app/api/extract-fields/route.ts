@@ -80,6 +80,20 @@ Preserva TODOS los decimales y formatea importes con separador de miles punto y 
         continue
       }
 
+      // Special handling for Documento Firmado (Sí/No)
+      if (isFactura && fieldName === 'Documento Firmado') {
+        properties[fieldName] = {
+          type: "string",
+          enum: ["Sí", "No"],
+          description: `Determina si la factura está firmada o no.
+Busca cualquier tipo de firma en el documento: firma manuscrita, firma digital, sello de empresa, firma electrónica o cualquier indicación de firma.
+Devuelve "Sí" si hay alguna firma o sello presente en el documento.
+Devuelve "No" si no hay ninguna firma ni sello visible.`
+        }
+        required.push(fieldName)
+        continue
+      }
+
       // Special handling for Tipo Impositivo (IVA, IGIC, VAT, GST, etc.)
       if (isFactura && fieldName === 'Tipo Impositivo') {
         properties[fieldName] = {

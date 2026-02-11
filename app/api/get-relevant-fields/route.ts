@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
         'Total a Percibir',
         'Moneda',
         'Forma de Pago',
-        'IBAN / Cuenta Bancaria'
+        'IBAN / Cuenta Bancaria',
+        'Documento Firmado'
       ];
       fieldsCache.set(documentType, fields);
       return NextResponse.json({ fields });
@@ -125,7 +126,8 @@ export async function POST(request: NextRequest) {
         'Payment Method',
         'LC / Payment Reference',
         'PO / Proforma Reference',
-        'Total in Words'
+        'Total in Words',
+        'Documento Firmado'
       ];
       fieldsCache.set(documentType, fields);
       return NextResponse.json({ fields });
