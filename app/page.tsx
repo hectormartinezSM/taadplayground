@@ -141,17 +141,8 @@ export default function Home() {
             </button>
             <div className="border-l pl-10">
               <Image
-                src="/images/ntt-data-logo.png"
-                alt="NTT DATA"
-                width={200}
-                height={60}
-                className="h-10 w-auto object-contain"
-              />
-            </div>
-            <div className="border-l pl-10">
-              <Image
-                src="/images/abertis-logo.png"
-                alt="Abertis"
+                src="/images/bravo-logo.png"
+                alt="Bravo"
                 width={200}
                 height={60}
                 className="h-10 w-auto object-contain"

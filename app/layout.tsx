@@ -11,9 +11,9 @@ const merriweather = Merriweather({
 })
 
 export const metadata: Metadata = {
-  title: "Demo Facturas - Abertis",
+  title: "Demo Bravo - Comprobantes y IDs",
   description:
-    "Demo de procesamiento automático de facturas de proveedores de Abertis: clasificación, segmentación y extracción de datos con IA",
+    "Demo de procesamiento automático de comprobantes bancarios y documentos identificativos de Bravo: clasificación, segmentación y extracción de datos con IA",
   generator: "v0.app",
   icons: {
     icon: [

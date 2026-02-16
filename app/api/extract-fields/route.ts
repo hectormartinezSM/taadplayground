@@ -48,105 +48,172 @@ export async function POST(request: NextRequest) {
     const properties: Record<string, any> = {}
     const required: string[] = []
 
-    // Check if this is an invoice document for special field handling
-    const isFactura = documentType === 'Factura' || documentType.toLowerCase().includes('factura')
+    // Check document type for special field handling
+    const isComprobante = documentType === 'Comprobante Bancario' || documentType.toLowerCase().includes('comprobante')
+    const isDocumentoID = documentType === 'Documento Identificativo' || documentType.toLowerCase().includes('identificativo')
 
     for (const fieldName of fields) {
       if (!fieldName) continue
 
-      // Special handling for Tipo de Factura
-      if (isFactura && fieldName === 'Tipo de Factura') {
+      // Special handling for Comprobante Bancario fields
+      if (isComprobante && fieldName === 'Tipo de Crédito') {
         properties[fieldName] = {
           type: "string",
-          description: `Clasifica el tipo de factura. Valores posibles:
-- "Ordinaria": factura estándar / normal
-- "Rectificativa": factura que corrige una anterior (credit note, abono)
-- "Proforma": factura proforma / presupuesto
-- "Recapitulativa": factura que agrupa varias operaciones
-Si no puedes determinarlo, devuelve "Ordinaria" por defecto.
-Devuelve SOLO el tipo, sin explicaciones.`
-        }
-        required.push(fieldName)
-        continue
-      }
-
-      // Special handling for Orden de Compra / Referencia
-      if (isFactura && fieldName === 'Orden de Compra / Referencia') {
-        properties[fieldName] = {
-          type: "string",
-          description: `Extrae el número de orden de compra (Purchase Order / PO), número de pedido, o referencia del sistema del comprador.
-Busca campos como: "Orden de compra", "Purchase Order", "PO", "Pedido", "Nº Pedido", "Order Number", "Referencia", "Your Reference", "Bestellnummer".
-Si hay varios, sepáralos por " / ".
+          description: `Extrae el tipo o nombre del producto de crédito/préstamo que aparece en el comprobante bancario (ej.: "Dinero Inmediato", "Préstamo Personal", "Crédito al Consumo").
 Si no se encuentra, devuelve "N/D".`
         }
         required.push(fieldName)
         continue
       }
 
-      // Special handling for Esquema Fiscal / Tipo Impositivo
-      if (isFactura && fieldName === 'Esquema Fiscal / Tipo Impositivo') {
+      if (isComprobante && fieldName === 'Institución') {
         properties[fieldName] = {
           type: "string",
-          description: `Identifica el TIPO o esquema de impuesto aplicado en la factura.
-NO devuelvas el porcentaje, sino el NOMBRE del tipo impositivo.
-Ejemplos: "IVA", "IGIC", "IPSI", "VAT", "GST", "Sales Tax", "Exento", "Reverse Charge", "Intracomunitaria".
-- Para facturas españolas suele ser "IVA" (o "IGIC" en Canarias, "IPSI" en Ceuta/Melilla).
-- Para facturas de otros países puede ser "VAT", "GST", "Sales Tax", etc.
-- Si la factura está exenta de impuestos, devuelve "Exento".
-- Si no se identifica ningún impuesto, devuelve "N/D".
-Devuelve SOLO el nombre del esquema fiscal, sin porcentaje ni importe.`
+          description: `Extrae el nombre del banco o entidad financiera que provee el crédito o préstamo.
+Capitaliza correctamente: primera letra en mayúscula. Si no se encuentra, devuelve "N/D".`
         }
         required.push(fieldName)
         continue
       }
 
+      if (isComprobante && fieldName === 'Importe de la Cuota') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae el importe de la cuota regular del préstamo/crédito.
+Formato: XX.XXX,XX € (separador de miles: punto, separador decimal: coma, símbolo de moneda detrás).
+Ejemplo: "1.234,56 €". Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isComprobante && fieldName === 'Cuotas Pendientes') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae el número de cuotas pendientes de pago del préstamo/crédito.
+Devuelve solo el número (ej.: "12", "36"). Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      // Special handling for Documento Identificativo fields
+      if (isDocumentoID && fieldName === 'Apellidos') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae los apellidos de la persona del documento de identidad (DNI, NIE o Pasaporte).
+Capitalización normal: primera letra en mayúscula, resto en minúsculas. Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Nombre') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae el nombre de pila de la persona del documento de identidad.
+Capitalización normal: primera letra en mayúscula, resto en minúsculas. Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Sexo') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae el sexo de la persona del documento de identidad.
+Devuelve "M" para masculino o "F" para femenino. Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Nacionalidad') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae la nacionalidad de la persona del documento de identidad (ej.: "Española", "Colombiana").
+Capitalización normal. Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Fecha nacimiento') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae la fecha de nacimiento del documento de identidad.
+Formato obligatorio: DD/MM/AAAA. Ejemplo: "15/03/1990". Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Estado Civil') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae el estado civil de la persona del documento de identidad (ej.: "Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a").
+Si no se encuentra en el documento, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Lugar de nacimiento') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae el lugar de nacimiento de la persona del documento de identidad.
+Devuelve la localidad/ciudad de nacimiento. Capitalización normal. Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Ciudad') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae la ciudad de domicilio/residencia de la persona del documento de identidad.
+Capitalización normal. Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Provincia') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae la provincia de domicilio/residencia de la persona del documento de identidad.
+Capitalización normal. Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Calle') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae la calle de domicilio/residencia de la persona del documento de identidad.
+Incluye nombre de la vía y número. Capitalización normal. Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDocumentoID && fieldName === 'Número de apartamento') {
+        properties[fieldName] = {
+          type: "string",
+          description: `Extrae el número de apartamento, piso, puerta o escalera del domicilio de la persona del documento de identidad (ej.: "3º B", "Piso 2, Puerta A").
+Si no se encuentra, devuelve "N/D".`
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      // Generic fallback for any other field
       properties[fieldName] = {
         type: "string",
         description: `Extrae el valor de ${fieldName} del documento tipo ${documentType}.
-
-Tu objetivo es devolver los campos solicitados de forma MUY CONCISA: cuanto más breve, resumida y sintetizada sea la respuesta, mejor, sin perder información clave.
-
-REGLAS DE FORMATO (OBLIGATORIAS):
-
-1) Brevedad extrema:
-   - Cada valor debe ser lo más corto posible.
-   - Objetivo: <= 50 caracteres por campo.
-   - Si te pasas de 50, reescribe y acorta (elimina palabras redundantes, abrevia lo obvio).
-   - Prohibido: frases completas, explicaciones, coletillas ("según el documento…", "parece…").
-   - Solo el dato final. Si falta: "N/D".
-
-2) Nombres de personas:
-   - Formato obligatorio: "Nombre Apellidos"
-   - Si el documento trae "Apellidos, Nombre" o "APELLIDOS, NOMBRE": invierte a "Nombre Apellidos".
-   - Capitalización normal: Primera letra en mayúscula y resto en minúsculas (respetando tildes).
-   - Elimina comas en el nombre final.
-   - Ejemplos:
-     - "PÉREZ GARCÍA, JUAN" → "Juan Pérez García"
-     - "GARCIA, ANA" → "Ana Garcia"
-     - "Juan Pérez García" → "Juan Pérez García"
-
-3) Nombres de empresas:
-   - Primera letra en MAYÚSCULA y el resto en minúsculas.
-   - Mantén siglas y formas societarias en mayúsculas cuando aplique (ej.: "S.A.", "S.L.", "S.L.U.", "U.T.E.", "B.V.", "GmbH").
-   - Ejemplo:
-     - "SERIMAG SOLUCIONES DIGITALES S.L." → "Serimag Soluciones Digitales S.L."
-
-4) Importes:
-   - Formato numérico: XX.XXX.XXX,XX
-   - Separador de miles: punto (.)
-   - Separador decimal: coma (,)
-   - Añade el símbolo de moneda (preferentemente detrás si no se indica lo contrario): "1.234,56 €"
-   - Si hay unidad adicional, usa formato simbólico (ej.: "%", "€/mes", "€/día", "u.").
-   - Ejemplos:
-     - "1234.5 EUR" → "1.234,50 €"
-     - "10 percent" → "10 %"
-
-5) Fechas:
-   - Formato: DD/MM/AAAA
-   - Si es un intervalo o periodo: DD/MM/AAAA - DD/MM/AAAA
-   - Ejemplos:
-     - "2025-01-08" → "08/01/2025"
-     - "del 1 de enero al 31 de marzo de 2025" → "01/01/2025 - 31/03/2025"`,
+Sé conciso: devuelve solo el dato, sin explicaciones. Máximo 50 caracteres.
+Fechas: DD/MM/AAAA. Importes: XX.XXX,XX €. Si no se encuentra: "N/D".`,
       }
       required.push(fieldName)
     }

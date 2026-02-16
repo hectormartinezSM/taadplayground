@@ -59,61 +59,40 @@ export async function POST(request: NextRequest) {
 
     console.log('[v0] API: Getting relevant fields for document type:', documentType);
 
-    // Campos predefinidos para Facturas de Proveedores de Abertis
-    if (documentType === 'Factura' || documentType.toLowerCase().includes('factura')) {
+    // Campos predefinidos para Comprobantes Bancarios
+    if (documentType === 'Comprobante Bancario' || documentType.toLowerCase().includes('comprobante')) {
       const fields = [
-        'Tipo de Factura',
-        'Moneda',
-        'Fecha de Factura',
-        'Número de Factura',
-        'Orden de Compra / Referencia',
-        'Emisor - Razón Social',
-        'Emisor - NIF/CIF',
-        'Emisor - Dirección Postal',
-        'Receptor - Razón Social',
-        'Receptor - NIF/CIF',
-        'Receptor - Dirección Postal',
-        'Esquema Fiscal / Tipo Impositivo',
-        'Porcentaje Impuesto',
-        'Cuota Impuesto',
-        'Base Imponible',
-        'Importe Total',
+        'Tipo de Crédito',
+        'Institución',
+        'Importe de la Cuota',
+        'Cuotas Pendientes',
       ];
       fieldsCache.set(documentType, fields);
       return NextResponse.json({ fields });
     }
 
-    const schemaCampos = JSON.stringify({
-      properties: {
-        Campos: {
-          anyOf: [{ type: 'string' }, { type: 'null' }],
-          default: null,
-          description: 'Tienes que identificar la informacion mas relevante en el documento. No tienes que sacar el valor, sino el campo a identificar.Piensa que eres responsable de un banco, aseguradora para plantearte la informacion que te interesaIdentifica los cinco campos más relevantes del documento segun su tipologia documentalDevelveme los campos relevantes separados por ; El nombre de los campos estara siempre en castellano',
-          title: 'Campos',
-        },
-      },
-      title: 'CamposRelevantes',
-      type: 'object',
-    });
-
-    const extCampos = await apiExtract(markdown, schemaCampos);
-
-    let fields: string[] = [];
-
-    if (extCampos && extCampos.extraction && extCampos.extraction.Campos) {
-      fields = extCampos.extraction.Campos
-        .split(';')
-        .map(field => field.trim())
-        .filter(field => field.length > 0);
-    }
-
-    console.log('[v0] API: Extracted fields:', fields);
-
-    if (fields.length > 0) {
+    // Campos predefinidos para Documentos Identificativos
+    if (documentType === 'Documento Identificativo' || documentType.toLowerCase().includes('identificativo') || documentType.toLowerCase().includes('dni') || documentType.toLowerCase().includes('pasaporte')) {
+      const fields = [
+        'Apellidos',
+        'Nombre',
+        'Sexo',
+        'Nacionalidad',
+        'Fecha nacimiento',
+        'Estado Civil',
+        'Lugar de nacimiento',
+        'Ciudad',
+        'Provincia',
+        'Calle',
+        'Número de apartamento',
+      ];
       fieldsCache.set(documentType, fields);
+      return NextResponse.json({ fields });
     }
 
-    return NextResponse.json({ fields });
+    // Para "Otros" no se extraen campos
+    console.log('[v0] API: Document type is Otros or unknown, returning empty fields');
+    return NextResponse.json({ fields: [] });
   } catch (error) {
     console.error('[v0] API: Error getting relevant fields:', error);
     

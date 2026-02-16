@@ -127,57 +127,89 @@ export async function POST(request: NextRequest) {
     const joinedMarkdown = joinMarkdowns(markdowns)
     const lowerMarkdown = joinedMarkdown.toLowerCase()
 
-    // Fast keyword-based classification: "Factura" or "Otros"
-    // Check for invoice patterns in any language
-    const isInvoice = 
-      lowerMarkdown.includes('factura') ||
-      lowerMarkdown.includes('invoice') ||
-      lowerMarkdown.includes('rechnung') ||
-      lowerMarkdown.includes('facture') ||
-      (lowerMarkdown.includes('iva') && lowerMarkdown.includes('base imponible')) ||
-      (lowerMarkdown.includes('vat') && lowerMarkdown.includes('total')) ||
-      (lowerMarkdown.includes('tax') && lowerMarkdown.includes('amount due')) ||
-      lowerMarkdown.includes('nif') ||
-      lowerMarkdown.includes('cif')
+    // Fast keyword-based classification: Comprobante Bancario / Documento Identificativo / Otros
+    const isComprobante =
+      lowerMarkdown.includes('cuota') ||
+      lowerMarkdown.includes('credito') ||
+      lowerMarkdown.includes('crédito') ||
+      lowerMarkdown.includes('prestamo') ||
+      lowerMarkdown.includes('préstamo') ||
+      lowerMarkdown.includes('saldo pendiente') ||
+      lowerMarkdown.includes('cuotas pendientes') ||
+      lowerMarkdown.includes('importe cuota') ||
+      lowerMarkdown.includes('institución') ||
+      lowerMarkdown.includes('institucion') ||
+      (lowerMarkdown.includes('banco') && (lowerMarkdown.includes('cuota') || lowerMarkdown.includes('pendiente'))) ||
+      lowerMarkdown.includes('número de cuenta') ||
+      lowerMarkdown.includes('numero de cuenta')
 
-    if (isInvoice) {
-      console.log("[v0] API: Fast classification - Factura detected by keywords")
+    const isDocumentoID =
+      lowerMarkdown.includes('dni') ||
+      lowerMarkdown.includes('nie') ||
+      lowerMarkdown.includes('pasaporte') ||
+      lowerMarkdown.includes('passport') ||
+      lowerMarkdown.includes('documento nacional') ||
+      lowerMarkdown.includes('número de soporte') ||
+      lowerMarkdown.includes('numero de soporte') ||
+      lowerMarkdown.includes('fecha de nacimiento') ||
+      lowerMarkdown.includes('nacionalidad') ||
+      lowerMarkdown.includes('lugar de nacimiento') ||
+      (lowerMarkdown.includes('sexo') && (lowerMarkdown.includes('apellido') || lowerMarkdown.includes('nombre')))
+
+    if (isComprobante && !isDocumentoID) {
+      console.log("[v0] API: Fast classification - Comprobante Bancario detected by keywords")
       return NextResponse.json({
-        type: "Factura",
+        type: "Comprobante Bancario",
         confidence: 1,
         markdown: joinedMarkdown,
       })
     }
 
-    // If no keywords matched, use the AI extraction to confirm
-    const schemaClasFactura = JSON.stringify({
+    if (isDocumentoID && !isComprobante) {
+      console.log("[v0] API: Fast classification - Documento Identificativo detected by keywords")
+      return NextResponse.json({
+        type: "Documento Identificativo",
+        confidence: 1,
+        markdown: joinedMarkdown,
+      })
+    }
+
+    // If both or neither matched, use AI extraction to decide
+    const schemaClasificacion = JSON.stringify({
       properties: {
         Clasify: {
           anyOf: [{ type: "string" }, { type: "null" }],
           default: null,
           description: `INSTRUCCIONES DE CLASIFICACIÓN (OBLIGATORIAS)
 
-Debes clasificar el documento en UNA de estas dos categorías EXACTAS:
-- "Factura": Si el documento es una factura de proveedor (nacional o internacional, en cualquier idioma o formato).
-- "Otros": Si el documento NO es una factura.
+Debes clasificar el documento en UNA de estas tres categorías EXACTAS:
+- "Comprobante Bancario": Si el documento es una captura de pantalla o comprobante de una plataforma bancaria online mostrando detalles de un préstamo, crédito o cuotas de pago.
+- "Documento Identificativo": Si el documento es un DNI, NIE, pasaporte o documento de identidad español.
+- "Otros": Si el documento NO encaja en ninguna de las dos categorías anteriores.
 
-Devuelve SOLO "Factura" o "Otros". Sin explicaciones, sin aclaraciones.`,
+Devuelve SOLO "Comprobante Bancario", "Documento Identificativo" o "Otros". Sin explicaciones, sin aclaraciones.`,
           title: "Clasify",
         },
       },
-      title: "TipoFactura",
+      title: "TipoDocumento",
       type: "object",
     })
 
     let classification = "Otros"
 
     try {
-      console.log("[v0] API: Trying AI classification (Factura / Otros)...")
-      const result = await apiExtract(joinedMarkdown, schemaClasFactura)
+      console.log("[v0] API: Trying AI classification (Comprobante Bancario / Documento Identificativo / Otros)...")
+      const result = await apiExtract(joinedMarkdown, schemaClasificacion)
 
       if (result.extraction && result.extraction.Clasify) {
-        const aiResult = result.extraction.Clasify.trim()
-        classification = aiResult.toLowerCase().includes('factura') ? 'Factura' : 'Otros'
+        const aiResult = result.extraction.Clasify.trim().toLowerCase()
+        if (aiResult.includes('comprobante')) {
+          classification = 'Comprobante Bancario'
+        } else if (aiResult.includes('identificativo') || aiResult.includes('dni') || aiResult.includes('pasaporte')) {
+          classification = 'Documento Identificativo'
+        } else {
+          classification = 'Otros'
+        }
       }
     } catch (error) {
       console.log("[v0] API: Classification failed, defaulting to Otros")
