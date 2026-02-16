@@ -11,9 +11,9 @@ const merriweather = Merriweather({
 })
 
 export const metadata: Metadata = {
-  title: "Demo Facturas - Serimag",
+  title: "Demo Facturas - Abertis",
   description:
-    "Demo de procesamiento automático de facturas nacionales e internacionales: clasificación, segmentación y extracción de datos con IA",
+    "Demo de procesamiento automático de facturas de proveedores de Abertis: clasificación, segmentación y extracción de datos con IA",
   generator: "v0.app",
   icons: {
     icon: [

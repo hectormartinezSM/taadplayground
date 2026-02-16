@@ -127,177 +127,61 @@ export async function POST(request: NextRequest) {
     const joinedMarkdown = joinMarkdowns(markdowns)
     const lowerMarkdown = joinedMarkdown.toLowerCase()
 
-    // Fast keyword-based pre-classification for invoices
-    // Check for international invoice patterns (foreign currencies, incoterms, commercial invoice)
-    if (
-      (lowerMarkdown.includes('commercial invoice') || lowerMarkdown.includes('proforma invoice')) ||
-      (lowerMarkdown.includes('invoice') && (lowerMarkdown.includes('fob') || lowerMarkdown.includes('cif') || lowerMarkdown.includes('incoterm'))) ||
-      (lowerMarkdown.includes('invoice') && (lowerMarkdown.includes('usd') || lowerMarkdown.includes('gbp') || lowerMarkdown.includes('jpy') || lowerMarkdown.includes('cny')))
-    ) {
-      console.log("[v0] API: Fast classification - Factura Internacional detected by keywords")
+    // Fast keyword-based classification: "Factura" or "Otros"
+    // Check for invoice patterns in any language
+    const isInvoice = 
+      lowerMarkdown.includes('factura') ||
+      lowerMarkdown.includes('invoice') ||
+      lowerMarkdown.includes('rechnung') ||
+      lowerMarkdown.includes('facture') ||
+      (lowerMarkdown.includes('iva') && lowerMarkdown.includes('base imponible')) ||
+      (lowerMarkdown.includes('vat') && lowerMarkdown.includes('total')) ||
+      (lowerMarkdown.includes('tax') && lowerMarkdown.includes('amount due')) ||
+      lowerMarkdown.includes('nif') ||
+      lowerMarkdown.includes('cif')
+
+    if (isInvoice) {
+      console.log("[v0] API: Fast classification - Factura detected by keywords")
       return NextResponse.json({
-        type: "Factura Internacional",
+        type: "Factura",
         confidence: 1,
         markdown: joinedMarkdown,
       })
     }
 
-    // Check for national invoice patterns (NIF/CIF, IVA, factura)
-    if (
-      (lowerMarkdown.includes('factura') && (lowerMarkdown.includes('iva') || lowerMarkdown.includes('nif') || lowerMarkdown.includes('cif'))) ||
-      (lowerMarkdown.includes('base imponible') && lowerMarkdown.includes('iva'))
-    ) {
-      console.log("[v0] API: Fast classification - Factura Nacional detected by keywords")
-      return NextResponse.json({
-        type: "Factura Nacional",
-        confidence: 1,
-        markdown: joinedMarkdown,
-      })
-    }
-
-    const schemaClasGeneral = JSON.stringify({
+    // If no keywords matched, use the AI extraction to confirm
+    const schemaClasFactura = JSON.stringify({
       properties: {
         Clasify: {
           anyOf: [{ type: "string" }, { type: "null" }],
           default: null,
           description: `INSTRUCCIONES DE CLASIFICACIÓN (OBLIGATORIAS)
 
-Debes clasificar el documento usando IDEALMENTE una de las tipologías EXACTAS de la siguiente lista.
-- Si encaja con una de ellas, devuelve EL MISMO LITERAL (misma ortografía, mayúsculas y acentos).
-- No traduzcas, no reformules, no añadas aclaraciones.
-- Si NO puedes asignarlo con confianza a ninguna tipología de la lista, crea una tipología nueva:
-  - Debe ser lo MÁS CORTA POSIBLE (objetivo <= 25 caracteres).
-  - Sin artículos ("el/la"), sin frases, sin detalles redundantes.
-  - 2-4 palabras máximo.
+Debes clasificar el documento en UNA de estas dos categorías EXACTAS:
+- "Factura": Si el documento es una factura de proveedor (nacional o internacional, en cualquier idioma o formato).
+- "Otros": Si el documento NO es una factura.
 
-LISTA DE TIPOLOGÍAS PERMITIDAS (LITERAL EXACTO):
-DNI
-NIE
-Pasaporte
-ID No Español
-Libro de familia
-CIF
-Carnet conducir
-Certificado de nacimiento
-Certificado de matrimonio
-Certificado de defunción
-Sentencia de Separación
-Certificado últimas voluntades
-Certificado de empadronamiento
-Contrato laboral
-Finiquito laboral
-Nomina
-Vida laboral
-Certificado retenciones Seguridad Social
-Certificado corriente pago Seguridad social
-Certificado corriente pago Agencia Tributaria
-Pensión
-Toma posesión funcionario
-Escritura hipotecaria
-Escritura compraventa
-Testamento
-Repartición herencia
-Escritura de poder
-Escritura declaración de obra nueva
-Escritura constitución entidad
-Tasación
-Nota simple registro propiedad
-Contrato alquiler
-Resolución contra alquiler
-Certificado catastral
-Nota registro mercantil
-Declaración de Residencia Fiscal
-Modelo 100 AEAT
-Modelo 130 AEAT
-Modelo 131 AEAT
-Modelo 303 AEAT
-Modelo 200 AEAT
-Modelo 347 AEAT
-Otros modelos tributarios
-Contrato bancario
-Justificante bancario
-Certificado de titularidad de cuenta
-Factura Nacional
-Factura Internacional
-Presupuesto
-Albarán
-Ticket
-Pagaré
-Cheque
-Parte médico
-Fotografía
-Póliza seguros
-Ficha técnica vehículo
-Atestado policial
-Permiso circulación vehículo
-Acta junta propietarios
-Declaración amistosa accidente
-Tarjeta embarque
-Reserva alojamiento
-Sanción
-Pago tasas
-CIRBE
-Auditoría anual empresa
-Licencia obras
-Balance
-Cuenta de pérdidas y ganancias
-Decreto
-Auto
-Denuncia
-Demanda
-Citación judicial
-Recibo IBI
-Recibo contribución urbana
-Recibo IVTM
-Convenio CAE
-Declaración Responsable Ayudas`,
+Devuelve SOLO "Factura" o "Otros". Sin explicaciones, sin aclaraciones.`,
           title: "Clasify",
         },
       },
-      title: "TipoGeneral",
+      title: "TipoFactura",
       type: "object",
     })
 
     let classification = "Otros"
 
     try {
-      console.log("[v0] API: Trying general classification schema...")
-      const result1 = await apiExtract(joinedMarkdown, schemaClasGeneral)
+      console.log("[v0] API: Trying AI classification (Factura / Otros)...")
+      const result = await apiExtract(joinedMarkdown, schemaClasFactura)
 
-      if (result1.extraction && result1.extraction.Clasify) {
-        classification = result1.extraction.Clasify
+      if (result.extraction && result.extraction.Clasify) {
+        const aiResult = result.extraction.Clasify.trim()
+        classification = aiResult.toLowerCase().includes('factura') ? 'Factura' : 'Otros'
       }
     } catch (error) {
-      console.log("[v0] API: General classification failed, defaulting to Otros")
+      console.log("[v0] API: Classification failed, defaulting to Otros")
       classification = "Otros"
-    }
-
-    if (classification === "Otros") {
-      const schemaClasOtros = JSON.stringify({
-        properties: {
-          Clasify: {
-            anyOf: [{ type: "string" }, { type: "null" }],
-            default: null,
-            description:
-              "No pudiste clasificar el documento con las tipologías predefinidas. Crea una tipología nueva lo MÁS CORTA POSIBLE (objetivo <= 25 caracteres). Sin artículos, sin frases, 2-4 palabras máximo. Ejemplos: 'Contrato franquicia', 'Informe pericial', 'Recibo donación'.",
-            title: "Clasify",
-          },
-        },
-        title: "TipoOtros",
-        type: "object",
-      })
-
-      try {
-        console.log('[v0] API: Trying specific "Otros" classification schema...')
-        const result2 = await apiExtract(joinedMarkdown, schemaClasOtros)
-
-        if (result2.extraction && result2.extraction.Clasify) {
-          classification = result2.extraction.Clasify
-        }
-      } catch (error) {
-        console.log("[v0] API: Specific classification also failed, keeping as Otros")
-        classification = "Otros"
-      }
     }
 
     console.log("[v0] API: Document classified as:", classification)

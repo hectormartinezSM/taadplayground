@@ -59,75 +59,25 @@ export async function POST(request: NextRequest) {
 
     console.log('[v0] API: Getting relevant fields for document type:', documentType);
 
-    if (documentType === 'Fotografía') {
-      const fields = ['Descripción de la fotografía'];
-      fieldsCache.set(documentType, fields);
-      return NextResponse.json({ fields });
-    }
-
-    // Campos predefinidos para Factura Nacional
-    if (documentType === 'Factura Nacional' || 
-        (documentType.toLowerCase().includes('factura') && !documentType.toLowerCase().includes('internacional'))) {
+    // Campos predefinidos para Facturas de Proveedores de Abertis
+    if (documentType === 'Factura' || documentType.toLowerCase().includes('factura')) {
       const fields = [
+        'Tipo de Factura',
+        'Moneda',
+        'Fecha de Factura',
         'Número de Factura',
-        'Fecha de Emisión',
-        'Fecha de Vencimiento',
-        'Periodo de Facturación',
+        'Orden de Compra / Referencia',
         'Emisor - Razón Social',
         'Emisor - NIF/CIF',
-        'Emisor - Dirección',
+        'Emisor - Dirección Postal',
         'Receptor - Razón Social',
         'Receptor - NIF/CIF',
-        'Receptor - Dirección',
-        'Conceptos / Líneas de Detalle',
-        'Base Imponible',
-        'Tipo Impositivo',
+        'Receptor - Dirección Postal',
+        'Esquema Fiscal / Tipo Impositivo',
         'Porcentaje Impuesto',
         'Cuota Impuesto',
-        'Retención IRPF',
-        'Total Factura',
-        'Total a Percibir',
-        'Moneda',
-        'Forma de Pago',
-        'IBAN / Cuenta Bancaria',
-        'Documento Firmado'
-      ];
-      fieldsCache.set(documentType, fields);
-      return NextResponse.json({ fields });
-    }
-
-    // Campos predefinidos para Factura Internacional
-    if (documentType === 'Factura Internacional' || 
-        (documentType.toLowerCase().includes('factura') && documentType.toLowerCase().includes('internacional')) ||
-        documentType.toLowerCase().includes('commercial invoice')) {
-      const fields = [
-        'Invoice Number',
-        'Invoice Date',
-        'Shipment / Delivery Date',
-        'Seller - Company Name',
-        'Seller - Tax ID',
-        'Seller - Address',
-        'Seller - Country',
-        'Buyer - Company Name',
-        'Buyer - Tax ID',
-        'Buyer - Address',
-        'Buyer - Country',
-        'Delivery Address',
-        'Origin',
-        'Destination',
-        'Incoterm',
-        'Conceptos / Líneas de Detalle',
-        'Base Amount',
-        'Tipo Impositivo',
-        'Tax Rate (%)',
-        'Tax Amount',
-        'Total Amount',
-        'Currency',
-        'Payment Method',
-        'LC / Payment Reference',
-        'PO / Proforma Reference',
-        'Total in Words',
-        'Documento Firmado'
+        'Base Imponible',
+        'Importe Total',
       ];
       fieldsCache.set(documentType, fields);
       return NextResponse.json({ fields });

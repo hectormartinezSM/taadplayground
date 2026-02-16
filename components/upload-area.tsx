@@ -326,7 +326,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
               isDragging ? "border-primary bg-primary/5 shadow-inner" : "border-border bg-muted/30"
             }`}
           >
-            <h2 className="text-2xl font-bold text-foreground">Demo Facturas</h2>
+            <h2 className="text-2xl font-bold text-foreground">Facturas de Proveedores de Abertis</h2>
 
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 shadow-sm">
               {isLoading ? (
@@ -365,17 +365,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                   />
                   
                   <div className="mt-6 pt-6 border-t border-border">
-                    <p className="text-sm font-medium text-foreground mb-3">Documentos admitidos:</p>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
-                        Facturas Nacionales
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
-                        Facturas Internacionales
-                      </li>
-                    </ul>
+                    <p className="text-sm text-muted-foreground">Facturas de Proveedores de Abertis</p>
                   </div>
                 </>
               )}

@@ -49,63 +49,52 @@ export async function POST(request: NextRequest) {
     const required: string[] = []
 
     // Check if this is an invoice document for special field handling
-    const isFacturaNacional = documentType === 'Factura Nacional' || 
-      (documentType.toLowerCase().includes('factura') && !documentType.toLowerCase().includes('internacional'))
-
-    const isFacturaInternacional = documentType === 'Factura Internacional' || 
-      (documentType.toLowerCase().includes('factura') && documentType.toLowerCase().includes('internacional')) ||
-      documentType.toLowerCase().includes('commercial invoice')
-
-    const isFactura = isFacturaNacional || isFacturaInternacional
+    const isFactura = documentType === 'Factura' || documentType.toLowerCase().includes('factura')
 
     for (const fieldName of fields) {
       if (!fieldName) continue
 
-      // Special handling for invoice line items / conceptos
-      if (isFactura && (fieldName === 'Conceptos / Líneas de Detalle')) {
+      // Special handling for Tipo de Factura
+      if (isFactura && fieldName === 'Tipo de Factura') {
         properties[fieldName] = {
           type: "string",
-          description: `Extrae TODAS las líneas de detalle / conceptos de la factura.
-Para cada línea, extrae: descripción, cantidad, precio unitario e importe.
-Devuelve cada línea separada por " | " con el formato:
-"Descripción; Cantidad; Precio Unitario; Importe"
-
-Si hay múltiples líneas, sepáralas con " | ".
-Ejemplo: "Servicio consultoría; 10 horas; 50,00 €; 500,00 € | Material oficina; 3 uds; 12,00 €; 36,00 €"
-
-Si algún campo de la línea no existe, pon "-".
-Preserva TODOS los decimales y formatea importes con separador de miles punto y decimal coma.`
+          description: `Clasifica el tipo de factura. Valores posibles:
+- "Ordinaria": factura estándar / normal
+- "Rectificativa": factura que corrige una anterior (credit note, abono)
+- "Proforma": factura proforma / presupuesto
+- "Recapitulativa": factura que agrupa varias operaciones
+Si no puedes determinarlo, devuelve "Ordinaria" por defecto.
+Devuelve SOLO el tipo, sin explicaciones.`
         }
         required.push(fieldName)
         continue
       }
 
-      // Special handling for Documento Firmado (Sí/No)
-      if (isFactura && fieldName === 'Documento Firmado') {
+      // Special handling for Orden de Compra / Referencia
+      if (isFactura && fieldName === 'Orden de Compra / Referencia') {
         properties[fieldName] = {
           type: "string",
-          enum: ["Sí", "No"],
-          description: `Determina si la factura está firmada o no.
-Busca cualquier tipo de firma en el documento: firma manuscrita, firma digital, sello de empresa, firma electrónica o cualquier indicación de firma.
-Devuelve "Sí" si hay alguna firma o sello presente en el documento.
-Devuelve "No" si no hay ninguna firma ni sello visible.`
+          description: `Extrae el número de orden de compra (Purchase Order / PO), número de pedido, o referencia del sistema del comprador.
+Busca campos como: "Orden de compra", "Purchase Order", "PO", "Pedido", "Nº Pedido", "Order Number", "Referencia", "Your Reference", "Bestellnummer".
+Si hay varios, sepáralos por " / ".
+Si no se encuentra, devuelve "N/D".`
         }
         required.push(fieldName)
         continue
       }
 
-      // Special handling for Tipo Impositivo (IVA, IGIC, VAT, GST, etc.)
-      if (isFactura && fieldName === 'Tipo Impositivo') {
+      // Special handling for Esquema Fiscal / Tipo Impositivo
+      if (isFactura && fieldName === 'Esquema Fiscal / Tipo Impositivo') {
         properties[fieldName] = {
           type: "string",
-          description: `Identifica el TIPO de impuesto aplicado en la factura.
+          description: `Identifica el TIPO o esquema de impuesto aplicado en la factura.
 NO devuelvas el porcentaje, sino el NOMBRE del tipo impositivo.
-Ejemplos de tipos impositivos: "IVA", "IGIC", "IPSI", "VAT", "GST", "Sales Tax", "Consumption Tax", "HST", "Service Tax".
+Ejemplos: "IVA", "IGIC", "IPSI", "VAT", "GST", "Sales Tax", "Exento", "Reverse Charge", "Intracomunitaria".
 - Para facturas españolas suele ser "IVA" (o "IGIC" en Canarias, "IPSI" en Ceuta/Melilla).
-- Para facturas internacionales puede ser "VAT", "GST", "Sales Tax", etc.
+- Para facturas de otros países puede ser "VAT", "GST", "Sales Tax", etc.
 - Si la factura está exenta de impuestos, devuelve "Exento".
 - Si no se identifica ningún impuesto, devuelve "N/D".
-Devuelve SOLO el nombre del tipo impositivo, sin porcentaje ni importe.`
+Devuelve SOLO el nombre del esquema fiscal, sin porcentaje ni importe.`
         }
         required.push(fieldName)
         continue
