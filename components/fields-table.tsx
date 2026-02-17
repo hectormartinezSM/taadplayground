@@ -161,7 +161,18 @@ function parseCargas(value: string): Carga[] | null {
       // Empty array means "sin cargas"
       if (parsed.length === 0) return []
       if (parsed[0].tipoCarga || parsed[0].entidad || parsed[0].numeroInscripcion) {
-        return parsed
+        // Filter: only Hipoteca or Embargo; Embargo must have a letter
+        const filtered = parsed.filter((c: Carga) => {
+          const tipo = (c.tipoCarga || "").toLowerCase().trim()
+          if (tipo !== "hipoteca" && tipo !== "embargo") return false
+          if (tipo === "embargo") {
+            const insc = (c.numeroInscripcion || "").trim()
+            // Must be a letter (A, B, C...), not a number, not empty, not "-"
+            if (!insc || insc === "-" || /^\d/.test(insc)) return false
+          }
+          return true
+        })
+        return filtered
       }
     }
   } catch {
