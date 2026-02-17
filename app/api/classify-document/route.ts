@@ -149,6 +149,12 @@ CRITERIOS DETALLADOS DE CLASIFICACIÓN:
   C) Representación procesal: texto que indique "Procurador/a de los Tribunales en nombre y representación de", "según acredito mediante poder"
   D) Estructura formal de escrito judicial: identificación de partes, petición concreta al órgano judicial, fecha y localidad al final ("En [ciudad], a [fecha]")
 
+>> "Diligencia de ordenación": clasificar como tal cuando el documento judicial cumpla TODAS estas condiciones:
+  A) El documento está compuesto por varias páginas (portada, cuerpo procesal, y opcionalmente metadatos LexNET).
+  B) La PRIMERA página que NO sea portada administrativa, carátula de envío, página de registro LexNET ni justificante técnico, corresponde a una Diligencia de ordenación (contiene expresiones como "DILIGENCIA DE ORDENACIÓN", "el/la Letrado/a de la Administración de Justicia", "ACUERDO", "Se tiene por presentado", etc.).
+  C) Si el primer contenido procesal identificable es una Diligencia de ordenación, esa tipología PREVALECE sobre cualquier otro contenido posterior en el documento.
+  IMPORTANTE: No confundir con "Escrito al juzgado". El Escrito al juzgado es presentado POR una parte procesal (procurador, abogado) AL juzgado. La Diligencia de ordenación es emitida POR el juzgado (por el Letrado de la Administración de Justicia).
+
 LISTA DE TIPOLOGÍAS PERMITIDAS (LITERAL EXACTO):
 Escrito al juzgado
 Diligencia de ordenación

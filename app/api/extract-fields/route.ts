@@ -282,6 +282,11 @@ const ESCRITO_AL_JUZGADO_FIELD_PROMPTS: Record<string, string> = {
     "En la sección LexNET (última página), extrae la fecha de presentación/registro de la presentación del escrito (campo equivalente a 'Fecha de presentación/registrado el…'); normalízala a DD/MM/AAAA.",
 }
 
+// Provisional: mismos prompts que Escrito al juzgado (se podrán desacoplar en el futuro)
+const DILIGENCIA_DE_ORDENACION_FIELD_PROMPTS: Record<string, string> = {
+  ...ESCRITO_AL_JUZGADO_FIELD_PROMPTS,
+}
+
 // Función para detectar si es un documento tipo DNI
 function isDNIDocument(documentType: string): boolean {
   const normalizedType = documentType.toLowerCase().trim()
@@ -372,6 +377,14 @@ function isEscritoAlJuzgadoDocument(documentType: string): boolean {
   )
 }
 
+function isDiligenciaDeOrdenacionDocument(documentType: string): boolean {
+  const normalizedType = documentType.toLowerCase().trim()
+  return (
+    normalizedType.includes("diligencia de ordenación") ||
+    normalizedType.includes("diligencia de ordenacion")
+  )
+}
+
 async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse | null> {
   const formData = new FormData()
   formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
@@ -419,6 +432,7 @@ export async function POST(request: NextRequest) {
     const isNotaSimple = isNotaSimpleDocument(documentType)
     const isModelo100IRPF = isModelo100IRPFDocument(documentType)
     const isEscritoAlJuzgado = isEscritoAlJuzgadoDocument(documentType)
+    const isDiligenciaDeOrdenacion = isDiligenciaDeOrdenacionDocument(documentType)
 
     for (const fieldName of fields) {
       if (!fieldName) continue
@@ -472,6 +486,15 @@ export async function POST(request: NextRequest) {
         properties[fieldName] = {
           type: "string",
           description: ESCRITO_AL_JUZGADO_FIELD_PROMPTS[fieldName],
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isDiligenciaDeOrdenacion && DILIGENCIA_DE_ORDENACION_FIELD_PROMPTS[fieldName]) {
+        properties[fieldName] = {
+          type: "string",
+          description: DILIGENCIA_DE_ORDENACION_FIELD_PROMPTS[fieldName],
         }
         required.push(fieldName)
         continue

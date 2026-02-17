@@ -63,6 +63,16 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Fecha de escrito",
     "Fecha de presentación",
   ],
+  // Provisional: mismos campos que Escrito al juzgado (se podrán desacoplar en el futuro)
+  DILIGENCIA_DE_ORDENACION: [
+    "Nombre del juzgado",
+    "Número de juzgado",
+    "Partido judicial",
+    "Tipo de procedimiento",
+    "Nombre del procurador",
+    "Fecha de escrito",
+    "Fecha de presentación",
+  ],
 }
 
 // Función para detectar si el tipo de documento coincide con alguno predefinido
@@ -126,6 +136,14 @@ function getPredefinedFields(documentType: string): string[] | null {
     normalizedType.includes("escrito procesal")
   ) {
     return PREDEFINED_FIELDS["ESCRITO_AL_JUZGADO"]
+  }
+
+  // Detectar Diligencia de ordenación
+  if (
+    normalizedType.includes("diligencia de ordenación") ||
+    normalizedType.includes("diligencia de ordenacion")
+  ) {
+    return PREDEFINED_FIELDS["DILIGENCIA_DE_ORDENACION"]
   }
 
   return null
