@@ -205,19 +205,19 @@ function TitularidadesTable({ titularidades }: { titularidades: Titularidad[] })
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="text-xs font-semibold">Titular</TableHead>
-            <TableHead className="text-xs font-semibold w-28">DNI</TableHead>
-            <TableHead className="text-xs font-semibold w-32">Tipo de Derecho</TableHead>
-            <TableHead className="text-xs font-semibold w-24 text-right">Participación</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-48">Titular</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-28">DNI</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-36">Tipo de Derecho</TableHead>
+            <TableHead className="text-xs font-semibold text-left">Participacion</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {titularidades.map((tit, idx) => (
             <TableRow key={idx}>
-              <TableCell className="text-sm py-2">{tit.titular}</TableCell>
-              <TableCell className="text-sm py-2">{tit.dni}</TableCell>
-              <TableCell className="text-sm py-2">{tit.tipoDerecho}</TableCell>
-              <TableCell className="text-sm py-2 text-right">{tit.participacion}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{tit.titular}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{tit.dni}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{tit.tipoDerecho}</TableCell>
+              <TableCell className="text-sm py-2 text-left">{tit.participacion}</TableCell>
             </TableRow>
           ))}
         </TableBody>
