@@ -193,7 +193,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
   )
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-5xl mx-auto">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -204,25 +204,25 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         aria-label="Seleccionar archivo"
       />
 
-      {/* Single main card with everything inside */}
+      {/* Single main card */}
       <Card className="shadow-sm">
-        <CardContent className="p-8 md:p-10">
-          <div className="flex flex-col items-center gap-6">
+        <CardContent className="p-8 md:p-10 lg:p-12">
+          <div className="flex flex-col items-center gap-8">
             {/* Icon + Title + Subtitle */}
             <div className="flex flex-col items-center gap-4 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1E3A6E]/10 shadow-sm">
+              <div className="flex h-18 w-18 items-center justify-center rounded-full bg-[#1E3A6E]/10 shadow-sm">
                 {isLoading ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-[#1E3A6E]" />
+                  <Loader2 className="h-9 w-9 animate-spin text-[#1E3A6E]" />
                 ) : (
-                  <Landmark className="h-8 w-8 text-[#1E3A6E]" />
+                  <Landmark className="h-9 w-9 text-[#1E3A6E]" />
                 )}
               </div>
 
-              <div className="space-y-2">
-                <h2 className="text-2xl font-bold text-foreground text-balance">
+              <div className="space-y-2.5">
+                <h2 className="text-3xl font-bold text-foreground text-balance">
                   {isLoading ? "Procesando documento..." : "Clasificacion y extraccion documental"}
                 </h2>
-                <p className="text-base text-muted-foreground leading-relaxed max-w-lg mx-auto">
+                <p className="text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto">
                   {isLoading
                     ? "Analizando el documento cargado"
                     : "Arrastra documentos sobre el caso de uso para iniciar el procesamiento automatico."}
@@ -230,20 +230,23 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="w-full border-t border-border/40" />
+            {/* Section label + Divider */}
+            <div className="w-full flex flex-col gap-3">
+              <div className="border-t border-border/40" />
+              <p className="text-sm text-muted-foreground font-medium">Casos de uso</p>
+            </div>
 
             {/* Two dropzone cards */}
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Legal Card - ACTIVE dropzone */}
               <div
                 role="button"
                 tabIndex={0}
                 aria-label="Caso de uso Legal. Arrastra documentos o haz clic para seleccionar archivos."
-                className={`group relative rounded-xl border-2 border-dashed p-6 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5A623] focus-visible:ring-offset-2 ${
+                className={`group relative rounded-xl border-2 border-dashed min-h-[220px] p-8 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5A623] focus-visible:ring-offset-2 ${
                   isDraggingLegal
-                    ? "border-[#F5A623] bg-[#F5A623]/10 shadow-lg scale-[1.01]"
-                    : "border-border/50 bg-background hover:border-[#F5A623]/50 hover:bg-[#F5A623]/5 hover:shadow-md"
+                    ? "border-[#F5A623] bg-[#F5A623]/10 shadow-lg ring-2 ring-[#F5A623]/20 scale-[1.01]"
+                    : "border-border/50 bg-[#F5A623]/[0.02] hover:border-[#F5A623]/50 hover:bg-[#F5A623]/5 hover:shadow-md hover:ring-2 hover:ring-[#F5A623]/10"
                 } ${isLoading ? "pointer-events-none opacity-60" : ""}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -251,38 +254,38 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                 onClick={handleLegalClick}
                 onKeyDown={handleKeyDown}
               >
-                <div className="flex flex-col items-center gap-4 text-center">
+                <div className="flex flex-col items-center justify-center gap-5 text-center h-full">
                   <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200 ${
+                    className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
                       isDraggingLegal ? "bg-[#F5A623]/20" : "bg-[#1E3A6E]/10 group-hover:bg-[#F5A623]/15"
                     }`}
                   >
                     {isLoading ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-[#F5A623]" />
+                      <Loader2 className="h-7 w-7 animate-spin text-[#F5A623]" />
                     ) : (
                       <Gavel
-                        className={`h-6 w-6 transition-colors duration-200 ${
+                        className={`h-7 w-7 transition-colors duration-200 ${
                           isDraggingLegal ? "text-[#F5A623]" : "text-[#1E3A6E] group-hover:text-[#F5A623]"
                         }`}
                       />
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-foreground">Legal</h3>
+                  <h3 className="text-xl font-bold text-foreground">Legal</h3>
 
                   <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-muted-foreground">Documentos admitidos:</p>
-                    <p className="text-xs text-muted-foreground/80 leading-relaxed">
+                    <p className="text-sm font-medium text-muted-foreground">Documentos admitidos:</p>
+                    <p className="text-sm text-muted-foreground/80 leading-relaxed">
                       Escrito al juzgado, Diligencia de ordenacion y Nota simple
                     </p>
                   </div>
 
                   <div
-                    className={`flex items-center gap-2 text-xs font-medium transition-colors duration-200 ${
+                    className={`flex items-center gap-2 text-xs font-medium transition-colors duration-200 mt-auto ${
                       isDraggingLegal ? "text-[#F5A623]" : "text-muted-foreground/60 group-hover:text-[#F5A623]/70"
                     }`}
                   >
-                    <Upload className="h-3.5 w-3.5" />
+                    <Upload className="h-4 w-4" />
                     <span>{isDraggingLegal ? "Suelta para iniciar" : "Arrastra archivos o haz clic"}</span>
                   </div>
                 </div>
@@ -292,34 +295,33 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
               <div
                 aria-disabled="true"
                 aria-label="Caso de uso Pagos. Proximamente."
-                className="relative rounded-xl border-2 border-dashed border-border/30 bg-muted/20 p-6 opacity-55 cursor-not-allowed select-none pointer-events-none"
+                className="relative rounded-xl border-2 border-dashed border-border/30 bg-muted/15 min-h-[220px] p-8 opacity-50 cursor-not-allowed select-none pointer-events-none"
               >
-                <div className="flex flex-col items-center gap-4 text-center">
+                <div className="flex flex-col items-center justify-center gap-5 text-center h-full">
                   {/* Proximamente pill */}
-                  <div className="absolute top-3 right-3">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                  <div className="absolute top-4 right-4">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
                       <Lock className="h-3 w-3" />
                       Proximamente
                     </span>
                   </div>
 
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
-                    <CreditCard className="h-6 w-6 text-muted-foreground/50" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/50">
+                    <CreditCard className="h-7 w-7 text-muted-foreground/50" />
                   </div>
 
-                  <h3 className="text-lg font-bold text-muted-foreground/70">Pagos</h3>
+                  <h3 className="text-xl font-bold text-muted-foreground/70">Pagos</h3>
 
                   <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-muted-foreground/60">Documentos admitidos:</p>
-                    <p className="text-xs text-muted-foreground/50 leading-relaxed">
+                    <p className="text-sm font-medium text-muted-foreground/60">Documentos admitidos:</p>
+                    <p className="text-sm text-muted-foreground/50 leading-relaxed">
                       Facturas proveedores e Impuestos
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground/40">
-                    <Upload className="h-3.5 w-3.5" />
-                    <span>No disponible</span>
-                  </div>
+                  <p className="text-xs text-muted-foreground/40 mt-auto">
+                    Disponible en la siguiente fase
+                  </p>
                 </div>
               </div>
             </div>

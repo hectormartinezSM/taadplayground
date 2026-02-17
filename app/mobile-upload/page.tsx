@@ -158,14 +158,8 @@ export default function MobileUploadPage() {
             height={40}
             className="h-10 w-auto object-contain"
           />
-          <span className="text-lg font-bold text-foreground">X</span>
-          <Image
-            src="/images/design-mode/Logo-hipoges.webp"
-            alt="Hipoges"
-            width={112}
-            height={32}
-            className="h-8 w-auto object-contain"
-          />
+          <span className="text-lg font-bold text-foreground/40">X</span>
+          <span className="text-xl font-extrabold tracking-tight text-[#F5A623]">HIPOGES</span>
         </div>
       </header>
 
