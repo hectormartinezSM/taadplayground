@@ -222,6 +222,15 @@ Ejemplos:
     "Determina si el inmueble está calificado como VPO/Vivienda de Protección Oficial (o equivalentes: VPPL, VPP, protección pública); normaliza a 'Sí' si aparece cualquier mención de calificación/protección y a 'No' si se indica explícitamente que no lo es o no existe ninguna mención (no inventar).",
   Cargas: `Extrae TODAS las cargas y gravámenes que figuren en la nota simple (hipotecas, embargos, anotaciones preventivas, condiciones resolutorias, servidumbres, afecciones, etc.).
 
+PASO 1 – SEGMENTACIÓN EN BLOQUES (obligatorio antes de extraer):
+Localiza la sección de CARGAS / GRAVÁMENES / LIMITACIONES en el documento. Divide esa sección en bloques individuales, uno por cada carga distinta. Reglas de corte:
+- Corta cuando encuentres: "Inscripción" + ordinal/número (ej: "14ª", "3ª", "Inscripción 5"), o "Anotación preventiva" + letra (ej: "Letra A"), o una línea con "HIPOTECA" / "EMBARGO" que inicia un nuevo asiento.
+- Si no hay delimitadores claros, usa saltos de párrafo y patrones ("A favor de…", "Constituida…", "Se constituye…") para detectar cambios.
+- Prioriza NO mezclar datos de cargas distintas: si dudas, separa más antes que menos.
+
+PASO 2 – EXTRACCIÓN POR BLOQUE:
+Aplica la extracción campo-a-campo sobre CADA bloque individual, no sobre toda la sección junta. Esto evita mezclar datos de hipotecas distintas.
+
 FORMATO DE SALIDA OBLIGATORIO:
 Devuelve EXACTAMENTE un array JSON. Si no hay cargas (o consta "libre de cargas"/"sin cargas"), devuelve [] (array vacío). Sin texto adicional, SOLO JSON.
 
