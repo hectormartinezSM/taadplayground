@@ -141,7 +141,18 @@ Debes clasificar el documento usando IDEALMENTE una de las tipologías EXACTAS d
   - Sin artículos ("el/la"), sin frases, sin detalles redundantes.
   - 2-4 palabras máximo.
 
+CRITERIOS DETALLADOS DE CLASIFICACIÓN:
+
+>> "Escrito al juzgado": clasificar como tal si el documento cumple AL MENOS DOS de los siguientes criterios:
+  A) Encabezado judicial (destinatario): referencias a órgano judicial como "JUZGADO DE ...", "JUZGADO DE PRIMERA INSTANCIA ...", número de procedimiento (ej: "Procedimiento", "Autos", "ETJ", "Ejecución", etc.)
+  B) Fórmulas procesales típicas: expresiones como "comparezco y DIGO", "SUPLICO AL JUZGADO", "SOLICITO AL JUZGADO"
+  C) Representación procesal: texto que indique "Procurador/a de los Tribunales en nombre y representación de", "según acredito mediante poder"
+  D) Estructura formal de escrito judicial: identificación de partes, petición concreta al órgano judicial, fecha y localidad al final ("En [ciudad], a [fecha]")
+
 LISTA DE TIPOLOGÍAS PERMITIDAS (LITERAL EXACTO):
+Escrito al juzgado
+Diligencia de ordenación
+Nota Simple
 DNI
 NIE
 Pasaporte
