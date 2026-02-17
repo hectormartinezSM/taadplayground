@@ -236,29 +236,29 @@ Delimitadores de corte (en orden de prioridad):
 REGLA DE ORO: Cada vez que el texto describa una operacion con una entidad, un importe principal, un notario y una fecha PROPIOS, es una carga separada. Si dos operaciones comparten el mismo bloque de texto sin separacion clara PERO tienen entidades o importes distintos, SON cargas distintas. En caso de duda, SEPARA.
 
 PASO 2 – EXTRACCIÓN POR BLOQUE:
-Extrae campo-a-campo sobre CADA bloque por separado. NUNCA mezcles datos de bloques distintos. Si un campo no aparece en un bloque concreto, pon "N/D" para ese bloque (no lo tomes de otro bloque).
+Extrae campo-a-campo sobre CADA bloque por separado. NUNCA mezcles datos de bloques distintos. Si un campo no aparece en un bloque concreto, pon "-" para ese bloque (no lo tomes de otro bloque).
 
 FORMATO DE SALIDA OBLIGATORIO:
 Devuelve EXACTAMENTE un array JSON. Si no hay cargas (o consta "libre de cargas"/"sin cargas"), devuelve [] (array vacío). Sin texto adicional, SOLO JSON.
 
 ESTRUCTURA POR CARGA (cada elemento del array):
 {
-  "numeroInscripcion": "Número de inscripción/anotación tal cual (ej: '3', '3ª'). Si no aparece: 'N/D'.",
-  "fechaInscripcion": "Fecha de inscripción en formato DD/MM/AAAA. Si no aparece: 'N/D'.",
-  "tipoCarga": "Solo 'Hipoteca' o 'Embargo'. Si dice 'anotación preventiva de embargo' → 'Embargo'.",
-  "subtipo": "'Nueva constitución' (si solo pone 'hipoteca'/'constituida'), 'Novación', 'Subrogación', 'Cesión' (cesión del crédito), 'Extensión' (ampliación). Si no se puede determinar: 'N/D'.",
-  "notario": "Nombre del notario en Title Case, conservando acentos. Si no aparece: 'N/D'.",
-  "fechaNotarial": "Fecha de la escritura notarial en DD/MM/AAAA. Si no aparece: 'N/D'.",
-  "entidad": "Acreedor (banco/organismo) tal cual, limpio de dobles espacios. Si no aparece: 'N/D'.",
-  "importe": "Solo número, sin símbolo €, sin separadores de miles, con coma decimal si aparece. Preferir 'principal'/'responsabilidad hipotecaria'. Si hay dudas: 'N/D'.",
-  "fechaVencimiento": "Fecha de vencimiento en DD/MM/AAAA. Si no aparece: 'N/D'.",
-  "interesesOrdinarios": "IMPORTE MÁXIMO garantizado por intereses ordinarios (responsabilidad hipotecaria por intereses ordinarios), NO el tipo de interés (%). Buscar expresiones como 'por intereses ordinarios … la cantidad de …', 'responsabilidad hipotecaria por intereses ordinarios …', 'se garantiza por intereses ordinarios …'. Devolver solo número, sin €, sin separadores de miles, con coma decimal si aparece. Si solo aparece el porcentaje y NO hay importe máximo → 'N/D'.",
-  "interesesDemora": "IMPORTE MÁXIMO garantizado por intereses de demora (responsabilidad hipotecaria por intereses moratorios/demora), NO el tipo de interés (%). Buscar expresiones como 'por intereses de demora … la cantidad de …', 'responsabilidad hipotecaria por intereses moratorios …', 'se garantiza por intereses de demora …'. Devolver solo número, sin €, sin separadores de miles, con coma decimal si aparece. Si solo aparece el porcentaje y NO hay importe máximo → 'N/D'.",
-  "costasGastos": "Solo número, sin €, sin separadores de miles. Si no aparece: 'N/D'."
+  "numeroInscripcion": "Para HIPOTECAS: número de inscripción (ej: '3', '3ª', '14ª'). Para EMBARGOS: la LETRA de la anotación (ej: 'A', 'B', 'C'). Los embargos se identifican con letras, NO con números. Si no aparece: '-'.",
+  "fechaInscripcion": "Fecha de inscripción en formato DD/MM/AAAA. Si no aparece: '-'.",
+  "tipoCarga": "Solo 'Hipoteca' o 'Embargo'. Si dice 'anotación preventiva de embargo' → 'Embargo'. Un embargo se reconoce porque tiene una LETRA como identificador (ej: 'Anotación preventiva letra A'), mientras que una hipoteca tiene un NÚMERO de inscripción.",
+  "subtipo": "'Nueva constitución' (si solo pone 'hipoteca'/'constituida'), 'Novación', 'Subrogación', 'Cesión' (cesión del crédito), 'Extensión' (ampliación). Si no se puede determinar: '-'.",
+  "notario": "Nombre del notario en Title Case, conservando acentos. Si no aparece: '-'.",
+  "fechaNotarial": "Fecha de la escritura notarial en DD/MM/AAAA. Si no aparece: '-'.",
+  "entidad": "Acreedor (banco/organismo) tal cual, limpio de dobles espacios. Si no aparece: '-'.",
+  "importe": "Solo número, sin símbolo €, sin separadores de miles, con coma decimal si aparece. Preferir 'principal'/'responsabilidad hipotecaria'. Si hay dudas: '-'.",
+  "fechaVencimiento": "Fecha de vencimiento en DD/MM/AAAA. Si no aparece: '-'.",
+  "interesesOrdinarios": "IMPORTE MÁXIMO garantizado por intereses ordinarios (responsabilidad hipotecaria por intereses ordinarios), NO el tipo de interés (%). Devolver solo número, sin €, sin separadores de miles, con coma decimal si aparece. Si solo aparece el porcentaje y NO hay importe máximo → '-'.",
+  "interesesDemora": "IMPORTE MÁXIMO garantizado por intereses de demora (responsabilidad hipotecaria por intereses moratorios/demora), NO el tipo de interés (%). Devolver solo número, sin €, sin separadores de miles, con coma decimal si aparece. Si solo aparece el porcentaje y NO hay importe máximo → '-'.",
+  "costasGastos": "Solo número, sin €, sin separadores de miles. Si no aparece: '-'."
 }
 
 Ejemplo de salida válida:
-[{"numeroInscripcion":"3","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco X, S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"12000","interesesDemora":"6000","costasGastos":"15000"}]
+[{"numeroInscripcion":"3ª","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco X, S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"12000","interesesDemora":"6000","costasGastos":"15000"},{"numeroInscripcion":"A","fechaInscripcion":"03/05/2021","tipoCarga":"Embargo","subtipo":"-","notario":"-","fechaNotarial":"-","entidad":"AEAT","importe":"25000","fechaVencimiento":"-","interesesOrdinarios":"-","interesesDemora":"-","costasGastos":"-"}]
 
 REGLAS ADICIONALES:
 - Incluye TODAS las cargas, no solo la primera.
