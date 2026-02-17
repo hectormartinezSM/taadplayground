@@ -1,7 +1,7 @@
 "use client"
 import type { UploadAreaProps } from "./upload-area.types"
 import { useCallback, useRef, useState } from "react"
-import { Landmark, Loader2, CheckCircle2, Gavel, CreditCard, Lock, Upload } from "lucide-react"
+import { Landmark, Loader2, Gavel, CreditCard, Lock, Upload } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Page } from "@/lib/types"
 import { extractPagesFromPDF } from "@/lib/pdf-utils"
@@ -193,7 +193,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
   )
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8">
+    <div className="w-full max-w-4xl mx-auto">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -204,168 +204,143 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         aria-label="Seleccionar archivo"
       />
 
-      {/* Header section */}
+      {/* Single main card with everything inside */}
       <Card className="shadow-sm">
-        <CardContent className="p-10">
-          <div className="flex flex-col items-center justify-center gap-6 text-center">
-            {/* Icon */}
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#1E3A6E]/10 shadow-sm">
-              {isLoading ? (
-                <Loader2 className="h-10 w-10 animate-spin text-[#1E3A6E]" />
-              ) : (
-                <Landmark className="h-10 w-10 text-[#1E3A6E]" />
-              )}
+        <CardContent className="p-8 md:p-10">
+          <div className="flex flex-col items-center gap-6">
+            {/* Icon + Title + Subtitle */}
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1E3A6E]/10 shadow-sm">
+                {isLoading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-[#1E3A6E]" />
+                ) : (
+                  <Landmark className="h-8 w-8 text-[#1E3A6E]" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-foreground text-balance">
+                  {isLoading ? "Procesando documento..." : "Clasificacion y extraccion documental"}
+                </h2>
+                <p className="text-base text-muted-foreground leading-relaxed max-w-lg mx-auto">
+                  {isLoading
+                    ? "Analizando el documento cargado"
+                    : "Arrastra documentos sobre el caso de uso para iniciar el procesamiento automatico."}
+                </p>
+              </div>
             </div>
 
-            {/* Title */}
-            <div className="space-y-3">
-              <h2 className="text-3xl font-bold text-foreground text-balance">
-                {isLoading ? "Procesando documento..." : "Clasificacion y extraccion documental"}
-              </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto">
-                {isLoading
-                  ? "Analizando el documento cargado"
-                  : "Arrastra documentos sobre el caso de uso para iniciar el procesamiento automatico."}
-              </p>
-            </div>
+            {/* Divider */}
+            <div className="w-full border-t border-border/40" />
 
-            {/* Feature checklist */}
-            <div className="w-full max-w-md bg-muted/30 rounded-lg p-5 border border-border/50">
-              <p className="text-sm font-medium text-foreground mb-3">Esta demo incluye:</p>
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-[#F5A623] flex-shrink-0" />
-                  <span>Segmentacion en documentos individuales</span>
+            {/* Two dropzone cards */}
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Legal Card - ACTIVE dropzone */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Caso de uso Legal. Arrastra documentos o haz clic para seleccionar archivos."
+                className={`group relative rounded-xl border-2 border-dashed p-6 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5A623] focus-visible:ring-offset-2 ${
+                  isDraggingLegal
+                    ? "border-[#F5A623] bg-[#F5A623]/10 shadow-lg scale-[1.01]"
+                    : "border-border/50 bg-background hover:border-[#F5A623]/50 hover:bg-[#F5A623]/5 hover:shadow-md"
+                } ${isLoading ? "pointer-events-none opacity-60" : ""}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={handleLegalClick}
+                onKeyDown={handleKeyDown}
+              >
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <div
+                    className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200 ${
+                      isDraggingLegal ? "bg-[#F5A623]/20" : "bg-[#1E3A6E]/10 group-hover:bg-[#F5A623]/15"
+                    }`}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-6 w-6 animate-spin text-[#F5A623]" />
+                    ) : (
+                      <Gavel
+                        className={`h-6 w-6 transition-colors duration-200 ${
+                          isDraggingLegal ? "text-[#F5A623]" : "text-[#1E3A6E] group-hover:text-[#F5A623]"
+                        }`}
+                      />
+                    )}
+                  </div>
+
+                  <h3 className="text-lg font-bold text-foreground">Legal</h3>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Documentos admitidos:</p>
+                    <p className="text-xs text-muted-foreground/80 leading-relaxed">
+                      Escrito al juzgado, Diligencia de ordenacion y Nota simple
+                    </p>
+                  </div>
+
+                  <div
+                    className={`flex items-center gap-2 text-xs font-medium transition-colors duration-200 ${
+                      isDraggingLegal ? "text-[#F5A623]" : "text-muted-foreground/60 group-hover:text-[#F5A623]/70"
+                    }`}
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>{isDraggingLegal ? "Suelta para iniciar" : "Arrastra archivos o haz clic"}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-[#F5A623] flex-shrink-0" />
-                  <span>Clasificacion inteligente de documentos</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-[#F5A623] flex-shrink-0" />
-                  <span>Extraccion de datos estructurados</span>
+              </div>
+
+              {/* Pagos Card - DISABLED */}
+              <div
+                aria-disabled="true"
+                aria-label="Caso de uso Pagos. Proximamente."
+                className="relative rounded-xl border-2 border-dashed border-border/30 bg-muted/20 p-6 opacity-55 cursor-not-allowed select-none pointer-events-none"
+              >
+                <div className="flex flex-col items-center gap-4 text-center">
+                  {/* Proximamente pill */}
+                  <div className="absolute top-3 right-3">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                      <Lock className="h-3 w-3" />
+                      Proximamente
+                    </span>
+                  </div>
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
+                    <CreditCard className="h-6 w-6 text-muted-foreground/50" />
+                  </div>
+
+                  <h3 className="text-lg font-bold text-muted-foreground/70">Pagos</h3>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground/60">Documentos admitidos:</p>
+                    <p className="text-xs text-muted-foreground/50 leading-relaxed">
+                      Facturas proveedores e Impuestos
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground/40">
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>No disponible</span>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Error message */}
+            {error && (
+              <p className="text-sm text-destructive bg-destructive/10 px-4 py-2 rounded-md">
+                {error}
+              </p>
+            )}
+
+            {/* Loading indicator */}
+            {isLoading && (
+              <div className="flex items-center justify-center gap-3 text-muted-foreground">
+                <div className="h-2 w-2 bg-[#F5A623] rounded-full animate-pulse" />
+                <span className="text-sm">Preparando el analisis del documento...</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
-
-      {/* Two-card selector */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Legal Card - ACTIVE dropzone */}
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label="Caso de uso Legal. Arrastra documentos o haz clic para seleccionar archivos."
-          className={`group relative rounded-xl border-2 border-dashed p-8 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5A623] focus-visible:ring-offset-2 ${
-            isDraggingLegal
-              ? "border-[#F5A623] bg-[#F5A623]/10 shadow-lg scale-[1.02]"
-              : "border-border/60 bg-card hover:border-[#F5A623]/50 hover:bg-[#F5A623]/5 hover:shadow-md"
-          } ${isLoading ? "pointer-events-none opacity-60" : ""}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={handleLegalClick}
-          onKeyDown={handleKeyDown}
-        >
-          <div className="flex flex-col items-center gap-5 text-center">
-            {/* Icon */}
-            <div
-              className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
-                isDraggingLegal ? "bg-[#F5A623]/20" : "bg-[#1E3A6E]/10 group-hover:bg-[#F5A623]/15"
-              }`}
-            >
-              {isLoading ? (
-                <Loader2 className="h-7 w-7 animate-spin text-[#F5A623]" />
-              ) : (
-                <Gavel
-                  className={`h-7 w-7 transition-colors duration-200 ${
-                    isDraggingLegal ? "text-[#F5A623]" : "text-[#1E3A6E] group-hover:text-[#F5A623]"
-                  }`}
-                />
-              )}
-            </div>
-
-            {/* Title */}
-            <h3 className="text-xl font-bold text-foreground">Legal</h3>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Documentos admitidos:</p>
-              <p className="text-sm text-muted-foreground/80 leading-relaxed">
-                Escrito al juzgado, Diligencia de ordenacion y Nota simple
-              </p>
-            </div>
-
-            {/* Drop hint */}
-            <div
-              className={`flex items-center gap-2 text-xs font-medium transition-colors duration-200 ${
-                isDraggingLegal ? "text-[#F5A623]" : "text-muted-foreground/60 group-hover:text-[#F5A623]/70"
-              }`}
-            >
-              <Upload className="h-3.5 w-3.5" />
-              <span>{isDraggingLegal ? "Suelta para iniciar" : "Arrastra archivos o haz clic"}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Pagos Card - DISABLED */}
-        <div
-          aria-disabled="true"
-          aria-label="Caso de uso Pagos. Proximamente."
-          className="relative rounded-xl border-2 border-dashed border-border/30 bg-muted/20 p-8 opacity-60 cursor-not-allowed select-none"
-        >
-          <div className="flex flex-col items-center gap-5 text-center">
-            {/* Proximamente pill */}
-            <div className="absolute top-4 right-4">
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                <Lock className="h-3 w-3" />
-                Proximamente
-              </span>
-            </div>
-
-            {/* Icon */}
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/50">
-              <CreditCard className="h-7 w-7 text-muted-foreground/50" />
-            </div>
-
-            {/* Title */}
-            <h3 className="text-xl font-bold text-muted-foreground/70">Pagos</h3>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground/60">Documentos admitidos:</p>
-              <p className="text-sm text-muted-foreground/50 leading-relaxed">
-                Facturas proveedores e Impuestos
-              </p>
-            </div>
-
-            {/* Disabled hint */}
-            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground/40">
-              <Upload className="h-3.5 w-3.5" />
-              <span>No disponible</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="text-center">
-          <p className="inline-block text-sm text-destructive bg-destructive/10 px-4 py-2 rounded-md">
-            {error}
-          </p>
-        </div>
-      )}
-
-      {/* Loading indicator */}
-      {isLoading && (
-        <div className="flex items-center justify-center gap-3 text-muted-foreground">
-          <div className="h-2 w-2 bg-[#F5A623] rounded-full animate-pulse" />
-          <span className="text-sm">Preparando el analisis del documento...</span>
-        </div>
-      )}
     </div>
   )
 }
