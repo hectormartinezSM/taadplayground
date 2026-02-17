@@ -280,6 +280,21 @@ function DevengosTable({ devengos }: { devengos: Devengo[] }) {
   )
 }
 
+// Format a numeric string to Spanish currency: XXX.XXX.XXX,XX €
+function formatEUR(v: string): string {
+  if (!v || v === "N/D") return "N/D"
+  // Normalize: remove existing dots/spaces (thousands), keep comma as decimal
+  const cleaned = v.replace(/\s/g, "").replace(/\./g, "")
+  // If comma is present, split on it
+  const parts = cleaned.split(",")
+  const intPart = parts[0].replace(/[^\d]/g, "")
+  const decPart = parts[1] ? parts[1].replace(/[^\d]/g, "").slice(0, 2).padEnd(2, "0") : "00"
+  if (!intPart) return "N/D"
+  // Add thousands separators with dots
+  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+  return `${formatted},${decPart} \u20AC`
+}
+
 // Field definitions for transposed rendering
 const CARGA_FIELD_DEFS: { key: keyof Carga; label: string; format?: (v: string) => string }[] = [
   { key: "numeroInscripcion", label: "N. Inscripcion" },
@@ -289,11 +304,11 @@ const CARGA_FIELD_DEFS: { key: keyof Carga; label: string; format?: (v: string) 
   { key: "notario", label: "Notario" },
   { key: "fechaNotarial", label: "Fecha notarial" },
   { key: "entidad", label: "Entidad" },
-  { key: "importe", label: "Importe", format: (v) => (v && v !== "N/D" ? `${v} \u20AC` : "N/D") },
+  { key: "importe", label: "Importe", format: formatEUR },
   { key: "fechaVencimiento", label: "Fecha vencimiento" },
   { key: "interesesOrdinarios", label: "Int. ordinarios" },
   { key: "interesesDemora", label: "Int. demora" },
-  { key: "costasGastos", label: "Costas y gastos", format: (v) => (v && v !== "N/D" ? `${v} \u20AC` : "N/D") },
+  { key: "costasGastos", label: "Costas y gastos", format: formatEUR },
 ]
 
 function getCargaColumnHeader(carga: Carga, idx: number): string {
