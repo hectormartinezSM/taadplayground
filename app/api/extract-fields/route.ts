@@ -231,7 +231,8 @@ Delimitadores de corte (en orden de prioridad):
 3. Cambio de TIPO de carga: si pasa de hipoteca a embargo o viceversa, es otra carga
 4. Cambio de ENTIDAD acreedora: si el texto dice "A favor de [ENTIDAD_A]" y más adelante "A favor de [ENTIDAD_B]", son cargas distintas
 5. Cambio de NOTARIO o ESCRITURA: si aparece una nueva referencia notarial ("otorgada ante el Notario...") distinta de la anterior
-6. Patrones de inicio de asiento: "Se constituye...", "Constituida mediante...", "Hipoteca a favor de...", "Embargo a favor de..."
+6. Fórmula de escritura: "En virtud de escritura...", "En virtud de escrituras...", "Mediante escritura...", "Por escritura otorgada..." → indica inicio de una nueva carga
+7. Patrones de inicio de asiento: "Se constituye...", "Constituida mediante...", "Hipoteca a favor de...", "Embargo a favor de..."
 
 REGLA DE ORO: Cada vez que el texto describa una operacion con una entidad, un importe principal, un notario y una fecha PROPIOS, es una carga separada. Si dos operaciones comparten el mismo bloque de texto sin separacion clara PERO tienen entidades o importes distintos, SON cargas distintas. En caso de duda, SEPARA.
 
