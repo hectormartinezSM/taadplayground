@@ -1,7 +1,7 @@
 "use client"
 import type { UploadAreaProps } from "./upload-area.types"
 import { useCallback, useRef, useState } from "react"
-import { Landmark, Loader2, Gavel, CreditCard, Lock, Upload } from "lucide-react"
+import { Briefcase, Loader2, Gavel, CreditCard, Lock, Upload } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Page } from "@/lib/types"
 import { extractPagesFromPDF } from "@/lib/pdf-utils"
@@ -210,11 +210,11 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
           <div className="flex flex-col items-center gap-8">
             {/* Icon + Title + Subtitle */}
             <div className="flex flex-col items-center gap-4 text-center">
-              <div className="flex h-18 w-18 items-center justify-center rounded-full bg-[#1E3A6E]/10 shadow-sm">
+              <div className="flex h-18 w-18 items-center justify-center rounded-full bg-[#F5A623]/10 shadow-sm">
                 {isLoading ? (
-                  <Loader2 className="h-9 w-9 animate-spin text-[#1E3A6E]" />
+                  <Loader2 className="h-9 w-9 animate-spin text-[#F5A623]" />
                 ) : (
-                  <Landmark className="h-9 w-9 text-[#1E3A6E]" />
+                  <Briefcase className="h-9 w-9 text-[#F5A623]" />
                 )}
               </div>
 
