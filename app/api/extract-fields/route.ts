@@ -220,8 +220,34 @@ Ejemplos:
     "Extrae la superficie total de la finca (preferentemente la 'superficie construida total' o, si no existe, la 'superficie total' indicada); normaliza devolviendo un número en m² (usa punto decimal si hay decimales y elimina texto accesorio). Formato: 'XX,XX m²'.",
   "¿Es VPO?":
     "Determina si el inmueble está calificado como VPO/Vivienda de Protección Oficial (o equivalentes: VPPL, VPP, protección pública); normaliza a 'Sí' si aparece cualquier mención de calificación/protección y a 'No' si se indica explícitamente que no lo es o no existe ninguna mención (no inventar).",
-  "¿Tiene cargas?":
-    "Determina si existen cargas/gravámenes (hipoteca, embargo, servidumbre, afecciones, condiciones resolutorias, etc.); normaliza a 'Sí' si aparece cualquier sección o mención de 'cargas/gravámenes/limitaciones' con contenido, y a 'No' si consta explícitamente 'libre de cargas' o 'sin cargas'.",
+  Cargas: `Extrae TODAS las cargas y gravámenes que figuren en la nota simple (hipotecas, embargos, anotaciones preventivas, condiciones resolutorias, servidumbres, afecciones, etc.).
+
+FORMATO DE SALIDA OBLIGATORIO:
+Devuelve EXACTAMENTE un array JSON. Si no hay cargas (o consta "libre de cargas"/"sin cargas"), devuelve [] (array vacío). Sin texto adicional, SOLO JSON.
+
+ESTRUCTURA POR CARGA (cada elemento del array):
+{
+  "numeroInscripcion": "Número de inscripción/anotación tal cual (ej: '3', '3ª'). Si no aparece: 'N/D'.",
+  "fechaInscripcion": "Fecha de inscripción en formato DD/MM/AAAA. Si no aparece: 'N/D'.",
+  "tipoCarga": "Solo 'Hipoteca' o 'Embargo'. Si dice 'anotación preventiva de embargo' → 'Embargo'.",
+  "subtipo": "'Nueva constitución' (si solo pone 'hipoteca'/'constituida'), 'Novación', 'Subrogación', 'Cesión' (cesión del crédito), 'Extensión' (ampliación). Si no se puede determinar: 'N/D'.",
+  "notario": "Nombre del notario en Title Case, conservando acentos. Si no aparece: 'N/D'.",
+  "fechaNotarial": "Fecha de la escritura notarial en DD/MM/AAAA. Si no aparece: 'N/D'.",
+  "entidad": "Acreedor (banco/organismo) tal cual, limpio de dobles espacios. Si no aparece: 'N/D'.",
+  "importe": "Solo número, sin símbolo €, sin separadores de miles, con coma decimal si aparece. Preferir 'principal'/'responsabilidad hipotecaria'. Si hay dudas: 'N/D'.",
+  "fechaVencimiento": "Fecha de vencimiento en DD/MM/AAAA. Si no aparece: 'N/D'.",
+  "interesesOrdinarios": "Tal cual aparezca (ej: '3,50%'). Si no aparece: 'N/D'.",
+  "interesesDemora": "Tal cual aparezca (ej: '7,00%'). Si no aparece: 'N/D'.",
+  "costasGastos": "Solo número, sin €, sin separadores de miles. Si no aparece: 'N/D'."
+}
+
+Ejemplo de salida válida:
+[{"numeroInscripcion":"3","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco X, S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"3,50%","interesesDemora":"7,00%","costasGastos":"15000"}]
+
+REGLAS ADICIONALES:
+- Incluye TODAS las cargas, no solo la primera.
+- Mantén el orden en que aparecen en el documento.
+- NO añadas texto adicional, SOLO el JSON.`,
   Titularidades: `Extrae los titulares que figuran en la nota simple.
 
 FORMATO DE SALIDA OBLIGATORIO (JSON):
