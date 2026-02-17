@@ -245,13 +245,13 @@ ESTRUCTURA POR CARGA (cada elemento del array):
   "entidad": "Acreedor (banco/organismo) tal cual, limpio de dobles espacios. Si no aparece: 'N/D'.",
   "importe": "Solo número, sin símbolo €, sin separadores de miles, con coma decimal si aparece. Preferir 'principal'/'responsabilidad hipotecaria'. Si hay dudas: 'N/D'.",
   "fechaVencimiento": "Fecha de vencimiento en DD/MM/AAAA. Si no aparece: 'N/D'.",
-  "interesesOrdinarios": "Tal cual aparezca (ej: '3,50%'). Si no aparece: 'N/D'.",
-  "interesesDemora": "Tal cual aparezca (ej: '7,00%'). Si no aparece: 'N/D'.",
+  "interesesOrdinarios": "IMPORTE MÁXIMO garantizado por intereses ordinarios (responsabilidad hipotecaria por intereses ordinarios), NO el tipo de interés (%). Buscar expresiones como 'por intereses ordinarios … la cantidad de …', 'responsabilidad hipotecaria por intereses ordinarios …', 'se garantiza por intereses ordinarios …'. Devolver solo número, sin €, sin separadores de miles, con coma decimal si aparece. Si solo aparece el porcentaje y NO hay importe máximo → 'N/D'.",
+  "interesesDemora": "IMPORTE MÁXIMO garantizado por intereses de demora (responsabilidad hipotecaria por intereses moratorios/demora), NO el tipo de interés (%). Buscar expresiones como 'por intereses de demora … la cantidad de …', 'responsabilidad hipotecaria por intereses moratorios …', 'se garantiza por intereses de demora …'. Devolver solo número, sin €, sin separadores de miles, con coma decimal si aparece. Si solo aparece el porcentaje y NO hay importe máximo → 'N/D'.",
   "costasGastos": "Solo número, sin €, sin separadores de miles. Si no aparece: 'N/D'."
 }
 
 Ejemplo de salida válida:
-[{"numeroInscripcion":"3","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco X, S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"3,50%","interesesDemora":"7,00%","costasGastos":"15000"}]
+[{"numeroInscripcion":"3","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco X, S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"12000","interesesDemora":"6000","costasGastos":"15000"}]
 
 REGLAS ADICIONALES:
 - Incluye TODAS las cargas, no solo la primera.

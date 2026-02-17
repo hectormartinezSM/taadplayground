@@ -306,8 +306,8 @@ const CARGA_FIELD_DEFS: { key: keyof Carga; label: string; format?: (v: string) 
   { key: "entidad", label: "Entidad" },
   { key: "importe", label: "Importe", format: formatEUR },
   { key: "fechaVencimiento", label: "Fecha vencimiento" },
-  { key: "interesesOrdinarios", label: "Int. ordinarios" },
-  { key: "interesesDemora", label: "Int. demora" },
+  { key: "interesesOrdinarios", label: "Int. ordinarios", format: formatEUR },
+  { key: "interesesDemora", label: "Int. demora", format: formatEUR },
   { key: "costasGastos", label: "Costas y gastos", format: formatEUR },
 ]
 
