@@ -87,11 +87,11 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         <CardContent className="p-12">
           <div className="flex flex-col items-center justify-center gap-8 text-center">
             {/* Icon */}
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#F5A623]/10 shadow-sm">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#1E3A6E]/10 shadow-sm">
               {isLoading ? (
-                <Loader2 className="h-12 w-12 animate-spin text-[#F5A623]" />
+                <Loader2 className="h-12 w-12 animate-spin text-[#1E3A6E]" />
               ) : (
-                <Landmark className="h-12 w-12 text-[#F5A623]" />
+                <Landmark className="h-12 w-12 text-[#1E3A6E]" />
               )}
             </div>
 
@@ -143,7 +143,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
             {!isLoading && (
               <Button
                 size="lg"
-                className="shadow-md hover:shadow-lg text-lg px-8 py-6 h-auto bg-[#F5A623] hover:bg-[#D98E0A] text-white"
+                className="shadow-md hover:shadow-lg text-lg px-8 py-6 h-auto bg-[#1E3A6E] hover:bg-[#162D56] text-white"
                 onClick={handleStartDemo}
               >
                 <Play className="h-5 w-5 mr-2" />

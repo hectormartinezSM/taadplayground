@@ -117,9 +117,9 @@ export default function Home() {
               <Image
                 src="/images/design-mode/Logo-hipoges.webp"
                 alt="Hipoges"
-                width={140}
-                height={40}
-                className="h-8 w-auto object-contain"
+                width={112}
+                height={32}
+                className="h-6.5 w-auto object-contain"
                 priority
               />
             </button>
