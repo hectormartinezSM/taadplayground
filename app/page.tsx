@@ -113,8 +113,15 @@ export default function Home() {
                 className="h-8 w-auto object-contain"
                 priority
               />
-              <span className="text-lg font-bold text-foreground/40">X</span>
-              <span className="text-xl font-extrabold tracking-tight text-[#F5A623]">HIPOGES</span>
+              <span className="text-sm font-semibold text-foreground/30 uppercase tracking-wider">x</span>
+              <Image
+                src="/images/design-mode/Logo-hipoges.webp"
+                alt="Hipoges"
+                width={112}
+                height={32}
+                className="h-7 w-auto object-contain"
+                priority
+              />
             </button>
           </div>
         </div>
