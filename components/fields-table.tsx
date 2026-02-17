@@ -345,10 +345,8 @@ function CargasTable({ cargas }: { cargas: Carga[] }) {
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="text-xs font-semibold whitespace-nowrap text-left min-w-[160px]">Campo</TableHead>
-            {cargas.map((carga, idx) => (
-              <TableHead key={idx} className="text-xs font-semibold whitespace-nowrap text-left min-w-[160px]">
-                {getCargaColumnHeader(carga, idx)}
-              </TableHead>
+            {cargas.map((_, idx) => (
+              <TableHead key={idx} className="min-w-[160px]" />
             ))}
           </TableRow>
         </TableHeader>
