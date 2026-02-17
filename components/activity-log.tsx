@@ -17,7 +17,7 @@ const iconMap = {
 
 const colorMap = {
   page_discarded: 'text-orange-600',
-  document_created: 'text-blue-600',
+  document_created: 'text-amber-500',
   document_classified: 'text-purple-600',
   fields_detected: 'text-green-600',
   field_extracted: 'text-teal-600',

@@ -150,13 +150,23 @@ export default function MobileUploadPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b bg-background px-4 py-4">
-        <Image
-          src="/images/design-mode/Serimag_logo_color-1-scaled(1).png"
-          alt="Serimag"
-          width={120}
-          height={40}
-          className="h-10 w-auto object-contain"
-        />
+        <div className="flex items-center gap-3">
+          <Image
+            src="/images/design-mode/Serimag_logo_color-1-scaled(1).png"
+            alt="Serimag"
+            width={120}
+            height={40}
+            className="h-10 w-auto object-contain"
+          />
+          <span className="text-lg font-bold text-foreground">X</span>
+          <Image
+            src="/images/design-mode/Logo-hipoges.webp"
+            alt="Hipoges"
+            width={140}
+            height={40}
+            className="h-10 w-auto object-contain"
+          />
+        </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
@@ -217,7 +227,7 @@ export default function MobileUploadPage() {
                   />
 
                   {isUploading && (
-                    <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-50 text-blue-600 text-sm">
+                    <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-50 text-amber-600 text-sm">
                       <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" />
                       <span>Subiendo documento...</span>
                     </div>

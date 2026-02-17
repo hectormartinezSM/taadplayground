@@ -24,7 +24,7 @@ interface PageGridProps {
 }
 
 const documentColors = [
-  "border-blue-500 bg-blue-50 dark:bg-blue-950/20",
+  "border-amber-500 bg-amber-50 dark:bg-amber-950/20",
   "border-green-500 bg-green-50 dark:bg-green-950/20",
   "border-purple-500 bg-purple-50 dark:bg-purple-950/20",
   "border-orange-500 bg-orange-50 dark:bg-orange-950/20",

@@ -113,10 +113,16 @@ export default function Home() {
                 className="h-8 w-auto object-contain"
                 priority
               />
+              <span className="text-lg font-bold text-foreground">X</span>
+              <Image
+                src="/images/design-mode/Logo-hipoges.webp"
+                alt="Hipoges"
+                width={140}
+                height={40}
+                className="h-8 w-auto object-contain"
+                priority
+              />
             </button>
-            <div className="border-l pl-4">
-              <h1 className="text-2xl font-bold text-foreground">Demo Expediente Activo</h1>
-            </div>
           </div>
         </div>
       </header>
