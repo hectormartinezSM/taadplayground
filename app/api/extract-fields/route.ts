@@ -265,6 +265,23 @@ const MODELO_100_IRPF_FIELD_PROMPTS: Record<string, string> = {
   CSV: "Extrae el Código Seguro de Verificación (CSV) del documento; normaliza eliminando espacios y devolviendo el código en MAYÚSCULAS exactamente como aparece. El CSV suele estar cerca del pie del documento o en la cabecera.",
 }
 
+const ESCRITO_AL_JUZGADO_FIELD_PROMPTS: Record<string, string> = {
+  "Nombre del juzgado":
+    "En el cuerpo del escrito (páginas centrales), extrae el nombre completo del órgano judicial que aparece en el encabezado (p. ej., 'JUZGADO DE …'); reescríbelo en formato legible (por ejemplo 'JUZGADO DE 1ª INST…' → 'Juzgado de Primera Instancia…'), manteniendo localidad si aparece.",
+  "Número de juzgado":
+    "En el cuerpo del escrito, identifica el número del juzgado asociado al órgano judicial (p. ej., 'Juzgado … nº 4'); devuélvelo como un número en formato numérico (sin 'nº', sin ceros a la izquierda).",
+  "Partido judicial":
+    "En el cuerpo del escrito, extrae el partido judicial si aparece explícitamente ('Partido judicial: …' o equivalente); si no está explícito, devuelve 'No informado' (no lo infieras solo por la ciudad).",
+  "Tipo de procedimiento":
+    "En la sección de metadatos LexNET (última página), localiza el campo 'Asunto' y devuelve solo el nombre del procedimiento; elimina cualquier información entre paréntesis y también los paréntesis.",
+  "Nombre del procurador":
+    "En el cuerpo del escrito, extrae el nombre y apellidos del procurador/a que firma o comparece ('Procurador/a de los Tribunales…' o 'en nombre y representación…'); devuelve solo el nombre completo sin prefijos ('D.'/'Dª') ni cargos.",
+  "Fecha de escrito":
+    "En el cuerpo del escrito, extrae la fecha de firma del escrito (normalmente en la fórmula final tipo 'En [ciudad], a [fecha]'); normalízala a formato DD/MM/AAAA.",
+  "Fecha de presentación":
+    "En la sección LexNET (última página), extrae la fecha de presentación/registro de la presentación del escrito (campo equivalente a 'Fecha de presentación/registrado el…'); normalízala a DD/MM/AAAA.",
+}
+
 // Función para detectar si es un documento tipo DNI
 function isDNIDocument(documentType: string): boolean {
   const normalizedType = documentType.toLowerCase().trim()
@@ -317,6 +334,15 @@ function isModelo100IRPFDocument(documentType: string): boolean {
   )
 }
 
+function isEscritoAlJuzgadoDocument(documentType: string): boolean {
+  const normalizedType = documentType.toLowerCase().trim()
+  return (
+    normalizedType.includes("escrito al juzgado") ||
+    normalizedType.includes("escrito judicial") ||
+    normalizedType.includes("escrito procesal")
+  )
+}
+
 async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse | null> {
   const formData = new FormData()
   formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
@@ -363,6 +389,7 @@ export async function POST(request: NextRequest) {
     const isVidaLaboral = isVidaLaboralDocument(documentType)
     const isNotaSimple = isNotaSimpleDocument(documentType)
     const isModelo100IRPF = isModelo100IRPFDocument(documentType)
+    const isEscritoAlJuzgado = isEscritoAlJuzgadoDocument(documentType)
 
     for (const fieldName of fields) {
       if (!fieldName) continue
@@ -407,6 +434,15 @@ export async function POST(request: NextRequest) {
         properties[fieldName] = {
           type: "string",
           description: MODELO_100_IRPF_FIELD_PROMPTS[fieldName],
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isEscritoAlJuzgado && ESCRITO_AL_JUZGADO_FIELD_PROMPTS[fieldName]) {
+        properties[fieldName] = {
+          type: "string",
+          description: ESCRITO_AL_JUZGADO_FIELD_PROMPTS[fieldName],
         }
         required.push(fieldName)
         continue

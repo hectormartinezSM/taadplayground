@@ -54,6 +54,15 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Resultado de la declaración",
     "CSV",
   ],
+  ESCRITO_AL_JUZGADO: [
+    "Nombre del juzgado",
+    "Número de juzgado",
+    "Partido judicial",
+    "Tipo de procedimiento",
+    "Nombre del procurador",
+    "Fecha de escrito",
+    "Fecha de presentación",
+  ],
 }
 
 // Función para detectar si el tipo de documento coincide con alguno predefinido
@@ -108,6 +117,15 @@ function getPredefinedFields(documentType: string): string[] | null {
     normalizedType.includes("renta")
   ) {
     return PREDEFINED_FIELDS["MODELO_100_IRPF"]
+  }
+
+  // Detectar Escrito al juzgado
+  if (
+    normalizedType.includes("escrito al juzgado") ||
+    normalizedType.includes("escrito judicial") ||
+    normalizedType.includes("escrito procesal")
+  ) {
+    return PREDEFINED_FIELDS["ESCRITO_AL_JUZGADO"]
   }
 
   return null
