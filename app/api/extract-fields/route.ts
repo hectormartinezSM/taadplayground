@@ -246,10 +246,10 @@ ESTRUCTURA POR CARGA (cada elemento del array):
   "numeroInscripcion": "Para HIPOTECAS: número de inscripción (ej: '3', '3ª', '14ª'). Para EMBARGOS: la LETRA de la anotación (ej: 'A', 'B', 'C'). Los embargos se identifican con letras, NO con números. Si no aparece: '-'.",
   "fechaInscripcion": "Fecha de inscripción en formato DD/MM/AAAA. Si no aparece: '-'.",
   "tipoCarga": "Solo 'Hipoteca' o 'Embargo'. Si dice 'anotación preventiva de embargo' → 'Embargo'. Un embargo se reconoce porque tiene una LETRA como identificador (ej: 'Anotación preventiva letra A'), mientras que una hipoteca tiene un NÚMERO de inscripción.",
-  "subtipo": "'Nueva constitución' (si solo pone 'hipoteca'/'constituida'), 'Novación', 'Subrogación', 'Cesión' (cesión del crédito), 'Extensión' (ampliación). Si no se puede determinar: '-'.",
+  "subtipo": "VALORES PERMITIDOS (usar EXACTAMENTE uno de estos literales): 'Nueva constitución' (si solo pone 'hipoteca', 'constituida', 'se constituye' o no especifica subtipo), 'Novación, modificación y/o ampliación' (si dice 'novación', 'modificación', 'ampliación' o cualquier combinación), 'Subrogación', 'Cesión' (cesión del crédito hipotecario). NO existe el subtipo 'Extensión'. Si no se puede determinar: '-'.",
   "notario": "Nombre del notario en Title Case, conservando acentos. Si no aparece: '-'.",
   "fechaNotarial": "Fecha de la escritura notarial en DD/MM/AAAA. Si no aparece: '-'.",
-  "entidad": "Acreedor (banco/organismo) tal cual, limpio de dobles espacios. Si no aparece: '-'.",
+  "entidad": "Acreedor (banco/organismo). NORMALIZAR EL NOMBRE: palabras con primera letra en mayúscula y resto en minúscula, preposiciones ('de', 'del', 'la', 'las', 'los', 'el', 'y', 'e') en minúscula, siglas siempre en mayúsculas (S.A., S.L., S.A.U., BBVA, AEAT, TGSS). Ejemplos: 'BANCO SANTANDER S.A.' → 'Banco Santander S.A.', 'CAIXABANK, S.A.' → 'Caixabank S.A.', 'bankinter sa' → 'Bankinter S.A.'. Limpio de dobles espacios. Si no aparece: '-'.",
   "importe": "Solo número, sin símbolo €, sin separadores de miles, con coma decimal si aparece. Preferir 'principal'/'responsabilidad hipotecaria'. Si hay dudas: '-'.",
   "fechaVencimiento": "Fecha de vencimiento en DD/MM/AAAA. Si no aparece: '-'.",
   "interesesOrdinarios": "IMPORTE MÁXIMO garantizado por intereses ordinarios (responsabilidad hipotecaria por intereses ordinarios), NO el tipo de interés (%). Devolver solo número, sin €, sin separadores de miles, con coma decimal si aparece. Si solo aparece el porcentaje y NO hay importe máximo → '-'.",
@@ -258,7 +258,7 @@ ESTRUCTURA POR CARGA (cada elemento del array):
 }
 
 Ejemplo de salida válida:
-[{"numeroInscripcion":"3ª","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco X, S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"12000","interesesDemora":"6000","costasGastos":"15000"},{"numeroInscripcion":"A","fechaInscripcion":"03/05/2021","tipoCarga":"Embargo","subtipo":"-","notario":"-","fechaNotarial":"-","entidad":"AEAT","importe":"25000","fechaVencimiento":"-","interesesOrdinarios":"-","interesesDemora":"-","costasGastos":"-"}]
+[{"numeroInscripcion":"3ª","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco Santander S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"12000","interesesDemora":"6000","costasGastos":"15000"},{"numeroInscripcion":"A","fechaInscripcion":"03/05/2021","tipoCarga":"Embargo","subtipo":"-","notario":"-","fechaNotarial":"-","entidad":"AEAT","importe":"25000","fechaVencimiento":"-","interesesOrdinarios":"-","interesesDemora":"-","costasGastos":"-"}]
 
 REGLAS ADICIONALES:
 - Incluye TODAS las cargas, no solo la primera.
