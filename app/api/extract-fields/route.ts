@@ -278,13 +278,14 @@ Devuelve EXACTAMENTE un array JSON con objetos que contengan: titular, dni, tipo
 
 REGLAS DE NORMALIZACIÓN (OBLIGATORIAS):
 - titular: Nombre completo en formato legible (Title Case), sin dobles espacios.
+  - ELIMINAR prefijos honoríficos del inicio del nombre: "Don", "Doña", "D.", "Dª", "Señor", "Señora", "Sr.", "Sra.". Ejemplo: "DON JUAN PÉREZ GARCÍA" → "Juan Pérez García", "DOÑA MARÍA LÓPEZ" → "María López".
   - Si viene en formato "APELLIDOS, NOMBRE" o todo mayúsculas, normaliza a "Nombre Apellidos".
   - Conserva acentos.
   - Las conjunciones y preposiciones (y, de, del, la, las, los, el) van SIEMPRE en MINÚSCULAS.
   - Ejemplos:
-    - "JUAN GARCIA Y LOPEZ" → "Juan García y López"
-    - "MARIA DE LA FUENTE" → "María de la Fuente"
-    - "PEDRO DEL CASTILLO" → "Pedro del Castillo"
+    - "DON JUAN GARCIA Y LOPEZ" → "Juan García y López"
+    - "DOÑA MARIA DE LA FUENTE" → "María de la Fuente"
+    - "D. PEDRO DEL CASTILLO" → "Pedro del Castillo"
 - dni: Sin espacios ni guiones, en MAYÚSCULAS. Si no aparece, pon "N/D".
 - tipoDerecho: Tipo de derecho tal cual aparezca (pleno dominio, nuda propiedad, usufructo, etc.), solo limpiando espacios sobrantes.
   - participacion: Exactamente como aparezca en el documento (1/2, 50%, 100%, etc.), sin recalcular ni modificar. EXCEPCIÓN: si dice "plena propiedad" o "pleno dominio" sin indicar porcentaje ni fracción, normalizar a "100%".
