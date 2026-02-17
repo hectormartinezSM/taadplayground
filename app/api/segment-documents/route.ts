@@ -72,10 +72,14 @@ Criterios de segmentación:
 - Coherencia visual: mismo formato, estructura o entidad emisora
 - Referencias cruzadas: números de página, continuación de tablas, etc.
 
+REGLA OBLIGATORIA – Escritos judiciales:
+Las páginas de portada de documentos judiciales (encabezamientos con "JUZGADO DE...", "Procedimiento...", etc.) y las páginas de metadatos o justificantes de presentación telemática (por ejemplo, páginas de LexNET con campos como "Fecha de presentación", "Tipo de escrito", "Asunto", código CSV, etc.) NO deben segmentarse como documentos independientes. Todo el conjunto (portada + cuerpo del escrito + páginas de registro/LexNET) debe tratarse como UN ÚNICO documento, manteniendo la continuidad estructural. La segmentación solo se realizará si existe una separación material clara entre documentos verdaderamente distintos (por ejemplo, anexos independientes con identidad documental propia, como un DNI adjunto o una escritura separada).
+
 Ejemplos:
 - Si páginas 1-3 son una factura completa y 4-5 son un contrato: [{"start_page": 1, "end_page": 3}, {"start_page": 4, "end_page": 5}]
 - Si todas las páginas forman un único documento: [{"start_page": 1, "end_page": ${markdowns.length}}]
-- Si cada página es un documento diferente: [{"start_page": 1, "end_page": 1}, {"start_page": 2, "end_page": 2}, ...]`,
+- Si cada página es un documento diferente: [{"start_page": 1, "end_page": 1}, {"start_page": 2, "end_page": 2}, ...]
+- Si páginas 1-4 son un escrito al juzgado (portada + cuerpo + LexNET): [{"start_page": 1, "end_page": 4}] (NUNCA separar la portada ni LexNET del cuerpo)`,
           items: {
             properties: {
               start_page: {
