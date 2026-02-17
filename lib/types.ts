@@ -37,8 +37,9 @@ export interface Document {
 export interface ActivityLogEntry {
   id: string
   timestamp: Date
-  type: "page_discarded" | "document_created" | "document_classified" | "fields_detected" | "field_extracted"
+  type: "page_discarded" | "document_created" | "document_classified" | "fields_detected" | "field_extracted" | "info" | "success" | "error"
   message: string
+  details?: string
 }
 
 export type WorkflowStep =
