@@ -162,9 +162,9 @@ export default function MobileUploadPage() {
           <Image
             src="/images/design-mode/Logo-hipoges.webp"
             alt="Hipoges"
-            width={112}
-            height={32}
-            className="h-8 w-auto object-contain"
+            width={101}
+            height={29}
+            className="h-[1.8rem] w-auto object-contain"
           />
         </div>
       </header>
