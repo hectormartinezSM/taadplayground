@@ -261,12 +261,8 @@ ESTRUCTURA POR CARGA (cada elemento del array):
 Ejemplo de salida válida:
 [{"numeroInscripcion":"3ª","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco Santander S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"12000","interesesDemora":"6000","costasGastos":"15000"},{"numeroInscripcion":"A","fechaInscripcion":"03/05/2021","tipoCarga":"Embargo","subtipo":"-","notario":"-","fechaNotarial":"-","entidad":"AEAT","importe":"25000","fechaVencimiento":"-","interesesOrdinarios":"-","interesesDemora":"-","costasGastos":"-"}]
 
-REGLAS DE EXCLUSIÓN (obligatorias):
-- NO incluir cargas que aparezcan en la sección de PROCEDENCIA (finca de origen, transmisiones anteriores, títulos previos). Solo extraer cargas vigentes de la sección de CARGAS/GRAVÁMENES.
-- NO incluir embargos si no puedes extraer la LETRA de la anotación preventiva (ej: 'A', 'B', 'C'). Si un embargo no tiene letra identificable, OMÍTELO del array.
-
 REGLAS ADICIONALES:
-- Incluye TODAS las cargas que cumplan las reglas anteriores, no solo la primera.
+- Incluye TODAS las cargas, no solo la primera.
 - Mantén el orden en que aparecen en el documento.
 - NO añadas texto adicional, SOLO el JSON.`,
   Titularidades: `Extrae los titulares que figuran en la nota simple.
