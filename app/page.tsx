@@ -6,7 +6,7 @@ import { WorkflowTimeline } from "@/components/workflow-timeline"
 import { PageGrid } from "@/components/page-grid"
 import { DocumentList } from "@/components/document-list"
 import { ActivityLog } from "@/components/activity-log"
-import type { Page, Document, ActivityLogEntry, WorkflowStep, SegmentationStatus } from "@/lib/types"
+import type { Page, Document, ActivityLogEntry, WorkflowStep, SegmentationStatus, UseCase } from "@/lib/types"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
@@ -25,6 +25,7 @@ export default function Home() {
     documentsGenerated: 0,
     processingDocuments: false,
   })
+  const [activeUseCase, setActiveUseCase] = useState<UseCase>("legal")
   const [canScrollUp, setCanScrollUp] = useState(false)
   const [canScrollDown, setCanScrollDown] = useState(false)
 
@@ -38,11 +39,13 @@ export default function Home() {
     setRightSidebarOpen(false)
     setProcessedPages(0)
     setSegmentationStatus({ isSegmenting: false, documentsGenerated: 0, processingDocuments: false })
+    setActiveUseCase("legal")
     setCanScrollUp(false)
     setCanScrollDown(false)
   }
 
-  const handleFileUpload = (uploadedPages: Page[]) => {
+  const handleFileUpload = (uploadedPages: Page[], useCase: UseCase) => {
+    setActiveUseCase(useCase)
     setPages(uploadedPages)
     setDocuments([])
     setActivityLog([])
@@ -194,6 +197,7 @@ export default function Home() {
                 processedPages={processedPages}
                 setProcessedPages={setProcessedPages}
                 setSegmentationStatus={setSegmentationStatus}
+                activeUseCase={activeUseCase}
               />
 
               {documents.length > 0 && (

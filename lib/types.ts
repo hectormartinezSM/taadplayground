@@ -1,5 +1,7 @@
 // Types for the document processing workflow
 
+export type UseCase = "legal" | "pagos"
+
 export type PageStatus = "processing" | "blank" | "included" | "discarded"
 
 export interface Page {
@@ -30,6 +32,7 @@ export interface Document {
   pageIds: string[]
   status: "creating" | "classifying" | "extracting" | "complete"
   documentType?: DocumentType
+  catalogValid?: boolean
   fields?: Field[]
   extractedData?: Record<string, ExtractedField>
 }

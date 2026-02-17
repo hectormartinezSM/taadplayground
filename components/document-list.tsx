@@ -217,17 +217,30 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                       <FileText className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-semibold">
-                        Documento {index + 1}
-                        {doc.documentType && ` - ${doc.documentType.type}`}
-                      </CardTitle>
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <CardTitle className="text-lg font-semibold">
+                          Documento {index + 1}
+                          {doc.documentType && ` - ${doc.documentType.type}`}
+                        </CardTitle>
+                        {doc.documentType && doc.catalogValid === true && (
+                          <span className="inline-flex items-center rounded-md bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-green-600/20">
+                            Tipologia valida
+                          </span>
+                        )}
+                        {doc.documentType && doc.catalogValid === false && (
+                          <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700 ring-1 ring-yellow-600/20">
+                            Tipo documental fuera del catalogo actual del proceso
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {docPages.length} {docPages.length === 1 ? "página" : "páginas"}
+                        {doc.catalogValid === false && " · Extraccion no ejecutada"}
                       </p>
                     </div>
                   </div>
 
-                  {doc.status === "complete" && (
+                  {doc.status === "complete" && doc.catalogValid !== false && (
                     <div className="flex gap-2">
                       <Button
                         variant="outline"

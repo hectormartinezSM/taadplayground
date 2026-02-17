@@ -49,7 +49,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         await new Promise((resolve) => setTimeout(resolve, 500))
 
         updateWorkflowStep("blank_detection")
-        onFileUpload(pages)
+        onFileUpload(pages, "legal")
         setIsLoading(false)
       } catch (err) {
         console.error("[v0] Error processing file:", err)
@@ -106,7 +106,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
       await new Promise((resolve) => setTimeout(resolve, 500))
 
       updateWorkflowStep("blank_detection")
-      onFileUpload(pages)
+      onFileUpload(pages, "legal")
       setIsLoading(false)
     } catch (err) {
       console.error("[v0] Error starting demo:", err)

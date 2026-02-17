@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import type { Page, Document, ExtractedField, SegmentationProgress, SegmentationStatus } from "@/lib/types"
+import type { Page, Document, ExtractedField, SegmentationProgress, SegmentationStatus, UseCase } from "@/lib/types"
 import { mockGetRelevantFields } from "@/lib/mock-api"
+import { isTypeValidForUseCase } from "@/lib/use-case-catalog"
 import { FileX, CheckCircle2 } from "lucide-react"
 import { ImageViewer } from "./image-viewer"
 
@@ -21,6 +22,7 @@ interface PageGridProps {
   processedPages: number
   setProcessedPages: (count: number) => void
   setSegmentationStatus: (status: SegmentationStatus) => void
+  activeUseCase: UseCase
 }
 
 const documentColors = [
@@ -43,6 +45,7 @@ export function PageGrid({
   processedPages,
   setProcessedPages,
   setSegmentationStatus,
+  activeUseCase,
 }: PageGridProps) {
   const processingStarted = useRef(false)
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -287,7 +290,7 @@ export function PageGrid({
           // Get the pages for this document
           const docPages = docPageIndices.map((idx) => pages[idx]).filter(Boolean)
 
-          return processDocument(doc, docPages, newDocuments, updateDocuments, addActivityLog, markdownResults.current)
+          return processDocument(doc, docPages, newDocuments, updateDocuments, addActivityLog, markdownResults.current, activeUseCase)
         })
 
         // Wait for all documents to be processed
@@ -322,6 +325,7 @@ export function PageGrid({
     updateDocs: (docs: Document[]) => void,
     log: (entry: { type: string; message: string }) => void,
     markdownsMap: Map<number, { markdown: string; isBlank: boolean }>,
+    useCase: UseCase,
   ) => {
     if (!doc || !doc.id) {
       console.error("[v0] Invalid document passed to processDocument:", doc)
@@ -407,6 +411,37 @@ export function PageGrid({
 
     await new Promise((resolve) => setTimeout(resolve, 400))
 
+    // Validate classified type against the active use-case catalog
+    const isValid = isTypeValidForUseCase(documentType.type, useCase)
+    allDocs[docIndex] = {
+      ...allDocs[docIndex],
+      catalogValid: isValid,
+    }
+    updateDocs([...allDocs])
+
+    if (isValid) {
+      log({
+        type: "document_classified",
+        message: `Documento ${docIndex + 1}: Tipologia valida - se procede con extraccion`,
+      })
+    } else {
+      log({
+        type: "document_classified",
+        message: `Documento ${docIndex + 1}: Tipo documental fuera del catalogo actual del proceso`,
+      })
+
+      // Mark as complete without extraction
+      allDocs[docIndex] = {
+        ...allDocs[docIndex],
+        status: "complete",
+      }
+      updateDocs([...allDocs])
+
+      console.log("[v0] Document", docIndex + 1, "not in catalog, skipping extraction")
+      return
+    }
+
+    // Only proceed with extraction if the type is valid
     const fields = await mockGetRelevantFields(documentType.type, combinedMarkdown)
     allDocs[docIndex] = {
       ...allDocs[docIndex],
