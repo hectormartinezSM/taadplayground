@@ -231,24 +231,29 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
             </div>
 
             {/* Section header */}
-            <div className="w-full">
-              <h3 className="text-base font-semibold text-foreground">Casos de uso</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Selecciona un caso de uso y arrastra documentos para empezar
+            <div className="w-full mt-2">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="inline-flex items-center rounded-md bg-[#1E3A6E]/8 px-3 py-1 text-xs font-semibold text-[#1E3A6E] ring-1 ring-[#1E3A6E]/15">
+                  Casos de uso
+                </span>
+                <div className="flex-1 border-t border-border/30" />
+              </div>
+              <p className="text-xs text-muted-foreground/70 mb-5">
+                Arrastra documentos sobre un caso para empezar
               </p>
             </div>
 
             {/* Two dropzone cards */}
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Legal Card - ACTIVE dropzone */}
               <div
                 role="button"
                 tabIndex={0}
                 aria-label="Caso de uso Legal. Arrastra documentos o haz clic para seleccionar archivos."
-                className={`group relative rounded-xl border-2 border-dashed min-h-[240px] p-7 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5A623] focus-visible:ring-offset-2 ${
+                className={`group relative rounded-xl border-2 border-dashed min-h-[220px] p-8 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5A623] focus-visible:ring-offset-2 ${
                   isDraggingLegal
-                    ? "border-[#F5A623] bg-[#F5A623]/8 shadow-lg ring-2 ring-[#F5A623]/25"
-                    : "border-border/60 bg-background hover:border-[#F5A623]/40 hover:bg-[#F5A623]/[0.03] hover:shadow-sm"
+                    ? "border-[#F5A623] bg-[#F5A623]/10 shadow-lg ring-2 ring-[#F5A623]/20 scale-[1.01]"
+                    : "border-border/50 bg-[#F5A623]/[0.02] hover:border-[#F5A623]/50 hover:bg-[#F5A623]/5 hover:shadow-md hover:ring-2 hover:ring-[#F5A623]/10"
                 } ${isLoading ? "pointer-events-none opacity-60" : ""}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -256,38 +261,38 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                 onClick={handleLegalClick}
                 onKeyDown={handleKeyDown}
               >
-                <div className="flex flex-col items-center justify-center gap-4 text-center h-full">
+                <div className="flex flex-col items-center justify-center gap-5 text-center h-full">
                   <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200 ${
-                      isDraggingLegal ? "bg-[#F5A623]/20" : "bg-[#1E3A6E]/8 group-hover:bg-[#F5A623]/10"
+                    className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
+                      isDraggingLegal ? "bg-[#F5A623]/20" : "bg-[#1E3A6E]/10 group-hover:bg-[#F5A623]/15"
                     }`}
                   >
                     {isLoading ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-[#F5A623]" />
+                      <Loader2 className="h-7 w-7 animate-spin text-[#F5A623]" />
                     ) : (
                       <Gavel
-                        className={`h-6 w-6 transition-colors duration-200 ${
+                        className={`h-7 w-7 transition-colors duration-200 ${
                           isDraggingLegal ? "text-[#F5A623]" : "text-[#1E3A6E] group-hover:text-[#F5A623]"
                         }`}
                       />
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-foreground">Legal</h3>
+                  <h3 className="text-xl font-bold text-foreground">Legal</h3>
 
-                  {/* Document chips */}
-                  <div className="flex flex-wrap items-center justify-center gap-1.5">
-                    <span className="inline-flex rounded-full bg-[#1E3A6E]/6 px-2.5 py-0.5 text-xs font-medium text-[#1E3A6E]">Escrito al juzgado</span>
-                    <span className="inline-flex rounded-full bg-[#1E3A6E]/6 px-2.5 py-0.5 text-xs font-medium text-[#1E3A6E]">Diligencia de ordenacion</span>
-                    <span className="inline-flex rounded-full bg-[#1E3A6E]/6 px-2.5 py-0.5 text-xs font-medium text-[#1E3A6E]">Nota simple</span>
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-medium text-muted-foreground">Documentos admitidos:</p>
+                    <p className="text-sm text-muted-foreground/80 leading-relaxed">
+                      Escrito al juzgado, Diligencia de ordenacion y Nota simple
+                    </p>
                   </div>
 
                   <div
-                    className={`flex items-center gap-2 text-xs font-medium transition-colors duration-200 mt-auto pt-2 ${
-                      isDraggingLegal ? "text-[#F5A623]" : "text-muted-foreground/50 group-hover:text-[#F5A623]/80"
+                    className={`flex items-center gap-2 text-xs font-medium transition-colors duration-200 mt-auto ${
+                      isDraggingLegal ? "text-[#F5A623]" : "text-muted-foreground/60 group-hover:text-[#F5A623]/70"
                     }`}
                   >
-                    <Upload className="h-3.5 w-3.5" />
+                    <Upload className="h-4 w-4" />
                     <span>{isDraggingLegal ? "Suelta para iniciar" : "Arrastra archivos o haz clic"}</span>
                   </div>
                 </div>
@@ -297,30 +302,31 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
               <div
                 aria-disabled="true"
                 aria-label="Caso de uso Pagos. Proximamente."
-                className="relative rounded-xl border-2 border-dashed border-border/40 bg-muted/10 min-h-[240px] p-7 cursor-not-allowed select-none pointer-events-none"
+                className="relative rounded-xl border-2 border-dashed border-border/30 bg-muted/15 min-h-[220px] p-8 opacity-50 cursor-not-allowed select-none pointer-events-none"
               >
-                <div className="flex flex-col items-center justify-center gap-4 text-center h-full">
+                <div className="flex flex-col items-center justify-center gap-5 text-center h-full">
                   {/* Proximamente pill */}
-                  <div className="absolute top-3.5 right-3.5">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground/70">
+                  <div className="absolute top-4 right-4">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
                       <Lock className="h-3 w-3" />
                       Proximamente
                     </span>
                   </div>
 
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/40">
-                    <CreditCard className="h-6 w-6 text-muted-foreground/40" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/50">
+                    <CreditCard className="h-7 w-7 text-muted-foreground/50" />
                   </div>
 
-                  <h3 className="text-lg font-bold text-muted-foreground/50">Pagos</h3>
+                  <h3 className="text-xl font-bold text-muted-foreground/70">Pagos</h3>
 
-                  {/* Document chips - disabled style */}
-                  <div className="flex flex-wrap items-center justify-center gap-1.5">
-                    <span className="inline-flex rounded-full bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground/40">Facturas proveedores</span>
-                    <span className="inline-flex rounded-full bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground/40">Impuestos</span>
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-medium text-muted-foreground/60">Documentos admitidos:</p>
+                    <p className="text-sm text-muted-foreground/50 leading-relaxed">
+                      Facturas proveedores e Impuestos
+                    </p>
                   </div>
 
-                  <p className="text-xs text-muted-foreground/40 mt-auto pt-2">
+                  <p className="text-xs text-muted-foreground/40 mt-auto">
                     Disponible en la siguiente fase
                   </p>
                 </div>
