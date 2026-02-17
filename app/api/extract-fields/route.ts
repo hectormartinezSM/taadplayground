@@ -237,7 +237,8 @@ Delimitadores de corte (en orden de prioridad):
 REGLA DE ORO: Cada vez que el texto describa una operacion con una entidad, un importe principal, un notario y una fecha PROPIOS, es una carga separada. Si dos operaciones comparten el mismo bloque de texto sin separacion clara PERO tienen entidades o importes distintos, SON cargas distintas. En caso de duda, SEPARA.
 
 PASO 2 – EXTRACCIÓN POR BLOQUE:
-Extrae campo-a-campo sobre CADA bloque por separado. NUNCA mezcles datos de bloques distintos. Si un campo no aparece en un bloque concreto, pon "-" para ese bloque (no lo tomes de otro bloque).
+Extrae campo-a-campo sobre CADA bloque por separado.
+PROHIBICIÓN ABSOLUTA DE ARRASTRE: Cada carga es COMPLETAMENTE INDEPENDIENTE. Antes de extraer cada carga, reinicia TODOS los campos a "-". Solo rellena un campo si el texto de ESE bloque concreto lo menciona EXPLÍCITAMENTE. Si el texto de la nota simple no repite un dato en la carga actual (porque es el mismo que la anterior), NO lo copies de la carga anterior: pon "-". Que dos cargas compartan notario, entidad o fecha en la realidad NO significa que debas copiar esos datos; si no están escritos en el bloque actual, el valor es "-".
 
 FORMATO DE SALIDA OBLIGATORIO:
 Devuelve EXACTAMENTE un array JSON. Si no hay cargas (o consta "libre de cargas"/"sin cargas"), devuelve [] (array vacío). Sin texto adicional, SOLO JSON.
@@ -286,7 +287,7 @@ REGLAS DE NORMALIZACIÓN (OBLIGATORIAS):
     - "PEDRO DEL CASTILLO" → "Pedro del Castillo"
 - dni: Sin espacios ni guiones, en MAYÚSCULAS. Si no aparece, pon "N/D".
 - tipoDerecho: Tipo de derecho tal cual aparezca (pleno dominio, nuda propiedad, usufructo, etc.), solo limpiando espacios sobrantes.
-- participacion: Exactamente como aparezca en el documento (1/2, 50%, 100%, etc.), sin recalcular ni modificar.
+  - participacion: Exactamente como aparezca en el documento (1/2, 50%, 100%, etc.), sin recalcular ni modificar. EXCEPCIÓN: si dice "plena propiedad" o "pleno dominio" sin indicar porcentaje ni fracción, normalizar a "100%".
 
 Reglas adicionales:
 - Mantén el orden en que aparecen en el documento.
