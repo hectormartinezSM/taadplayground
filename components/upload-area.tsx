@@ -232,8 +232,8 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
 
             {/* Section header */}
             <div className="w-full mt-2">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="inline-flex items-center rounded-md bg-[#1E3A6E]/8 px-3 py-1 text-xs font-semibold text-[#1E3A6E] ring-1 ring-[#1E3A6E]/15">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="inline-flex items-center rounded-md bg-[#1E3A6E]/8 px-3 py-1 text-sm font-semibold text-[#1E3A6E] ring-1 ring-[#1E3A6E]/15">
                   Casos de uso
                 </span>
                 <div className="flex-1 border-t border-border/30" />
