@@ -237,7 +237,8 @@ Delimitadores de corte (en orden de prioridad):
 REGLA DE ORO: Cada vez que el texto describa una operacion con una entidad, un importe principal, un notario y una fecha PROPIOS, es una carga separada. Si dos operaciones comparten el mismo bloque de texto sin separacion clara PERO tienen entidades o importes distintos, SON cargas distintas. En caso de duda, SEPARA.
 
 PASO 2 – EXTRACCIÓN POR BLOQUE:
-Extrae campo-a-campo sobre CADA bloque por separado. NUNCA mezcles datos de bloques distintos. Si un campo no aparece en un bloque concreto, pon "-" para ese bloque (no lo tomes de otro bloque).
+Extrae campo-a-campo sobre CADA bloque por separado.
+PROHIBICIÓN ABSOLUTA DE ARRASTRE: NUNCA copies un valor de una carga anterior a la siguiente. Cada carga es INDEPENDIENTE. Si un campo (notario, entidad, importe, fecha, etc.) NO aparece EXPLÍCITAMENTE en el texto del bloque que estás procesando, el valor es "-". NO HEREDES, NO ASUMAS, NO REUTILICES valores de bloques anteriores. Cada bloque empieza con todos los campos en blanco ("-") y solo se rellenan si el texto de ESE bloque concreto los menciona.
 
 FORMATO DE SALIDA OBLIGATORIO:
 Devuelve EXACTAMENTE un array JSON. Si no hay cargas (o consta "libre de cargas"/"sin cargas"), devuelve [] (array vacío). Sin texto adicional, SOLO JSON.
