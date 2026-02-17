@@ -267,9 +267,9 @@ const MODELO_100_IRPF_FIELD_PROMPTS: Record<string, string> = {
 
 const ESCRITO_AL_JUZGADO_FIELD_PROMPTS: Record<string, string> = {
   "Nombre del juzgado":
-    "En el cuerpo del escrito (páginas centrales), extrae el nombre completo del órgano judicial que aparece en el encabezado (p. ej., 'JUZGADO DE …'); reescríbelo en formato legible (por ejemplo 'JUZGADO DE 1ª INST…' → 'Juzgado de Primera Instancia…'), manteniendo localidad si aparece.",
+    "PRIORIDAD DE FUENTES (obligatorio seguir este orden): 1.º Cuerpo principal del escrito (páginas centrales): busca el encabezado del órgano judicial (p. ej., 'JUZGADO DE …', 'AL JUZGADO DE …'). Esta es la fuente preferente y debe usarse siempre que esté disponible y sea legible. 2.º Solo si la información NO aparece en el cuerpo del escrito o no es legible, recurre a la portada o a la sección de metadatos de presentación (LexNET). Extrae el nombre completo del órgano judicial; reescríbelo en formato legible (por ejemplo 'JUZGADO DE 1ª INST…' → 'Juzgado de Primera Instancia…'), manteniendo localidad si aparece.",
   "Número de juzgado":
-    "En el cuerpo del escrito, identifica el número del juzgado asociado al órgano judicial (p. ej., 'Juzgado … nº 4'); devuélvelo como un número en formato numérico (sin 'nº', sin ceros a la izquierda).",
+    "PRIORIDAD DE FUENTES (obligatorio seguir este orden): 1.º Cuerpo principal del escrito (páginas centrales): busca el número del juzgado en el encabezado del órgano judicial (p. ej., 'Juzgado … nº 4'). Esta es la fuente preferente y debe usarse siempre que esté disponible y sea legible. 2.º Solo si la información NO aparece en el cuerpo del escrito o no es legible, recurre a la portada o a la sección de metadatos de presentación (LexNET). Devuélvelo como un número en formato numérico (sin 'nº', sin ceros a la izquierda).",
   "Partido judicial":
     "En el cuerpo del escrito, extrae el partido judicial si aparece explícitamente ('Partido judicial: …' o equivalente); si no está explícito, devuelve 'No informado' (no lo infieras solo por la ciudad).",
   "Tipo de procedimiento":
