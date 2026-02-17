@@ -44,6 +44,21 @@ interface Devengo {
   importe: string
 }
 
+interface Carga {
+  numeroInscripcion: string
+  fechaInscripcion: string
+  tipoCarga: string
+  subtipo: string
+  notario: string
+  fechaNotarial: string
+  entidad: string
+  importe: string
+  fechaVencimiento: string
+  interesesOrdinarios: string
+  interesesDemora: string
+  costasGastos: string
+}
+
 function parseSituaciones(value: string): Situacion[] | null {
   try {
     // Try to parse as JSON
@@ -135,6 +150,22 @@ function parseDevengos(value: string): Devengo[] | null {
         }
       })
     }
+  }
+  return null
+}
+
+function parseCargas(value: string): Carga[] | null {
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed)) {
+      // Empty array means "sin cargas"
+      if (parsed.length === 0) return []
+      if (parsed[0].tipoCarga || parsed[0].entidad || parsed[0].numeroInscripcion) {
+        return parsed
+      }
+    }
+  } catch {
+    // Not JSON, ignore
   }
   return null
 }
@@ -249,6 +280,61 @@ function DevengosTable({ devengos }: { devengos: Devengo[] }) {
   )
 }
 
+function CargasTable({ cargas }: { cargas: Carga[] }) {
+  if (cargas.length === 0) {
+    return (
+      <div className="rounded-md border border-border p-4 text-sm text-muted-foreground text-center">
+        Sin cargas
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-md border border-border overflow-x-auto">
+      <Table className="min-w-[1200px]">
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-left">N. Inscripcion</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-left">Fecha Inscripcion</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-left">Tipo de carga</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-left">Subtipo</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-left">Notario</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-left">Fecha notarial</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-left">Entidad</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Importe</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-left">Fecha vencimiento</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Int. ordinarios</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Int. demora</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Costas y gastos</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {cargas.map((carga, idx) => (
+            <TableRow key={idx}>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{carga.numeroInscripcion || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{carga.fechaInscripcion || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{carga.tipoCarga || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{carga.subtipo || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{carga.notario || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{carga.fechaNotarial || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{carga.entidad || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap text-right">
+                {carga.importe && carga.importe !== "N/D" ? `${carga.importe} \u20AC` : "N/D"}
+              </TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{carga.fechaVencimiento || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap text-right">{carga.interesesOrdinarios || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap text-right">{carga.interesesDemora || "N/D"}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap text-right">
+                {carga.costasGastos && carga.costasGastos !== "N/D" ? `${carga.costasGastos} \u20AC` : "N/D"}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
 export function FieldsTable({
   fields,
   extractedData,
@@ -315,6 +401,13 @@ export function FieldsTable({
       }
     }
 
+    if (fieldName.toLowerCase() === "cargas") {
+      const cargas = parseCargas(extracted.value)
+      if (cargas !== null) {
+        return <CargasTable cargas={cargas} />
+      }
+    }
+
     return <span className="animate-in fade-in duration-300">{extracted.value}</span>
   }
 
@@ -337,7 +430,8 @@ export function FieldsTable({
             const isRetenciones =
               field.name.toLowerCase() === "retenciones" && extracted && parseRetenciones(extracted.value)
             const isDevengos = field.name.toLowerCase() === "devengos" && extracted && parseDevengos(extracted.value)
-            const isTableField = isSituaciones || isTitularidades || isRetenciones || isDevengos
+            const isCargas = field.name.toLowerCase() === "cargas" && extracted && parseCargas(extracted.value) !== null
+            const isTableField = isSituaciones || isTitularidades || isRetenciones || isDevengos || isCargas
 
             return (
               <TableRow key={field.name}>

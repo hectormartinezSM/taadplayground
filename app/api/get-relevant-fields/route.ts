@@ -42,8 +42,8 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "CRU",
     "Superficie total",
     "¿Es VPO?",
-    "Cargas",
     "Titularidades",
+    "Cargas",
   ],
   MODELO_100_IRPF: [
     "Nombre completo",
