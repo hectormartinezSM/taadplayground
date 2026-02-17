@@ -222,14 +222,21 @@ Ejemplos:
     "Determina si el inmueble está calificado como VPO/Vivienda de Protección Oficial (o equivalentes: VPPL, VPP, protección pública); normaliza a 'Sí' si aparece cualquier mención de calificación/protección y a 'No' si se indica explícitamente que no lo es o no existe ninguna mención (no inventar).",
   Cargas: `Extrae TODAS las cargas y gravámenes que figuren en la nota simple (hipotecas, embargos, anotaciones preventivas, condiciones resolutorias, servidumbres, afecciones, etc.).
 
-PASO 1 – SEGMENTACIÓN EN BLOQUES (obligatorio antes de extraer):
-Localiza la sección de CARGAS / GRAVÁMENES / LIMITACIONES en el documento. Divide esa sección en bloques individuales, uno por cada carga distinta. Reglas de corte:
-- Corta cuando encuentres: "Inscripción" + ordinal/número (ej: "14ª", "3ª", "Inscripción 5"), o "Anotación preventiva" + letra (ej: "Letra A"), o una línea con "HIPOTECA" / "EMBARGO" que inicia un nuevo asiento.
-- Si no hay delimitadores claros, usa saltos de párrafo y patrones ("A favor de…", "Constituida…", "Se constituye…") para detectar cambios.
-- Prioriza NO mezclar datos de cargas distintas: si dudas, separa más antes que menos.
+PASO 1 – SEGMENTACIÓN EN BLOQUES (OBLIGATORIO antes de extraer):
+Localiza la sección de CARGAS / GRAVÁMENES / LIMITACIONES. Cada ASIENTO REGISTRAL es una carga independiente.
+
+Delimitadores de corte (en orden de prioridad):
+1. "Inscripción" / "Inscripcion" seguido de ordinal o número (ej: "Inscripción 14ª", "Inscripción 3", "14ª.-")
+2. "Anotación preventiva" seguido de letra (ej: "Anotación preventiva letra A")
+3. Cambio de TIPO de carga: si pasa de hipoteca a embargo o viceversa, es otra carga
+4. Cambio de ENTIDAD acreedora: si el texto dice "A favor de [ENTIDAD_A]" y más adelante "A favor de [ENTIDAD_B]", son cargas distintas
+5. Cambio de NOTARIO o ESCRITURA: si aparece una nueva referencia notarial ("otorgada ante el Notario...") distinta de la anterior
+6. Patrones de inicio de asiento: "Se constituye...", "Constituida mediante...", "Hipoteca a favor de...", "Embargo a favor de..."
+
+REGLA DE ORO: Cada vez que el texto describa una operacion con una entidad, un importe principal, un notario y una fecha PROPIOS, es una carga separada. Si dos operaciones comparten el mismo bloque de texto sin separacion clara PERO tienen entidades o importes distintos, SON cargas distintas. En caso de duda, SEPARA.
 
 PASO 2 – EXTRACCIÓN POR BLOQUE:
-Aplica la extracción campo-a-campo sobre CADA bloque individual, no sobre toda la sección junta. Esto evita mezclar datos de hipotecas distintas.
+Extrae campo-a-campo sobre CADA bloque por separado. NUNCA mezcles datos de bloques distintos. Si un campo no aparece en un bloque concreto, pon "N/D" para ese bloque (no lo tomes de otro bloque).
 
 FORMATO DE SALIDA OBLIGATORIO:
 Devuelve EXACTAMENTE un array JSON. Si no hay cargas (o consta "libre de cargas"/"sin cargas"), devuelve [] (array vacío). Sin texto adicional, SOLO JSON.
