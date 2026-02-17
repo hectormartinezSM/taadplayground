@@ -17,49 +17,58 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
   const [isDraggingLegal, setIsDraggingLegal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const processFile = useCallback(
-    async (file: File) => {
+  const processFiles = useCallback(
+    async (files: File[]) => {
       setIsLoading(true)
       setError(null)
       updateWorkflowStep("splitting")
 
+      const fileNames = files.map((f) => f.name).join(", ")
       addActivityLog({
         type: "info",
-        message: "Iniciando procesamiento...",
-        details: `Cargando documento: ${file.name}`,
+        message: files.length === 1 ? "Iniciando procesamiento..." : `Procesando ${files.length} documentos...`,
+        details: `Cargando: ${fileNames}`,
       })
 
       try {
-        const pageImages = await extractPagesFromPDF(file)
+        const allPages: Page[] = []
+        let globalIndex = 0
 
-        const pages: Page[] = pageImages.map((imageUrl, index) => ({
-          id: `page-${index}`,
-          index,
-          imageUrl,
-          status: "processing",
-          isBlank: false,
-        }))
+        for (const file of files) {
+          const pageImages = await extractPagesFromPDF(file)
+
+          for (const imageUrl of pageImages) {
+            allPages.push({
+              id: `page-${globalIndex}`,
+              index: globalIndex,
+              imageUrl,
+              status: "processing",
+              isBlank: false,
+            })
+            globalIndex++
+          }
+        }
 
         addActivityLog({
           type: "success",
-          message: "Documento cargado correctamente",
-          details: `Extraídas ${pages.length} páginas`,
+          message: files.length === 1 ? "Documento cargado correctamente" : `${files.length} documentos cargados correctamente`,
+          details: `Extraidas ${allPages.length} paginas en total`,
         })
 
         await new Promise((resolve) => setTimeout(resolve, 500))
 
         updateWorkflowStep("blank_detection")
-        onFileUpload(pages, "legal")
+        onFileUpload(allPages, "legal")
         setIsLoading(false)
       } catch (err) {
-        console.error("[v0] Error processing file:", err)
-        setError(err instanceof Error ? err.message : "Error al procesar el documento")
+        console.error("[v0] Error processing files:", err)
+        setError(err instanceof Error ? err.message : "Error al procesar los documentos")
         setIsLoading(false)
         updateWorkflowStep("upload")
 
         addActivityLog({
           type: "error",
-          message: "Error al procesar el documento",
+          message: "Error al procesar los documentos",
           details: err instanceof Error ? err.message : "Error desconocido",
         })
       }
@@ -147,34 +156,39 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
 
       if (isLoading) return
 
-      const files = Array.from(e.dataTransfer.files)
-      if (files.length === 0) return
+      const droppedFiles = Array.from(e.dataTransfer.files)
+      if (droppedFiles.length === 0) return
 
-      const file = files[0]
-      if (!ACCEPTED_TYPES.includes(file.type)) {
-        setError("Formato no permitido. Acepta PDF e imágenes (PNG, JPG, WebP).")
+      const validFiles = droppedFiles.filter((f) => ACCEPTED_TYPES.includes(f.type))
+      if (validFiles.length === 0) {
+        setError("Formato no permitido. Acepta PDF e imagenes (PNG, JPG, WebP).")
         return
       }
+      if (validFiles.length < droppedFiles.length) {
+        setError(`${droppedFiles.length - validFiles.length} archivo(s) ignorado(s) por formato no permitido.`)
+      }
 
-      processFile(file)
+      processFiles(validFiles)
     },
-    [isLoading, processFile],
+    [isLoading, processFiles],
   )
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files
-      if (!files || files.length === 0) return
+      const selectedFiles = e.target.files
+      if (!selectedFiles || selectedFiles.length === 0) return
 
-      const file = files[0]
-      if (!ACCEPTED_TYPES.includes(file.type)) {
-        setError("Formato no permitido. Acepta PDF e imágenes (PNG, JPG, WebP).")
+      const validFiles = Array.from(selectedFiles).filter((f) => ACCEPTED_TYPES.includes(f.type))
+      if (validFiles.length === 0) {
+        setError("Formato no permitido. Acepta PDF e imagenes (PNG, JPG, WebP).")
         return
       }
 
-      processFile(file)
+      processFiles(validFiles)
+      // Reset so the same files can be re-selected
+      e.target.value = ""
     },
-    [processFile],
+    [processFiles],
   )
 
   const handleLegalClick = useCallback(() => {
@@ -199,9 +213,10 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         ref={fileInputRef}
         type="file"
         accept=".pdf,.png,.jpg,.jpeg,.webp"
+        multiple
         className="hidden"
         onChange={handleFileSelect}
-        aria-label="Seleccionar archivo"
+        aria-label="Seleccionar archivos"
       />
 
       {/* Single main card */}

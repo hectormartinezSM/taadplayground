@@ -334,6 +334,35 @@ function isModelo100IRPFDocument(documentType: string): boolean {
   )
 }
 
+// Name fields that should be normalized to Title Case
+const NAME_FIELDS = new Set([
+  "nombre completo",
+  "nombre del procurador",
+  "nombre",
+  "nombre titular",
+  "nombre empleado",
+  "nombre empresa",
+  "nombre del titular",
+])
+
+function isNameField(fieldName: string): boolean {
+  return NAME_FIELDS.has(fieldName.toLowerCase().trim())
+}
+
+function toTitleCase(value: string): string {
+  if (!value || value === "N/D" || value === "N/A") return value
+  // Prepositions / particles that should stay lowercase (unless first word)
+  const particles = new Set(["de", "del", "la", "las", "los", "el", "y", "e"])
+  return value
+    .split(/\s+/)
+    .map((word, i) => {
+      if (i > 0 && particles.has(word.toLowerCase())) return word.toLowerCase()
+      if (/^[A-Z]{2,4}\.?$/.test(word)) return word // Keep acronyms like S.L., S.A.
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    })
+    .join(" ")
+}
+
 function isEscritoAlJuzgadoDocument(documentType: string): boolean {
   const normalizedType = documentType.toLowerCase().trim()
   return (
@@ -522,11 +551,15 @@ REGLAS DE FORMATO (OBLIGATORIAS):
           const valor = extractionResult.extraction[fieldName]
 
           if (valor && typeof valor === "string") {
+            let finalValue = valor.trim()
+            if (isNameField(fieldName)) {
+              finalValue = toTitleCase(finalValue)
+            }
             result[fieldName] = {
-              value: valor.trim(),
+              value: finalValue,
               confidence: 1,
             }
-            console.log("[v0] API: Field", fieldName, "extracted:", valor.trim())
+            console.log("[v0] API: Field", fieldName, "extracted:", finalValue)
           } else {
             if (isNomina && fieldName === "DNI") {
               result[fieldName] = {
