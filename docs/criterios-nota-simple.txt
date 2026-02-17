@@ -1,0 +1,236 @@
+================================================================================
+CRITERIOS DE CLASIFICACION Y EXTRACCION - NOTA SIMPLE
+================================================================================
+
+1. CLASIFICACION
+================================================================================
+
+1.1. Tipologia de clasificacion
+-------------------------------
+El documento se clasifica como "Nota Simple" dentro de la lista de tipologias
+predefinidas del sistema.
+
+1.2. Criterios de deteccion automatica
+---------------------------------------
+El sistema reconoce un documento como Nota Simple cuando el tipo clasificado
+(en minusculas) contiene alguno de estos textos:
+
+  - "nota simple"
+  - "certificacion registral"
+  - "registro de la propiedad"
+  - "certificado registral"
+
+1.3. Proceso de clasificacion
+-----------------------------
+1) Se envian todas las paginas del documento a la API de parsing (OCR/markdown).
+2) Se unen los markdowns de cada pagina con separadores "# Pagina N".
+3) Se envia el markdown unido a la API de extraccion con un schema de
+   clasificacion que contiene la lista completa de tipologias permitidas.
+4) Si el resultado coincide con alguna tipologia predefinida, se asigna.
+   Si devuelve "Otros", se hace una segunda llamada para generar una tipologia
+   nueva de maximo 25 caracteres.
+
+
+2. CAMPOS DE EXTRACCION (PREDEFINIDOS)
+================================================================================
+
+Cuando un documento se clasifica como Nota Simple, el sistema usa un conjunto
+FIJO de 9 campos predefinidos (no se consultan por IA, estan hardcodeados):
+
+  1. Registro de la propiedad
+  2. Registrador
+  3. Fecha de la nota
+  4. Numero de finca
+  5. CRU
+  6. Superficie total
+  7. Es VPO?
+  8. Tiene cargas?
+  9. Titularidades
+
+
+3. PROMPTS DE EXTRACCION POR CAMPO
+================================================================================
+
+3.1. Registro de la propiedad
+-----------------------------
+Prompt: "Extrae la localidad y el numero del Registro de la Propiedad;
+normaliza a una sola linea tipo 'Registro de la Propiedad de <Localidad>
+n <Numero>' (Title Case, sin dobles espacios)."
+
+Ejemplo de salida: "Registro de la Propiedad de Madrid n 28"
+
+
+3.2. Registrador
+----------------
+Prompt: "Extrae el nombre del registrador/a que firma o emite la nota;
+normaliza a formato legible (Title Case), conservando acentos y eliminando
+dobles espacios."
+
+Ejemplo de salida: "Maria Lopez Garcia"
+
+
+3.3. Fecha de la nota
+---------------------
+Prompt: "Extrae la fecha de expedicion/emision de la nota simple;
+normaliza a DD/MM/AAAA."
+
+Ejemplo de salida: "15/03/2024"
+
+
+3.4. Numero de finca
+--------------------
+Prompt detallado:
+
+DONDE BUSCAR:
+- Busca expresiones como "Finca n", "Finca registral", "N de finca",
+  "Finca numero", "FINCA".
+- Suele aparecer en la cabecera o en la descripcion de la finca.
+- NO confundir con el CRU/IDUFIR (codigo alfanumerico largo).
+
+NORMALIZACION (OBLIGATORIA):
+- Devuelve SOLO el identificador numerico de la finca.
+- Elimina los literales "finca", "finca registral", "n", "numero", etc.
+- Elimina separadores de miles (puntos) y espacios: "12.345" -> "12345".
+- Conserva posibles sufijos/indicadores si aparecen: BIS, letras, subfinca.
+
+Ejemplos:
+- "Finca n 12.345" -> "12345"
+- "Finca registral 98765 BIS" -> "98765 BIS"
+- "FINCA NUMERO 5.678-A" -> "5678-A"
+- "N de finca: 1234" -> "1234"
+
+
+3.5. CRU
+--------
+Prompt: "Extrae el Codigo Registral Unico (CRU/IDUFIR si aparece como tal);
+normaliza eliminando espacios y devolviendo el codigo en MAYUSCULAS exactamente
+como aparece. El CSV suele estar cerca del pie del documento o en la cabecera."
+
+Ejemplo de salida: "28045000123456"
+
+
+3.6. Superficie total
+---------------------
+Prompt: "Extrae la superficie total de la finca (preferentemente la
+'superficie construida total' o, si no existe, la 'superficie total'
+indicada); normaliza devolviendo un numero en m2 (usa punto decimal si hay
+decimales y elimina texto accesorio). Formato: 'XX,XX m2'."
+
+Ejemplo de salida: "85,50 m2"
+
+
+3.7. Es VPO?
+------------
+Prompt: "Determina si el inmueble esta calificado como VPO/Vivienda de
+Proteccion Oficial (o equivalentes: VPPL, VPP, proteccion publica);
+normaliza a 'Si' si aparece cualquier mencion de calificacion/proteccion
+y a 'No' si se indica explicitamente que no lo es o no existe ninguna
+mencion (no inventar)."
+
+Salida posible: "Si" | "No"
+
+
+3.8. Tiene cargas?
+------------------
+Prompt: "Determina si existen cargas/gravamenes (hipoteca, embargo,
+servidumbre, afecciones, condiciones resolutorias, etc.); normaliza a 'Si'
+si aparece cualquier seccion o mencion de 'cargas/gravamenes/limitaciones'
+con contenido, y a 'No' si consta explicitamente 'libre de cargas' o
+'sin cargas'."
+
+Salida posible: "Si" | "No"
+
+
+3.9. Titularidades
+------------------
+Prompt detallado:
+
+FORMATO DE SALIDA OBLIGATORIO (JSON):
+Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+titular, dni, tipoDerecho, participacion
+
+REGLAS DE NORMALIZACION (OBLIGATORIAS):
+- titular: Nombre completo en formato legible (Title Case), sin dobles
+  espacios.
+  - Si viene en formato "APELLIDOS, NOMBRE" o todo mayusculas, normaliza
+    a "Nombre Apellidos".
+  - Conserva acentos.
+  - Las conjunciones y preposiciones (y, de, del, la, las, los, el) van
+    SIEMPRE en MINUSCULAS.
+  - Ejemplos:
+    - "JUAN GARCIA Y LOPEZ" -> "Juan Garcia y Lopez"
+    - "MARIA DE LA FUENTE" -> "Maria de la Fuente"
+    - "PEDRO DEL CASTILLO" -> "Pedro del Castillo"
+- dni: Sin espacios ni guiones, en MAYUSCULAS. Si no aparece, pon "N/D".
+- tipoDerecho: Tipo de derecho tal cual aparezca (pleno dominio, nuda
+  propiedad, usufructo, etc.), solo limpiando espacios sobrantes.
+- participacion: Exactamente como aparezca en el documento (1/2, 50%,
+  100%, etc.), sin recalcular ni modificar.
+
+Reglas adicionales:
+- Manten el orden en que aparecen en el documento.
+- Si hay varios titulares, incluye todos.
+- NO agregues texto adicional, SOLO el JSON.
+
+Ejemplo de salida exacta:
+[
+  {
+    "titular": "Juan Garcia y Lopez",
+    "dni": "12345678A",
+    "tipoDerecho": "Pleno dominio",
+    "participacion": "1/2"
+  },
+  {
+    "titular": "Maria de la Fuente",
+    "dni": "87654321B",
+    "tipoDerecho": "Pleno dominio",
+    "participacion": "1/2"
+  }
+]
+
+
+4. PROCESO TECNICO DE EXTRACCION
+================================================================================
+
+4.1. Flujo general
+------------------
+1) El documento ya esta clasificado como "Nota Simple".
+2) Se obtienen los campos predefinidos (los 9 listados arriba).
+3) Para cada campo, se envia el markdown del documento junto con un schema
+   JSON que contiene el prompt especifico del campo.
+4) La API de extraccion devuelve el valor extraido.
+5) Los campos simples (texto, fecha, Si/No) se almacenan como string.
+6) Los campos complejos (Titularidades) se almacenan como JSON string.
+
+4.2. API utilizada
+------------------
+- Parse: POST /v1/ade/parse (modelo: dpt-2-latest)
+  Convierte imagenes de paginas a markdown.
+
+- Extract: POST /v1/ade/extract (modelo: extract-latest)
+  Extrae campos estructurados del markdown segun un schema JSON.
+
+4.3. Cache
+----------
+- Los resultados de parsing se cachean para evitar llamadas duplicadas.
+- Los campos predefinidos por tipo documental tambien se cachean.
+
+
+5. RESUMEN DE CAMPOS Y TIPOS DE DATO
+================================================================================
+
+  Campo                     | Tipo          | Formato esperado
+  --------------------------|---------------|----------------------------------
+  Registro de la propiedad  | Texto         | "Registro de... de <Loc> n <N>"
+  Registrador               | Texto         | Title Case
+  Fecha de la nota          | Fecha         | DD/MM/AAAA
+  Numero de finca           | Identificador | Solo digitos (+ sufijo si hay)
+  CRU                       | Codigo        | Alfanumerico, MAYUSCULAS
+  Superficie total          | Numerico      | XX,XX m2
+  Es VPO?                   | Booleano      | "Si" / "No"
+  Tiene cargas?             | Booleano      | "Si" / "No"
+  Titularidades             | JSON Array    | [{titular, dni, tipo, part}]
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
