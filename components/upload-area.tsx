@@ -437,7 +437,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                   <div className="space-y-1.5">
                     <p className="text-sm font-medium text-muted-foreground">Documentos admitidos:</p>
                     <p className="text-sm text-muted-foreground/80 leading-relaxed">
-                      Factura ordinaria y Factura IBI
+                      Factura y Factura IBI
                     </p>
                   </div>
 

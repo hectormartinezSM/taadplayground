@@ -337,25 +337,39 @@ const DILIGENCIA_DE_ORDENACION_FIELD_PROMPTS: Record<string, string> = {
   ...ESCRITO_AL_JUZGADO_FIELD_PROMPTS,
 }
 
-const FACTURA_ORDINARIA_FIELD_PROMPTS: Record<string, string> = {
-  "Nombre emisor":
-    "Extrae la razon social o nombre comercial de la empresa/persona que emite la factura. Normalizar a Title Case (primera letra mayuscula), preposiciones en minuscula, siglas en mayusculas (S.A., S.L., S.L.U.). Ejemplo: 'SERVICIOS INTEGRALES DEL HOGAR S.L.' → 'Servicios Integrales del Hogar S.L.'.",
-  "CIF/NIF emisor":
-    "Extrae el CIF o NIF del emisor de la factura. Devolver tal cual, en mayusculas, sin espacios. Ejemplo: 'B12345678', 'A87654321'.",
+const FACTURA_FIELD_PROMPTS: Record<string, string> = {
   "Numero de factura":
-    "Extrae el numero de factura tal cual aparece en el documento. Buscar campos como 'Factura nº', 'Nº Factura', 'Invoice', 'Ref.'. Devolver el literal exacto.",
-  "Fecha de factura":
-    "Extrae la fecha de emision de la factura. Normalizar a DD/MM/AAAA.",
-  Concepto:
-    "Extrae una descripcion breve del concepto principal de la factura (servicio o producto facturado). Maximo 80 caracteres, sin repetir datos de importe.",
-  "Base imponible":
-    "Extrae la base imponible (importe antes de IVA). Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
-  "Tipo IVA":
-    "Extrae el tipo de IVA aplicado (porcentaje). Devolver tal cual, con simbolo %. Ejemplo: '21%', '10%', '4%'. Si hay varios tipos, separarlos con ' / '.",
-  "Importe IVA":
-    "Extrae el importe del IVA. Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+    "Extrae el numero de factura. Suele aparecer como 'Factura nº', 'Nº Factura', 'Numero', 'Invoice No' o similar. Devuelve el valor completo tal cual, sin texto adicional.",
+  Serie:
+    "Extrae la serie de la factura si aparece (por ejemplo 'A', '2024', 'SERIE B'). Si no aparece una serie separada del numero, devuelve 'N/D'.",
+  "Fecha de emision":
+    "Extrae la fecha de emision de la factura. No confundas con fechas de vencimiento, entrega o pago. Devuelve la fecha en formato DD/MM/AAAA. Si no aparece, devuelve 'N/D'.",
+  Proveedor:
+    "Extrae el nombre o razon social del proveedor (emisor de la factura). Devuelve el nombre en formato legible, en una sola linea.",
+  "CIF/NIF proveedor":
+    "Extrae el CIF o NIF del proveedor. Devuelve el identificador sin espacios. Si no aparece, devuelve 'N/D'.",
+  "Direccion proveedor":
+    "Extrae la direccion completa del proveedor. Devuelve una sola linea legible. No mezcles con la direccion del cliente.",
+  "Provincia proveedor":
+    "Extrae la provincia del proveedor. Devuelve unicamente el nombre de la provincia. Si no aparece, devuelve 'N/D'.",
+  "Pais proveedor":
+    "Extrae el pais del proveedor. Devuelve unicamente el nombre del pais. Si no aparece, devuelve 'N/D'.",
+  Cliente:
+    "Extrae el nombre o razon social del cliente (receptor de la factura). Devuelve el nombre en formato legible, en una sola linea.",
+  "CIF/NIF cliente":
+    "Extrae el CIF o NIF del cliente. Devuelve el identificador sin espacios. Si no aparece, devuelve 'N/D'.",
+  "Direccion cliente":
+    "Extrae la direccion completa del cliente. Devuelve una sola linea legible. No mezcles con la direccion del proveedor.",
+  Lineas:
+    `Extrae las lineas de la factura. Para cada linea devuelve: concepto (descripcion del bien/servicio), baseImponible (importe de la linea sin impuestos), porcentajeIVA (porcentaje de IVA aplicado en la linea), importeIVA (importe de IVA de esa linea). Devuelve EXACTAMENTE un array JSON, sin texto adicional. Manten el orden de aparicion. Si una linea no tiene alguno de los campos, pon 'N/D'. Ejemplo: [{"concepto":"Servicio X","baseImponible":"100,00","porcentajeIVA":"21%","importeIVA":"21,00"},{"concepto":"Producto Y","baseImponible":"50,00","porcentajeIVA":"10%","importeIVA":"5,00"}]`,
+  "Base imponible total":
+    "Extrae la base imponible total de la factura (suma antes de impuestos). No confundas con subtotales parciales. Devuelve el numero tal cual aparece, sin simbolo de moneda. Si no aparece, devuelve 'N/D'.",
+  "Importe IVA total":
+    "Extrae el importe total de IVA de la factura. Devuelve el numero tal cual aparece, sin simbolo de moneda. Si no aparece, devuelve 'N/D'.",
+  "Importe IRPF":
+    "Extrae el importe de IRPF si aparece (retencion). Si no aparece IRPF, devuelve '0,00'. Devuelve el numero tal cual aparece, sin simbolo de moneda.",
   "Total factura":
-    "Extrae el importe total de la factura (base + IVA). Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+    "Extrae el total final de la factura (importe total a pagar). Devuelve el numero tal cual aparece, sin simbolo de moneda. Si no aparece, devuelve 'N/D'.",
 }
 
 const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
@@ -489,12 +503,14 @@ function isDiligenciaDeOrdenacionDocument(documentType: string): boolean {
   )
 }
 
-function isFacturaOrdinariaDocument(documentType: string): boolean {
+function isFacturaDocument(documentType: string): boolean {
   const normalizedType = documentType.toLowerCase().trim()
   return (
+    normalizedType === "factura" ||
     normalizedType.includes("factura ordinaria") ||
     normalizedType.includes("factura comercial") ||
-    normalizedType.includes("factura proveedor")
+    normalizedType.includes("factura proveedor") ||
+    normalizedType.includes("invoice")
   )
 }
 
@@ -558,7 +574,7 @@ export async function POST(request: NextRequest) {
     const isModelo100IRPF = isModelo100IRPFDocument(documentType)
     const isEscritoAlJuzgado = isEscritoAlJuzgadoDocument(documentType)
     const isDiligenciaDeOrdenacion = isDiligenciaDeOrdenacionDocument(documentType)
-    const isFacturaOrdinaria = isFacturaOrdinariaDocument(documentType)
+    const isFactura = isFacturaDocument(documentType)
     const isFacturaIBI = isFacturaIBIDocument(documentType)
 
     for (const fieldName of fields) {
@@ -627,10 +643,10 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      if (isFacturaOrdinaria && FACTURA_ORDINARIA_FIELD_PROMPTS[fieldName]) {
+      if (isFactura && FACTURA_FIELD_PROMPTS[fieldName]) {
         properties[fieldName] = {
           type: "string",
-          description: FACTURA_ORDINARIA_FIELD_PROMPTS[fieldName],
+          description: FACTURA_FIELD_PROMPTS[fieldName],
         }
         required.push(fieldName)
         continue
