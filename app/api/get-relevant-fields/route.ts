@@ -58,7 +58,7 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Nombre del juzgado",
     "Número de juzgado",
     "Partido judicial",
-    "Tipo de procedimiento",
+    "Codigo de procedimiento",
     "Nombre del procurador",
     "Fecha de escrito",
     "Fecha de presentación",
@@ -101,7 +101,7 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Nombre del juzgado",
     "Número de juzgado",
     "Partido judicial",
-    "Tipo de procedimiento",
+    "Codigo de procedimiento",
     "Nombre del procurador",
     "Fecha de escrito",
     "Fecha de presentación",
@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] API: Getting relevant fields for document type:", documentType)
 
     if (documentType === "Fotografía") {
-      const fields = ["Descripción de la fotografía"]
+      const fields = ["Descripci��n de la fotografía"]
       fieldsCache.set(documentType, fields)
       return NextResponse.json({ fields })
     }

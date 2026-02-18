@@ -322,8 +322,8 @@ const ESCRITO_AL_JUZGADO_FIELD_PROMPTS: Record<string, string> = {
     "PRIORIDAD DE FUENTES (obligatorio seguir este orden): 1.º Cuerpo principal del escrito (páginas centrales): busca el número del juzgado en el encabezado del órgano judicial (p. ej., 'Juzgado … nº 4', 'Juzgado … Nº 4'). 2.º Solo si NO aparece en el cuerpo o no es legible, recurre a la portada o a la sección LexNET. Devuélvelo como un número en formato numérico (sin 'nº', sin ceros a la izquierda). Ejemplo: 'JUZGADO DE PRIMERA INSTANCIA Nº 4 DE MADRID' → extracción correcta: '4'.",
   "Partido judicial":
     "PRIORIDAD DE FUENTES (obligatorio seguir este orden): 1.º Cuerpo principal del escrito (páginas centrales). 2.º Si no aparece, portada o sección LexNET. El partido judicial es la LOCALIDAD que aparece asociada al órgano judicial al final de su denominación. Normalmente se encuentra como 'Juzgado de … de [localidad]' (p. ej., 'Juzgado de Primera Instancia nº 4 DE MADRID' → partido judicial: 'Madrid'). Extrae solo el nombre de la localidad, sin 'de'. NO confundir con provincia o comunidad autónoma. Si la localidad no aparece explícitamente asociada al órgano judicial, devuelve 'No informado'.",
-  "Tipo de procedimiento":
-    "En la sección de metadatos LexNET (última página), localiza el campo 'Asunto' y devuelve solo el nombre del procedimiento; elimina cualquier información entre paréntesis y también los paréntesis.",
+  "Codigo de procedimiento":
+    "En la sección de metadatos LexNET (última página), localiza el campo 'Asunto' y extrae el código numérico del procedimiento que suele aparecer entre paréntesis o tras el nombre del procedimiento (p. ej., 'Procedimiento Ordinario (250/2024)' → '250/2024'). Devuelve solo el código (número/año). Si no aparece un código claro, devuelve 'N/D'.",
   "Nombre del procurador":
     "En el cuerpo del escrito, extrae el nombre y apellidos del procurador/a que firma o comparece ('Procurador/a de los Tribunales…' o 'en nombre y representación…'); devuelve solo el nombre completo sin prefijos ('D.'/'Dª') ni cargos.",
   "Fecha de escrito":
