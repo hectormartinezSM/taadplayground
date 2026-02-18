@@ -361,8 +361,6 @@ const FACTURA_ORDINARIA_FIELD_PROMPTS: Record<string, string> = {
 const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
   "Entidad emisora":
     "Extrae el organismo que emite el recibo. Simplifica el nombre a formato legible y corto, como: 'Ayuntamiento de Madrid', 'Diputacion de Valencia'. No incluyas denominaciones administrativas largas. Devuelve unicamente el nombre simplificado.",
-  "CIF emisora":
-    "Extrae el CIF del organismo emisor. Si no aparece, devuelve 'N/D'.",
   Provincia:
     "Extrae la provincia española a la que pertenece el inmueble o el organismo emisor. Devuelve unicamente el nombre de la provincia.",
   "Ejercicio y periodo":
@@ -375,14 +373,8 @@ const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
     "Extrae la referencia completa necesaria para realizar el pago del recibo. Puede aparecer como 'Referencia', 'Numero de recibo', 'Referencia de pago' o similar. Devuelve el codigo completo sin espacios adicionales.",
   Identificacion:
     "Si el documento es una liquidacion, extrae el identificador de liquidacion. Si no aparece ningun identificador de liquidacion, devuelve 'N/D'.",
-  CPR:
-    "Extrae el CPR (Codigo Personal de Recaudacion) si aparece en el documento. Si no aparece, devuelve 'N/D'.",
-  "Numero de codigo de barras":
-    "Extrae el numero completo asociado al codigo de barras si aparece impreso en formato numerico. Devuelve unicamente el numero completo sin espacios. Si no aparece, devuelve 'N/D'.",
   "Referencia catastral":
     "Extrae la referencia catastral completa del inmueble. Debe ser el codigo oficial alfanumerico completo sin espacios.",
-  "Direccion del inmueble":
-    "Extrae la direccion completa del inmueble al que corresponde el IBI. Debe ser legible para una persona. Incluye tipo de via, nombre, numero, piso o puerta si aparece. No confundas con la direccion fiscal del contribuyente ni con la del organismo emisor. Devuelve el texto en una sola linea, correctamente capitalizado y sin saltos innecesarios.",
   "Localidad del inmueble":
     "Extrae el municipio del inmueble al que corresponde el IBI. Debe ser un municipio de España. No confundas con la localidad del organismo emisor.",
   "Sujeto pasivo":
