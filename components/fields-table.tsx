@@ -255,7 +255,6 @@ function parseConceptosFacturables(value: string): ConceptoFacturable[] | null {
 
 function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturable[] }) {
   const hasCalculated = conceptos.some((c) => c.ivaCalculado)
-  const showCantidad = conceptos.some((c) => c.cantidad && c.cantidad !== "1" && c.cantidad !== "N/D")
 
   return (
     <div>
@@ -264,12 +263,8 @@ function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturabl
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="text-xs font-semibold whitespace-nowrap w-48">Concepto</TableHead>
-              {showCantidad && (
-                <TableHead className="text-xs font-semibold whitespace-nowrap w-16">Cantidad</TableHead>
-              )}
-              {showCantidad && (
-                <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Precio unitario</TableHead>
-              )}
+              <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Precio unitario</TableHead>
+              <TableHead className="text-xs font-semibold whitespace-nowrap w-16">Cantidad</TableHead>
               <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Base imponible</TableHead>
               <TableHead className="text-xs font-semibold whitespace-nowrap w-20">% IVA</TableHead>
               <TableHead className="text-xs font-semibold text-left">Importe IVA</TableHead>
@@ -279,12 +274,8 @@ function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturabl
             {conceptos.map((c, idx) => (
               <TableRow key={idx}>
                 <TableCell className="text-sm py-2 whitespace-nowrap">{c.concepto}</TableCell>
-                {showCantidad && (
-                  <TableCell className="text-sm py-2 whitespace-nowrap">{c.cantidad}</TableCell>
-                )}
-                {showCantidad && (
-                  <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.precioUnitario)}</TableCell>
-                )}
+                <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.precioUnitario)}</TableCell>
+                <TableCell className="text-sm py-2 whitespace-nowrap">{c.cantidad}</TableCell>
                 <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.baseImponible)}</TableCell>
                 <TableCell className="text-sm py-2 whitespace-nowrap">{c.porcentajeIVA}</TableCell>
                 <TableCell className="text-sm py-2 text-left">
