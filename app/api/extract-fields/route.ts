@@ -359,36 +359,44 @@ const FACTURA_ORDINARIA_FIELD_PROMPTS: Record<string, string> = {
 }
 
 const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
+  "Entidad emisora":
+    "Extrae el organismo que emite el recibo. Simplifica el nombre a formato legible y corto, como: 'Ayuntamiento de Madrid', 'Diputacion de Valencia'. No incluyas denominaciones administrativas largas. Devuelve unicamente el nombre simplificado.",
+  "CIF emisora":
+    "Extrae el CIF del organismo emisor. Si no aparece, devuelve 'N/D'.",
+  "Codigo entidad emisora":
+    "Extrae el codigo interno del organismo emisor si aparece. Si no aparece, devuelve 'N/D'.",
+  Provincia:
+    "Extrae la provincia española a la que pertenece el inmueble o el organismo emisor. Devuelve unicamente el nombre de la provincia.",
   "Ejercicio y periodo":
-    "Estas analizando un recibo de IBI en España. Identifica el año y el periodo del impuesto. No confundas con fechas de pago. Si está fraccionado en dos plazos, considéralo Semestral. Devuelve exactamente en formato: Trimestral → 4T-2024, Semestral → 2S-2024, Anual → A-2024.",
-  "Ultimo dia de pago":
-    "Extrae el último día para pagar el IBI en periodo voluntario. Si existen varios periodos, devuelve la fecha final del periodo voluntario. No inventes fechas. Formato obligatorio DD/MM/AAAA.",
-  "Direccion del inmueble":
-    "Extrae la dirección completa del inmueble al que corresponde el IBI. Debe ser legible para una persona. Incluye tipo de vía, nombre, número, piso o puerta si aparece. No confundas con la dirección fiscal del contribuyente ni con la del organismo emisor. Devuelve el texto en una sola línea, correctamente capitalizado y sin saltos innecesarios.",
+    "Estas analizando un recibo de IBI en España. Identifica el año y el periodo del impuesto. No confundas con fechas de pago. Si esta fraccionado en dos plazos, consideralo Semestral. Devuelve exactamente en formato: Trimestral → 4T-2024, Semestral → 2S-2024, Anual → A-2024.",
   "Tipo de IBI":
-    "Indica si el recibo corresponde a IBI Urbano o IBI Rustico. Devuelve únicamente una de esas dos opciones exactas.",
-  "Entidades colaboradoras":
-    "Extrae todas las entidades colaboradoras donde puede pagarse el IBI. Devuelve únicamente los nombres de los bancos o entidades financieras mencionadas.",
+    "Indica si el recibo corresponde a IBI Urbano o IBI Rustico. Devuelve unicamente una de esas dos opciones exactas.",
+  "Referencia recibo":
+    "Extrae la referencia completa necesaria para realizar el pago del recibo. Puede aparecer como 'Referencia', 'Numero de recibo', 'Referencia de pago' o similar. Devuelve el codigo completo sin espacios adicionales.",
+  "Identificador de liquidacion":
+    "Si el documento es una liquidacion, extrae el identificador de liquidacion. Si no aparece ningun identificador de liquidacion, devuelve 'N/D'.",
+  CPR:
+    "Extrae el CPR (Codigo Personal de Recaudacion) si aparece en el documento. Si no aparece, devuelve 'N/D'.",
+  "Numero de codigo de barras":
+    "Extrae el numero completo asociado al codigo de barras si aparece impreso en formato numerico. Devuelve unicamente el numero completo sin espacios. Si no aparece, devuelve 'N/D'.",
+  "Referencia catastral":
+    "Extrae la referencia catastral completa del inmueble. Debe ser el codigo oficial alfanumerico completo sin espacios.",
+  "Direccion del inmueble":
+    "Extrae la direccion completa del inmueble al que corresponde el IBI. Debe ser legible para una persona. Incluye tipo de via, nombre, numero, piso o puerta si aparece. No confundas con la direccion fiscal del contribuyente ni con la del organismo emisor. Devuelve el texto en una sola linea, correctamente capitalizado y sin saltos innecesarios.",
   "Localidad del inmueble":
     "Extrae el municipio del inmueble al que corresponde el IBI. Debe ser un municipio de España. No confundas con la localidad del organismo emisor.",
-  "IBAN para transferencia":
-    "Busca si el documento indica un IBAN donde pueda realizarse una transferencia para pagar el IBI. Si existe un IBAN válido, extráelo completo sin espacios. Si no aparece ningún IBAN para pago por transferencia, devuelve exactamente 'N/D'. No confundas con cuenta para domiciliación.",
-  "Entidad emisora":
-    "Extrae el nombre del organismo que emite el recibo del IBI (Ayuntamiento, organismo autónomo de recaudación, SUMA, ORGT, etc.). Devuelve el nombre completo en formato legible.",
-  "CIF emisora":
-    "Extrae el CIF del organismo emisor del IBI. Si no aparece, devuelve 'N/D'.",
-  "Codigo entidad emisora":
-    "Extrae el código interno del organismo emisor si aparece (código organismo, código ayuntamiento, código entidad). Si no aparece, devuelve 'N/D'.",
-  "Referencia recibo":
-    "Extrae la referencia completa necesaria para realizar el pago del recibo. Puede aparecer como 'Referencia', 'Número de recibo', 'Referencia de pago' o similar. Devuelve el código completo sin espacios adicionales.",
-  "Identificador de liquidacion":
-    "Si el documento es una liquidación, extrae el identificador de liquidación. Si no aparece ningún identificador de liquidación, devuelve 'N/D'.",
-  "Referencia catastral":
-    "Extrae la referencia catastral completa del inmueble. Debe ser el código oficial alfanumérico completo sin espacios.",
+  "Sujeto pasivo":
+    "Extrae el nombre completo del sujeto pasivo del IBI. Devuelve el nombre en formato legible.",
+  "NIF/CIF sujeto pasivo":
+    "Extrae el NIF o CIF del sujeto pasivo. Si no aparece, devuelve 'N/D'.",
   Importe:
-    "Extrae el importe total a pagar del recibo de IBI. Debe incluir separador de miles con punto, coma decimal y dos decimales siempre. Añade el símbolo € al final sin espacio. Ejemplo correcto: 1.234,56€. Si no aparece importe claro, devuelve 'N/D'.",
-  Contribuyente:
-    "Extrae el nombre completo del sujeto pasivo o contribuyente al que corresponde el recibo de IBI. Devuelve el nombre en formato legible.",
+    "Extrae el importe total a pagar del recibo de IBI. Debe incluir separador de miles con punto, coma decimal y dos decimales siempre. Anade el simbolo € al final sin espacio. Ejemplo correcto: 1.234,56€. Si no aparece importe claro, devuelve 'N/D'.",
+  "Ultimo dia de pago":
+    "Extrae el ultimo dia para pagar el IBI en periodo voluntario. Si existen varios periodos, devuelve la fecha final del periodo voluntario. No inventes fechas. Formato obligatorio DD/MM/AAAA.",
+  "IBAN para transferencia":
+    "Busca si el documento indica un IBAN donde pueda realizarse una transferencia para pagar el IBI. Si existe un IBAN valido, extraelo completo sin espacios. Si no aparece ningun IBAN para pago por transferencia, devuelve exactamente 'N/D'. No confundas con cuenta para domiciliacion.",
+  "Entidades colaboradoras":
+    "Extrae todas las entidades colaboradoras donde puede pagarse el IBI. Devuelve unicamente los nombres de los bancos o entidades financieras mencionadas.",
 }
 
 // Función para detectar si es un documento tipo DNI
