@@ -228,13 +228,15 @@ Localiza la sección de CARGAS / GRAVÁMENES / LIMITACIONES. Cada ASIENTO REGIST
 Delimitadores de corte (en orden de prioridad):
 1. "Inscripción" / "Inscripcion" seguido de ordinal o número (ej: "Inscripción 14ª", "Inscripción 3", "14ª.-")
 2. "Anotación preventiva" seguido de letra (ej: "Anotación preventiva letra A")
-3. Cambio de TIPO de carga: si pasa de hipoteca a embargo o viceversa, es otra carga
-4. Cambio de ENTIDAD acreedora: si el texto dice "A favor de [ENTIDAD_A]" y más adelante "A favor de [ENTIDAD_B]", son cargas distintas
-5. Cambio de NOTARIO o ESCRITURA: si aparece una nueva referencia notarial ("otorgada ante el Notario...") distinta de la anterior
-6. Fórmula de escritura: "En virtud de escritura...", "En virtud de escrituras...", "Mediante escritura...", "Por escritura otorgada..." → indica inicio de una nueva carga
-7. Patrones de inicio de asiento: "Se constituye...", "Constituida mediante...", "Hipoteca a favor de...", "Embargo a favor de..."
+3. "PRORROGADA" / "Prorrogada" / "prorrogada" seguido de referencia a anotación y letra (ej: "PRORROGADA la anotación de la letra A por la anotación de la letra B"). Cada prórroga es una carga INDEPENDIENTE de tipo Embargo con subtipo "Prórroga".
+4. "CEDIDA" / "Cedida" seguido de referencia a inscripción (ej: "CEDIDA la hipoteca de la inscripción 6ª por la inscripción 10"). Cada cesión es una carga INDEPENDIENTE de tipo Hipoteca con subtipo "Cesión".
+5. Cambio de TIPO de carga: si pasa de hipoteca a embargo o viceversa, es otra carga
+6. Cambio de ENTIDAD acreedora: si el texto dice "A favor de [ENTIDAD_A]" y más adelante "A favor de [ENTIDAD_B]", son cargas distintas
+7. Cambio de NOTARIO o ESCRITURA: si aparece una nueva referencia notarial ("otorgada ante el Notario...") distinta de la anterior
+8. Fórmula de escritura: "En virtud de escritura...", "En virtud de escrituras...", "Mediante escritura...", "Por escritura otorgada..." → indica inicio de una nueva carga
+9. Patrones de inicio de asiento: "Se constituye...", "Constituida mediante...", "Hipoteca a favor de...", "Embargo a favor de..."
 
-REGLA DE ORO: Cada vez que el texto describa una operacion con una entidad, un importe principal, un notario y una fecha PROPIOS, es una carga separada. Si dos operaciones comparten el mismo bloque de texto sin separacion clara PERO tienen entidades o importes distintos, SON cargas distintas. En caso de duda, SEPARA.
+REGLA DE ORO: Cada vez que el texto describa una operacion con una entidad, un importe principal, un notario y una fecha PROPIOS, es una carga separada. Las PRÓRROGAS de anotaciones preventivas (ej: "PRORROGADA la anotación de la letra A por la anotación de la letra B") son SIEMPRE cargas independientes aunque no tengan importe propio. Las CESIONES de hipotecas (ej: "CEDIDA la hipoteca de la inscripción 6ª por la inscripción 10") son SIEMPRE cargas independientes. Si dos operaciones comparten el mismo bloque de texto sin separacion clara PERO tienen entidades o importes distintos, SON cargas distintas. En caso de duda, SEPARA.
 
 PASO 2 – EXTRACCIÓN POR BLOQUE:
 Extrae campo-a-campo sobre CADA bloque por separado.
@@ -248,7 +250,7 @@ ESTRUCTURA POR CARGA (cada elemento del array):
   "numeroInscripcion": "Para HIPOTECAS: número de inscripción (ej: '3', '3ª', '14ª'). Para EMBARGOS: la LETRA de la anotación (ej: 'A', 'B', 'C'). Los embargos se identifican con letras, NO con números. Si no aparece: '-'.",
   "fechaInscripcion": "Fecha de inscripción en formato DD/MM/AAAA. Si no aparece: '-'.",
   "tipoCarga": "Solo 'Hipoteca' o 'Embargo'. Si dice 'anotación preventiva de embargo' → 'Embargo'. Un embargo se reconoce porque tiene una LETRA como identificador (ej: 'Anotación preventiva letra A'), mientras que una hipoteca tiene un NÚMERO de inscripción.",
-  "subtipo": "VALORES PERMITIDOS (usar EXACTAMENTE uno de estos literales): 'Nueva constitución' (si solo pone 'hipoteca', 'constituida', 'se constituye' o no especifica subtipo), 'Novación, modificación y/o ampliación' (si dice 'novación', 'modificación', 'ampliación' o cualquier combinación), 'Subrogación', 'Cesión' (cesión del crédito hipotecario). NO existe el subtipo 'Extensión'. Si no se puede determinar: '-'.",
+  "subtipo": "VALORES PERMITIDOS (usar EXACTAMENTE uno de estos literales): 'Nueva constitución' (si solo pone 'hipoteca', 'constituida', 'se constituye' o no especifica subtipo), 'Novación, modificación y/o ampliación' (si dice 'novación', 'modificación', 'ampliación' o cualquier combinación), 'Subrogación', 'Cesión' (cesión del crédito hipotecario), 'Prórroga' (si dice 'prorrogada la anotación', 'prórroga'). NO existe el subtipo 'Extensión'. Si no se puede determinar: '-'.",
   "notario": "Nombre del notario en Title Case, conservando acentos. Si no aparece: '-'.",
   "fechaNotarial": "Fecha de la escritura notarial en DD/MM/AAAA. Si no aparece: '-'.",
   "entidad": "Acreedor (banco/organismo). NORMALIZAR EL NOMBRE: palabras con primera letra en mayúscula y resto en minúscula, preposiciones ('de', 'del', 'la', 'las', 'los', 'el', 'y', 'e') en minúscula, siglas siempre en mayúsculas (S.A., S.L., S.A.U., BBVA, AEAT, TGSS). Ejemplos: 'BANCO SANTANDER S.A.' → 'Banco Santander S.A.', 'CAIXABANK, S.A.' → 'Caixabank S.A.', 'bankinter sa' → 'Bankinter S.A.'. Limpio de dobles espacios. Si no aparece: '-'.",
@@ -260,7 +262,7 @@ ESTRUCTURA POR CARGA (cada elemento del array):
 }
 
 Ejemplo de salida válida:
-[{"numeroInscripcion":"3ª","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco Santander S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"12000","interesesDemora":"6000","costasGastos":"15000"},{"numeroInscripcion":"A","fechaInscripcion":"03/05/2021","tipoCarga":"Embargo","subtipo":"-","notario":"-","fechaNotarial":"-","entidad":"AEAT","importe":"25000","fechaVencimiento":"-","interesesOrdinarios":"-","interesesDemora":"-","costasGastos":"-"}]
+[{"numeroInscripcion":"3ª","fechaInscripcion":"12/09/2019","tipoCarga":"Hipoteca","subtipo":"Nueva constitución","notario":"María López García","fechaNotarial":"05/09/2019","entidad":"Banco Santander S.A.","importe":"150000","fechaVencimiento":"05/09/2049","interesesOrdinarios":"12000","interesesDemora":"6000","costasGastos":"15000"},{"numeroInscripcion":"A","fechaInscripcion":"03/05/2021","tipoCarga":"Embargo","subtipo":"-","notario":"-","fechaNotarial":"-","entidad":"AEAT","importe":"25000","fechaVencimiento":"-","interesesOrdinarios":"-","interesesDemora":"-","costasGastos":"-"},{"numeroInscripcion":"B","fechaInscripcion":"21/05/2024","tipoCarga":"Embargo","subtipo":"Prórroga","notario":"-","fechaNotarial":"-","entidad":"AEAT","importe":"-","fechaVencimiento":"-","interesesOrdinarios":"-","interesesDemora":"-","costasGastos":"-"}]
 
 REGLAS DE EXCLUSIÓN (obligatorias):
 - Solo incluir cargas de tipo 'Hipoteca' o 'Embargo'. Cualquier otro tipo (servidumbres, afecciones, condiciones resolutorias, notas marginales, etc.) → OMITIR del array.
@@ -268,6 +270,8 @@ REGLAS DE EXCLUSIÓN (obligatorias):
 - NO incluir cargas que aparezcan en la sección de PROCEDENCIA (finca de origen, transmisiones anteriores, títulos previos). Solo extraer cargas vigentes de la sección de CARGAS/GRAVÁMENES.
 
 REGLAS ADICIONALES:
+- Las PRÓRROGAS de anotaciones (ej: "PRORROGADA la anotación de la letra A por la anotación de la letra B") DEBEN incluirse como embargos independientes. La letra de la prórroga es la NUEVA letra (B, C, etc.), no la letra original (A).
+- Las CESIONES de hipotecas (ej: "CEDIDA la hipoteca de la inscripción 6ª por la inscripción 10") DEBEN incluirse como hipotecas independientes. El número de inscripción es el NUEVO (10), no el original (6ª).
 - Incluye TODAS las cargas que cumplan las reglas anteriores, no solo la primera.
 - Mantén el orden en que aparecen en el documento.
 - NO añadas texto adicional, SOLO el JSON.`,
