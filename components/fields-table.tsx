@@ -46,6 +46,8 @@ interface Devengo {
 
 interface ConceptoFacturable {
   concepto: string
+  cantidad: string
+  precioUnitario: string
   baseImponible: string
   porcentajeIVA: string
   importeIVA: string
@@ -207,10 +209,21 @@ function parseConceptosFacturables(value: string): ConceptoFacturable[] | null {
     const parsed = JSON.parse(value)
     if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].concepto) {
       return parsed.map((item: ConceptoFacturable) => {
-        const base = item.baseImponible
+        const cantidad = item.cantidad || "1"
+        const precioUnitario = item.precioUnitario || "N/D"
+        let base = item.baseImponible
         const pctStr = item.porcentajeIVA
         let iva = item.importeIVA
         let ivaCalculado = false
+
+        // If baseImponible is missing but we have cantidad and precioUnitario, calculate it
+        if ((!base || base === "N/D") && precioUnitario !== "N/D") {
+          const cantNum = parseFloat(cantidad.replace(/\./g, "").replace(",", "."))
+          const precioNum = parseFloat(precioUnitario.replace(/\./g, "").replace(",", "."))
+          if (!isNaN(cantNum) && !isNaN(precioNum)) {
+            base = (cantNum * precioNum).toFixed(2).replace(".", ",")
+          }
+        }
 
         // If IVA is missing but base and percentage exist, calculate it
         if ((!iva || iva === "N/D") && base && base !== "N/D" && pctStr && pctStr !== "N/D") {
@@ -218,7 +231,6 @@ function parseConceptosFacturables(value: string): ConceptoFacturable[] | null {
           const pctNum = parseFloat(pctStr.replace("%", "").replace(",", ".")) / 100
           if (!isNaN(baseNum) && !isNaN(pctNum)) {
             const computed = baseNum * pctNum
-            // Format to Spanish decimal
             iva = computed.toFixed(2).replace(".", ",")
             ivaCalculado = true
           }
@@ -226,6 +238,8 @@ function parseConceptosFacturables(value: string): ConceptoFacturable[] | null {
 
         return {
           concepto: item.concepto,
+          cantidad,
+          precioUnitario,
           baseImponible: base,
           porcentajeIVA: pctStr,
           importeIVA: iva,
@@ -240,39 +254,54 @@ function parseConceptosFacturables(value: string): ConceptoFacturable[] | null {
 }
 
 function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturable[] }) {
+  const hasCalculated = conceptos.some((c) => c.ivaCalculado)
+  const showCantidad = conceptos.some((c) => c.cantidad && c.cantidad !== "1" && c.cantidad !== "N/D")
+
   return (
-    <div className="rounded-md border border-border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="text-xs font-semibold whitespace-nowrap w-48">Concepto</TableHead>
-            <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Base imponible</TableHead>
-            <TableHead className="text-xs font-semibold whitespace-nowrap w-20">% IVA</TableHead>
-            <TableHead className="text-xs font-semibold text-left">Importe IVA</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {conceptos.map((c, idx) => (
-            <TableRow key={idx}>
-              <TableCell className="text-sm py-2 whitespace-nowrap">{c.concepto}</TableCell>
-              <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.baseImponible)}</TableCell>
-              <TableCell className="text-sm py-2 whitespace-nowrap">{c.porcentajeIVA}</TableCell>
-              <TableCell className="text-sm py-2 text-left">
-                {c.ivaCalculado ? (
-                  <div>
-                    <span className="italic">{formatImporteEUR(c.importeIVA)}</span>
-                    <p className="text-[10px] text-muted-foreground italic leading-tight mt-0.5">
-                      IVA calculado
-                    </p>
-                  </div>
-                ) : (
-                  formatImporteEUR(c.importeIVA)
-                )}
-              </TableCell>
+    <div>
+      <div className="rounded-md border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="text-xs font-semibold whitespace-nowrap w-48">Concepto</TableHead>
+              {showCantidad && (
+                <TableHead className="text-xs font-semibold whitespace-nowrap w-16">Cantidad</TableHead>
+              )}
+              {showCantidad && (
+                <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Precio unitario</TableHead>
+              )}
+              <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Base imponible</TableHead>
+              <TableHead className="text-xs font-semibold whitespace-nowrap w-20">% IVA</TableHead>
+              <TableHead className="text-xs font-semibold text-left">Importe IVA</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {conceptos.map((c, idx) => (
+              <TableRow key={idx}>
+                <TableCell className="text-sm py-2 whitespace-nowrap">{c.concepto}</TableCell>
+                {showCantidad && (
+                  <TableCell className="text-sm py-2 whitespace-nowrap">{c.cantidad}</TableCell>
+                )}
+                {showCantidad && (
+                  <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.precioUnitario)}</TableCell>
+                )}
+                <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.baseImponible)}</TableCell>
+                <TableCell className="text-sm py-2 whitespace-nowrap">{c.porcentajeIVA}</TableCell>
+                <TableCell className="text-sm py-2 text-left">
+                  {c.ivaCalculado ? (
+                    <span>{formatImporteEUR(c.importeIVA)} *</span>
+                  ) : (
+                    formatImporteEUR(c.importeIVA)
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      {hasCalculated && (
+        <p className="text-xs text-muted-foreground mt-1.5 ml-1">* Importe calculado</p>
+      )}
     </div>
   )
 }
