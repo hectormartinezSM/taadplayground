@@ -337,6 +337,46 @@ const DILIGENCIA_DE_ORDENACION_FIELD_PROMPTS: Record<string, string> = {
   ...ESCRITO_AL_JUZGADO_FIELD_PROMPTS,
 }
 
+const FACTURA_ORDINARIA_FIELD_PROMPTS: Record<string, string> = {
+  "Nombre emisor":
+    "Extrae la razon social o nombre comercial de la empresa/persona que emite la factura. Normalizar a Title Case (primera letra mayuscula), preposiciones en minuscula, siglas en mayusculas (S.A., S.L., S.L.U.). Ejemplo: 'SERVICIOS INTEGRALES DEL HOGAR S.L.' → 'Servicios Integrales del Hogar S.L.'.",
+  "CIF/NIF emisor":
+    "Extrae el CIF o NIF del emisor de la factura. Devolver tal cual, en mayusculas, sin espacios. Ejemplo: 'B12345678', 'A87654321'.",
+  "Numero de factura":
+    "Extrae el numero de factura tal cual aparece en el documento. Buscar campos como 'Factura nº', 'Nº Factura', 'Invoice', 'Ref.'. Devolver el literal exacto.",
+  "Fecha de factura":
+    "Extrae la fecha de emision de la factura. Normalizar a DD/MM/AAAA.",
+  Concepto:
+    "Extrae una descripcion breve del concepto principal de la factura (servicio o producto facturado). Maximo 80 caracteres, sin repetir datos de importe.",
+  "Base imponible":
+    "Extrae la base imponible (importe antes de IVA). Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+  "Tipo IVA":
+    "Extrae el tipo de IVA aplicado (porcentaje). Devolver tal cual, con simbolo %. Ejemplo: '21%', '10%', '4%'. Si hay varios tipos, separarlos con ' / '.",
+  "Importe IVA":
+    "Extrae el importe del IVA. Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+  "Total factura":
+    "Extrae el importe total de la factura (base + IVA). Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+}
+
+const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
+  Ayuntamiento:
+    "Extrae el nombre del ayuntamiento que emite el recibo de IBI. Normalizar a Title Case. Ejemplo: 'AYUNTAMIENTO DE MADRID' → 'Ayuntamiento de Madrid'.",
+  "Referencia catastral":
+    "Extrae la referencia catastral completa del inmueble. Devolver tal cual, en mayusculas, sin espacios extra.",
+  "Direccion del inmueble":
+    "Extrae la direccion del inmueble gravado con el IBI tal como aparece en el recibo. Normalizar a Title Case.",
+  "Periodo impositivo":
+    "Extrae el periodo/ejercicio impositivo. Normalizar a YYYY (solo el ano). Ejemplo: '2024'.",
+  "Valor catastral":
+    "Extrae el valor catastral total del inmueble. Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+  "Base imponible":
+    "Extrae la base imponible del IBI. Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+  "Cuota integra":
+    "Extrae la cuota integra o cuota liquida del IBI. Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+  "Total a pagar":
+    "Extrae el importe total a pagar. Solo numero, sin simbolo €, sin separadores de miles, con coma decimal si aparece.",
+}
+
 // Función para detectar si es un documento tipo DNI
 function isDNIDocument(documentType: string): boolean {
   const normalizedType = documentType.toLowerCase().trim()
@@ -435,6 +475,24 @@ function isDiligenciaDeOrdenacionDocument(documentType: string): boolean {
   )
 }
 
+function isFacturaOrdinariaDocument(documentType: string): boolean {
+  const normalizedType = documentType.toLowerCase().trim()
+  return (
+    normalizedType.includes("factura ordinaria") ||
+    normalizedType.includes("factura comercial") ||
+    normalizedType.includes("factura proveedor")
+  )
+}
+
+function isFacturaIBIDocument(documentType: string): boolean {
+  const normalizedType = documentType.toLowerCase().trim()
+  return (
+    normalizedType.includes("factura ibi") ||
+    normalizedType.includes("recibo ibi") ||
+    normalizedType.includes("impuesto sobre bienes inmuebles")
+  )
+}
+
 async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse | null> {
   const formData = new FormData()
   formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
@@ -483,6 +541,8 @@ export async function POST(request: NextRequest) {
     const isModelo100IRPF = isModelo100IRPFDocument(documentType)
     const isEscritoAlJuzgado = isEscritoAlJuzgadoDocument(documentType)
     const isDiligenciaDeOrdenacion = isDiligenciaDeOrdenacionDocument(documentType)
+    const isFacturaOrdinaria = isFacturaOrdinariaDocument(documentType)
+    const isFacturaIBI = isFacturaIBIDocument(documentType)
 
     for (const fieldName of fields) {
       if (!fieldName) continue
@@ -545,6 +605,24 @@ export async function POST(request: NextRequest) {
         properties[fieldName] = {
           type: "string",
           description: DILIGENCIA_DE_ORDENACION_FIELD_PROMPTS[fieldName],
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isFacturaOrdinaria && FACTURA_ORDINARIA_FIELD_PROMPTS[fieldName]) {
+        properties[fieldName] = {
+          type: "string",
+          description: FACTURA_ORDINARIA_FIELD_PROMPTS[fieldName],
+        }
+        required.push(fieldName)
+        continue
+      }
+
+      if (isFacturaIBI && FACTURA_IBI_FIELD_PROMPTS[fieldName]) {
+        properties[fieldName] = {
+          type: "string",
+          description: FACTURA_IBI_FIELD_PROMPTS[fieldName],
         }
         required.push(fieldName)
         continue

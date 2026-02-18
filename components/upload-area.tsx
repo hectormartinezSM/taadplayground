@@ -1,7 +1,7 @@
 "use client"
 import type { UploadAreaProps } from "./upload-area.types"
 import { useCallback, useRef, useState } from "react"
-import { Briefcase, Loader2, Gavel, CreditCard, Lock, Upload } from "lucide-react"
+import { Briefcase, Loader2, Gavel, FileText, Upload } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Page } from "@/lib/types"
 import { extractPagesFromPDF } from "@/lib/pdf-utils"
@@ -15,10 +15,12 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isDraggingLegal, setIsDraggingLegal] = useState(false)
+  const [isDraggingPagos, setIsDraggingPagos] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputPagosRef = useRef<HTMLInputElement>(null)
 
   const processFiles = useCallback(
-    async (files: File[]) => {
+    async (files: File[], useCase: "legal" | "pagos" = "legal") => {
       setIsLoading(true)
       setError(null)
       updateWorkflowStep("splitting")
@@ -58,7 +60,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         await new Promise((resolve) => setTimeout(resolve, 500))
 
         updateWorkflowStep("blank_detection")
-        onFileUpload(allPages, "legal")
+        onFileUpload(allPages, useCase)
         setIsLoading(false)
       } catch (err) {
         console.error("[v0] Error processing files:", err)
@@ -206,6 +208,81 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
     [handleLegalClick],
   )
 
+  // Pagos (Facturas) handlers
+  const handleDragOverPagos = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!isLoading) {
+        setIsDraggingPagos(true)
+      }
+    },
+    [isLoading],
+  )
+
+  const handleDragLeavePagos = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingPagos(false)
+  }, [])
+
+  const handleDropPagos = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDraggingPagos(false)
+
+      if (isLoading) return
+
+      const droppedFiles = Array.from(e.dataTransfer.files)
+      if (droppedFiles.length === 0) return
+
+      const validFiles = droppedFiles.filter((f) => ACCEPTED_TYPES.includes(f.type))
+      if (validFiles.length === 0) {
+        setError("Formato no permitido. Acepta PDF e imagenes (PNG, JPG, WebP).")
+        return
+      }
+      if (validFiles.length < droppedFiles.length) {
+        setError(`${droppedFiles.length - validFiles.length} archivo(s) ignorado(s) por formato no permitido.`)
+      }
+
+      processFiles(validFiles, "pagos")
+    },
+    [isLoading, processFiles],
+  )
+
+  const handlePagosClick = useCallback(() => {
+    if (isLoading) return
+    fileInputPagosRef.current?.click()
+  }, [isLoading])
+
+  const handleFileSelectPagos = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = e.target.files
+      if (!selectedFiles || selectedFiles.length === 0) return
+
+      const validFiles = Array.from(selectedFiles).filter((f) => ACCEPTED_TYPES.includes(f.type))
+      if (validFiles.length === 0) {
+        setError("Formato no permitido. Acepta PDF e imagenes (PNG, JPG, WebP).")
+        return
+      }
+
+      processFiles(validFiles, "pagos")
+      e.target.value = ""
+    },
+    [processFiles],
+  )
+
+  const handleKeyDownPagos = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault()
+        handlePagosClick()
+      }
+    },
+    [handlePagosClick],
+  )
+
   return (
     <div className="w-full max-w-5xl mx-auto">
       {/* Hidden file input */}
@@ -216,7 +293,16 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         multiple
         className="hidden"
         onChange={handleFileSelect}
-        aria-label="Seleccionar archivos"
+        aria-label="Seleccionar archivos Legal"
+      />
+      <input
+        ref={fileInputPagosRef}
+        type="file"
+        accept=".pdf,.png,.jpg,.jpeg,.webp"
+        multiple
+        className="hidden"
+        onChange={handleFileSelectPagos}
+        aria-label="Seleccionar archivos Facturas"
       />
 
       {/* Single main card */}
@@ -313,37 +399,56 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                 </div>
               </div>
 
-              {/* Pagos Card - DISABLED */}
+              {/* Facturas Card - ACTIVE dropzone */}
               <div
-                aria-disabled="true"
-                aria-label="Caso de uso Pagos. Proximamente."
-                className="relative rounded-xl border-2 border-dashed border-border/30 bg-muted/15 min-h-[220px] p-8 opacity-50 cursor-not-allowed select-none pointer-events-none"
+                role="button"
+                tabIndex={0}
+                aria-label="Caso de uso Facturas. Arrastra documentos o haz clic para seleccionar archivos."
+                className={`group relative rounded-xl border-2 border-dashed min-h-[220px] p-8 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5A623] focus-visible:ring-offset-2 ${
+                  isDraggingPagos
+                    ? "border-[#F5A623] bg-[#F5A623]/10 shadow-lg ring-2 ring-[#F5A623]/20 scale-[1.01]"
+                    : "border-border/50 bg-[#F5A623]/[0.02] hover:border-[#F5A623]/50 hover:bg-[#F5A623]/5 hover:shadow-md hover:ring-2 hover:ring-[#F5A623]/10"
+                } ${isLoading ? "pointer-events-none opacity-60" : ""}`}
+                onDragOver={handleDragOverPagos}
+                onDragLeave={handleDragLeavePagos}
+                onDrop={handleDropPagos}
+                onClick={handlePagosClick}
+                onKeyDown={handleKeyDownPagos}
               >
                 <div className="flex flex-col items-center justify-center gap-5 text-center h-full">
-                  {/* Proximamente pill */}
-                  <div className="absolute top-4 right-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                      <Lock className="h-3 w-3" />
-                      Proximamente
-                    </span>
+                  <div
+                    className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
+                      isDraggingPagos ? "bg-[#F5A623]/20" : "bg-[#1E3A6E]/10 group-hover:bg-[#F5A623]/15"
+                    }`}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-7 w-7 animate-spin text-[#F5A623]" />
+                    ) : (
+                      <FileText
+                        className={`h-7 w-7 transition-colors duration-200 ${
+                          isDraggingPagos ? "text-[#F5A623]" : "text-[#1E3A6E] group-hover:text-[#F5A623]"
+                        }`}
+                      />
+                    )}
                   </div>
 
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/50">
-                    <CreditCard className="h-7 w-7 text-muted-foreground/50" />
-                  </div>
-
-                  <h3 className="text-xl font-bold text-muted-foreground/70">Pagos</h3>
+                  <h3 className="text-xl font-bold text-foreground">Facturas</h3>
 
                   <div className="space-y-1.5">
-                    <p className="text-sm font-medium text-muted-foreground/60">Documentos admitidos:</p>
-                    <p className="text-sm text-muted-foreground/50 leading-relaxed">
-                      Facturas proveedores e Impuestos
+                    <p className="text-sm font-medium text-muted-foreground">Documentos admitidos:</p>
+                    <p className="text-sm text-muted-foreground/80 leading-relaxed">
+                      Factura ordinaria y Factura IBI
                     </p>
                   </div>
 
-                  <p className="text-xs text-muted-foreground/40 mt-auto">
-                    Disponible en la siguiente fase
-                  </p>
+                  <div
+                    className={`flex items-center gap-2 text-xs font-medium transition-colors duration-200 mt-auto ${
+                      isDraggingPagos ? "text-[#F5A623]" : "text-muted-foreground/60 group-hover:text-[#F5A623]/70"
+                    }`}
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>{isDraggingPagos ? "Suelta para iniciar" : "Arrastra archivos o haz clic"}</span>
+                  </div>
                 </div>
               </div>
             </div>

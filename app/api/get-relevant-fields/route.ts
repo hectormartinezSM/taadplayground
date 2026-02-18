@@ -63,6 +63,27 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Fecha de escrito",
     "Fecha de presentación",
   ],
+  FACTURA_ORDINARIA: [
+    "Nombre emisor",
+    "CIF/NIF emisor",
+    "Numero de factura",
+    "Fecha de factura",
+    "Concepto",
+    "Base imponible",
+    "Tipo IVA",
+    "Importe IVA",
+    "Total factura",
+  ],
+  FACTURA_IBI: [
+    "Ayuntamiento",
+    "Referencia catastral",
+    "Direccion del inmueble",
+    "Periodo impositivo",
+    "Valor catastral",
+    "Base imponible",
+    "Cuota integra",
+    "Total a pagar",
+  ],
   // Provisional: mismos campos que Escrito al juzgado (se podrán desacoplar en el futuro)
   DILIGENCIA_DE_ORDENACION: [
     "Nombre del juzgado",
@@ -144,6 +165,24 @@ function getPredefinedFields(documentType: string): string[] | null {
     normalizedType.includes("diligencia de ordenacion")
   ) {
     return PREDEFINED_FIELDS["DILIGENCIA_DE_ORDENACION"]
+  }
+
+  // Detectar Factura IBI (antes que factura ordinaria para prioridad)
+  if (
+    normalizedType.includes("factura ibi") ||
+    normalizedType.includes("recibo ibi") ||
+    normalizedType.includes("impuesto sobre bienes inmuebles")
+  ) {
+    return PREDEFINED_FIELDS["FACTURA_IBI"]
+  }
+
+  // Detectar Factura ordinaria
+  if (
+    normalizedType.includes("factura ordinaria") ||
+    normalizedType.includes("factura comercial") ||
+    normalizedType.includes("factura proveedor")
+  ) {
+    return PREDEFINED_FIELDS["FACTURA_ORDINARIA"]
   }
 
   return null
