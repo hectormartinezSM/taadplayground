@@ -12,11 +12,8 @@ const CATALOG: Record<UseCase, string[]> = {
     "nota simple",
   ],
   pagos: [
-    "facturas proveedores",
-    "factura proveedor",
-    "factura",
-    "impuestos",
-    "impuesto",
+    "factura ordinaria",
+    "factura ibi",
   ],
 }
 

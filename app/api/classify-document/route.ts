@@ -210,7 +210,8 @@ Otros modelos tributarios
 Contrato bancario
 Justificante bancario
 Certificado de titularidad de cuenta
-Factura
+Factura ordinaria
+Factura IBI
 Presupuesto
 Albarán
 Ticket
