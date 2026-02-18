@@ -44,6 +44,14 @@ interface Devengo {
   importe: string
 }
 
+interface ConceptoFacturable {
+  concepto: string
+  baseImponible: string
+  porcentajeIVA: string
+  importeIVA: string
+  ivaCalculado?: boolean
+}
+
 interface Carga {
   numeroInscripcion: string
   fechaInscripcion: string
@@ -179,6 +187,94 @@ function parseCargas(value: string): Carga[] | null {
     // Not JSON, ignore
   }
   return null
+}
+
+// Format a raw number string to XX.XXX,XX€
+function formatImporteEUR(v: string): string {
+  if (!v || v === "N/D" || v === "-") return v
+  // Remove existing € symbol, spaces, dots (thousands), keep comma as decimal
+  let cleaned = v.replace(/€/g, "").trim().replace(/\s/g, "").replace(/\./g, "")
+  const parts = cleaned.split(",")
+  const intPart = parts[0].replace(/[^\d]/g, "")
+  const decPart = parts[1] ? parts[1].replace(/[^\d]/g, "").slice(0, 2).padEnd(2, "0") : "00"
+  if (!intPart) return v
+  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+  return `${formatted},${decPart}\u20AC`
+}
+
+function parseConceptosFacturables(value: string): ConceptoFacturable[] | null {
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].concepto) {
+      return parsed.map((item: ConceptoFacturable) => {
+        const base = item.baseImponible
+        const pctStr = item.porcentajeIVA
+        let iva = item.importeIVA
+        let ivaCalculado = false
+
+        // If IVA is missing but base and percentage exist, calculate it
+        if ((!iva || iva === "N/D") && base && base !== "N/D" && pctStr && pctStr !== "N/D") {
+          const baseNum = parseFloat(base.replace(/\./g, "").replace(",", "."))
+          const pctNum = parseFloat(pctStr.replace("%", "").replace(",", ".")) / 100
+          if (!isNaN(baseNum) && !isNaN(pctNum)) {
+            const computed = baseNum * pctNum
+            // Format to Spanish decimal
+            iva = computed.toFixed(2).replace(".", ",")
+            ivaCalculado = true
+          }
+        }
+
+        return {
+          concepto: item.concepto,
+          baseImponible: base,
+          porcentajeIVA: pctStr,
+          importeIVA: iva,
+          ivaCalculado,
+        }
+      })
+    }
+  } catch {
+    // Not JSON
+  }
+  return null
+}
+
+function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturable[] }) {
+  return (
+    <div className="rounded-md border border-border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/30">
+            <TableHead className="text-xs font-semibold text-left">Concepto</TableHead>
+            <TableHead className="text-xs font-semibold text-left whitespace-nowrap w-28">Base imponible</TableHead>
+            <TableHead className="text-xs font-semibold text-left whitespace-nowrap w-20">% IVA</TableHead>
+            <TableHead className="text-xs font-semibold text-left whitespace-nowrap w-28">Importe IVA</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {conceptos.map((c, idx) => (
+            <TableRow key={idx}>
+              <TableCell className="text-sm py-2">{c.concepto}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.baseImponible)}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{c.porcentajeIVA}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">
+                {c.ivaCalculado ? (
+                  <div>
+                    <span className="italic">{formatImporteEUR(c.importeIVA)}</span>
+                    <p className="text-[10px] text-muted-foreground italic leading-tight mt-0.5">
+                      IVA calculado (no aparece explicitamente en factura)
+                    </p>
+                  </div>
+                ) : (
+                  formatImporteEUR(c.importeIVA)
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
 }
 
 function SituacionesTable({ situaciones }: { situaciones: Situacion[] }) {
@@ -446,6 +542,13 @@ export function FieldsTable({
       }
     }
 
+    if (fieldName.toLowerCase() === "conceptos facturables") {
+      const conceptos = parseConceptosFacturables(extracted.value)
+      if (conceptos && conceptos.length > 0) {
+        return <ConceptosFacturablesTable conceptos={conceptos} />
+      }
+    }
+
     return <span className="animate-in fade-in duration-300">{extracted.value}</span>
   }
 
@@ -469,7 +572,11 @@ export function FieldsTable({
               field.name.toLowerCase() === "retenciones" && extracted && parseRetenciones(extracted.value)
             const isDevengos = field.name.toLowerCase() === "devengos" && extracted && parseDevengos(extracted.value)
             const isCargas = field.name.toLowerCase() === "cargas" && extracted && parseCargas(extracted.value) !== null
-            const isTableField = isSituaciones || isTitularidades || isRetenciones || isDevengos || isCargas
+            const isConceptos =
+              field.name.toLowerCase() === "conceptos facturables" &&
+              extracted &&
+              parseConceptosFacturables(extracted.value) !== null
+            const isTableField = isSituaciones || isTitularidades || isRetenciones || isDevengos || isCargas || isConceptos
 
             return (
               <TableRow key={field.name}>

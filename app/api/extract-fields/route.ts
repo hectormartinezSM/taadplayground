@@ -345,31 +345,27 @@ const FACTURA_FIELD_PROMPTS: Record<string, string> = {
   "Fecha de emision":
     "Extrae la fecha de emision de la factura. No confundas con fechas de vencimiento, entrega o pago. Devuelve la fecha en formato DD/MM/AAAA. Si no aparece, devuelve 'N/D'.",
   Proveedor:
-    "Extrae el nombre o razon social del proveedor (emisor de la factura). Devuelve el nombre en formato legible, en una sola linea.",
+    "Extrae el nombre o razon social del proveedor (emisor de la factura). Debe extraerse del MISMO BLOQUE donde aparece el CIF/NIF del proveedor, no de cabeceras genericas, pies de pagina ni textos legales. Devuelve el nombre en una sola linea, sin dobles espacios, capitalizado de forma legible (no todo mayusculas), conservando acentos.",
   "CIF/NIF proveedor":
     "Extrae el CIF o NIF del proveedor. Devuelve el identificador sin espacios. Si no aparece, devuelve 'N/D'.",
   "Direccion proveedor":
-    "Extrae la direccion completa del proveedor. Devuelve una sola linea legible. No mezcles con la direccion del cliente.",
-  "Provincia proveedor":
-    "Extrae la provincia del proveedor. Devuelve unicamente el nombre de la provincia. Si no aparece, devuelve 'N/D'.",
-  "Pais proveedor":
-    "Extrae el pais del proveedor. Devuelve unicamente el nombre del pais. Si no aparece, devuelve 'N/D'.",
+    "Extrae la direccion completa del proveedor. Devuelve una sola linea legible, sin dobles espacios, capitalizada de forma legible (no todo mayusculas), conservando acentos. No mezcles con la direccion del cliente. No incluyas textos legales ni informacion irrelevante.",
   Cliente:
-    "Extrae el nombre o razon social del cliente (receptor de la factura). Devuelve el nombre en formato legible, en una sola linea.",
+    "Extrae el nombre o razon social del cliente (receptor de la factura). Devuelve el nombre en una sola linea, sin dobles espacios, capitalizado de forma legible (no todo mayusculas), conservando acentos.",
   "CIF/NIF cliente":
     "Extrae el CIF o NIF del cliente. Devuelve el identificador sin espacios. Si no aparece, devuelve 'N/D'.",
   "Direccion cliente":
-    "Extrae la direccion completa del cliente. Devuelve una sola linea legible. No mezcles con la direccion del proveedor.",
-  Lineas:
-    `Extrae las lineas de la factura. Para cada linea devuelve: concepto (descripcion del bien/servicio), baseImponible (importe de la linea sin impuestos), porcentajeIVA (porcentaje de IVA aplicado en la linea), importeIVA (importe de IVA de esa linea). Devuelve EXACTAMENTE un array JSON, sin texto adicional. Manten el orden de aparicion. Si una linea no tiene alguno de los campos, pon 'N/D'. Ejemplo: [{"concepto":"Servicio X","baseImponible":"100,00","porcentajeIVA":"21%","importeIVA":"21,00"},{"concepto":"Producto Y","baseImponible":"50,00","porcentajeIVA":"10%","importeIVA":"5,00"}]`,
+    "Extrae la direccion completa del cliente. Devuelve una sola linea legible, sin dobles espacios, capitalizada de forma legible (no todo mayusculas), conservando acentos. No mezcles con la direccion del proveedor. No incluyas textos legales ni informacion irrelevante.",
+  "Conceptos facturables":
+    `Extrae las lineas/conceptos facturables de la factura. Para cada linea devuelve: concepto (descripcion del bien/servicio), baseImponible (importe de la linea sin impuestos, formato XX.XXX,XX sin simbolo €), porcentajeIVA (porcentaje de IVA aplicado, con simbolo %), importeIVA (importe de IVA de esa linea, formato XX.XXX,XX sin simbolo €). Devuelve EXACTAMENTE un array JSON, sin texto adicional. Manten el orden de aparicion. Si una linea no tiene alguno de los campos, pon 'N/D'. Ejemplo: [{"concepto":"Servicio X","baseImponible":"100,00","porcentajeIVA":"21%","importeIVA":"21,00"},{"concepto":"Producto Y","baseImponible":"50,00","porcentajeIVA":"10%","importeIVA":"5,00"}]`,
   "Base imponible total":
-    "Extrae la base imponible total de la factura (suma antes de impuestos). No confundas con subtotales parciales. Devuelve el numero tal cual aparece, sin simbolo de moneda. Si no aparece, devuelve 'N/D'.",
+    "Extrae la base imponible total de la factura (suma antes de impuestos). Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
   "Importe IVA total":
-    "Extrae el importe total de IVA de la factura. Devuelve el numero tal cual aparece, sin simbolo de moneda. Si no aparece, devuelve 'N/D'.",
+    "Extrae el importe total de IVA de la factura. Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
   "Importe IRPF":
-    "Extrae el importe de IRPF si aparece (retencion). Si no aparece IRPF, devuelve '0,00'. Devuelve el numero tal cual aparece, sin simbolo de moneda.",
+    "Extrae el importe de IRPF si aparece (retencion). Si no aparece IRPF, devuelve '0,00€'. Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio).",
   "Total factura":
-    "Extrae el total final de la factura (importe total a pagar). Devuelve el numero tal cual aparece, sin simbolo de moneda. Si no aparece, devuelve 'N/D'.",
+    "Extrae el total final de la factura (importe total a pagar). Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
 }
 
 const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
