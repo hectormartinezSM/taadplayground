@@ -244,25 +244,25 @@ function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturabl
     <div className="rounded-md border border-border overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/30">
-            <TableHead className="text-xs font-semibold text-left">Concepto</TableHead>
-            <TableHead className="text-xs font-semibold text-left whitespace-nowrap w-28">Base imponible</TableHead>
-            <TableHead className="text-xs font-semibold text-left whitespace-nowrap w-20">% IVA</TableHead>
-            <TableHead className="text-xs font-semibold text-left whitespace-nowrap w-28">Importe IVA</TableHead>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-48">Concepto</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Base imponible</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-20">% IVA</TableHead>
+            <TableHead className="text-xs font-semibold text-left">Importe IVA</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {conceptos.map((c, idx) => (
             <TableRow key={idx}>
-              <TableCell className="text-sm py-2">{c.concepto}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{c.concepto}</TableCell>
               <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.baseImponible)}</TableCell>
               <TableCell className="text-sm py-2 whitespace-nowrap">{c.porcentajeIVA}</TableCell>
-              <TableCell className="text-sm py-2 whitespace-nowrap">
+              <TableCell className="text-sm py-2 text-left">
                 {c.ivaCalculado ? (
                   <div>
                     <span className="italic">{formatImporteEUR(c.importeIVA)}</span>
                     <p className="text-[10px] text-muted-foreground italic leading-tight mt-0.5">
-                      IVA calculado (no aparece explicitamente en factura)
+                      IVA calculado
                     </p>
                   </div>
                 ) : (
