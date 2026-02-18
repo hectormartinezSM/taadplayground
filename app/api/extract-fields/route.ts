@@ -359,22 +359,36 @@ const FACTURA_ORDINARIA_FIELD_PROMPTS: Record<string, string> = {
 }
 
 const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
-  Ejercicio_Periodo:
-    "Estas analizando un documento de impuesto municipal español. Identifica el año y el periodo del impuesto. Los periodos pueden ser Anual, Trimestral o Semestral. No confundas con fechas de pago. Si el impuesto es fraccionado en dos plazos, considéralo Semestral. FORMATO OBLIGATORIO: Trimestral → 4T-2024, Semestral → 2S-2024, Anual → A-2024. Devuelve exactamente en ese formato.",
-  FechaPago:
-    "Estas analizando un documento de impuesto municipal español. Extrae el último día para pagar el impuesto. Si existen varios periodos (voluntario, ejecutivo, fraccionado, etc.), devuelve todas las fechas finales separadas por ' / '. Si aparecen dos fechas indistinguibles, devuelve ambas. No inventes fechas. Formato obligatorio: DD/MM/AAAA.",
-  DireccionInmueble:
-    "Estas analizando un documento de impuesto municipal español. Extrae la dirección completa del inmueble al que aplica el impuesto. No confundir con la dirección fiscal del sujeto pasivo ni con la dirección del organismo emisor. Devuelve la dirección en una sola línea legible.",
-  TipoImpuesto:
-    "Estas analizando un documento de impuesto municipal español. Identifica el tipo de impuesto. Devuelve únicamente una de las siguientes opciones exactas: IBI Urbano, IBI Rustico. Si detectas más de uno, devuelve el primero que aparezca. No devuelvas texto adicional.",
-  Lineas:
-    "Estas analizando un documento de impuesto municipal español. Determina si el documento contiene una única línea de impuesto o varias líneas independientes agrupadas. Si contiene solo una línea de impuesto, devuelve 'True'. Si contiene varias líneas independientes, devuelve 'False'.",
-  EntidadesColaboradoras:
-    "Estas analizando un documento de impuesto municipal español. Extrae todas las entidades colaboradoras (normalmente bancos españoles) donde puede realizarse el pago del impuesto. Devuelve todas las entidades mencionadas separadas por ' / '. No incluyas textos explicativos adicionales.",
-  LocalidadInmueble:
-    "Estas analizando un documento de impuesto municipal español. Extrae la localidad (municipio de España) del inmueble al que aplica el impuesto. No confundir con la localidad fiscal del sujeto pasivo ni con la localidad del organismo emisor. Devuelve únicamente el nombre del municipio.",
-  NumeroCuentaBancaria:
-    "Estas analizando un documento de impuesto municipal español. Indica si existe un IBAN donde se pueda transferir directamente el pago del impuesto. Si aparece un IBAN válido para realizar el pago, devuelve 'True'. Si no aparece, devuelve 'False'. No confundir con cuenta para domiciliación bancaria.",
+  "Ejercicio y periodo":
+    "Estas analizando un recibo de IBI en España. Identifica el año y el periodo del impuesto. No confundas con fechas de pago. Si está fraccionado en dos plazos, considéralo Semestral. Devuelve exactamente en formato: Trimestral → 4T-2024, Semestral → 2S-2024, Anual → A-2024.",
+  "Ultimo dia de pago":
+    "Extrae el último día para pagar el IBI en periodo voluntario. Si existen varios periodos, devuelve la fecha final del periodo voluntario. No inventes fechas. Formato obligatorio DD/MM/AAAA.",
+  "Direccion del inmueble":
+    "Extrae la dirección completa del inmueble al que corresponde el IBI. Debe ser legible para una persona. Incluye tipo de vía, nombre, número, piso o puerta si aparece. No confundas con la dirección fiscal del contribuyente ni con la del organismo emisor. Devuelve el texto en una sola línea, correctamente capitalizado y sin saltos innecesarios.",
+  "Tipo de IBI":
+    "Indica si el recibo corresponde a IBI Urbano o IBI Rustico. Devuelve únicamente una de esas dos opciones exactas.",
+  "Entidades colaboradoras":
+    "Extrae todas las entidades colaboradoras donde puede pagarse el IBI. Devuelve únicamente los nombres de los bancos o entidades financieras mencionadas.",
+  "Localidad del inmueble":
+    "Extrae el municipio del inmueble al que corresponde el IBI. Debe ser un municipio de España. No confundas con la localidad del organismo emisor.",
+  "IBAN para transferencia":
+    "Busca si el documento indica un IBAN donde pueda realizarse una transferencia para pagar el IBI. Si existe un IBAN válido, extráelo completo sin espacios. Si no aparece ningún IBAN para pago por transferencia, devuelve exactamente 'N/D'. No confundas con cuenta para domiciliación.",
+  "Entidad emisora":
+    "Extrae el nombre del organismo que emite el recibo del IBI (Ayuntamiento, organismo autónomo de recaudación, SUMA, ORGT, etc.). Devuelve el nombre completo en formato legible.",
+  "CIF emisora":
+    "Extrae el CIF del organismo emisor del IBI. Si no aparece, devuelve 'N/D'.",
+  "Codigo entidad emisora":
+    "Extrae el código interno del organismo emisor si aparece (código organismo, código ayuntamiento, código entidad). Si no aparece, devuelve 'N/D'.",
+  "Referencia recibo":
+    "Extrae la referencia completa necesaria para realizar el pago del recibo. Puede aparecer como 'Referencia', 'Número de recibo', 'Referencia de pago' o similar. Devuelve el código completo sin espacios adicionales.",
+  "Identificador de liquidacion":
+    "Si el documento es una liquidación, extrae el identificador de liquidación. Si no aparece ningún identificador de liquidación, devuelve 'N/D'.",
+  "Referencia catastral":
+    "Extrae la referencia catastral completa del inmueble. Debe ser el código oficial alfanumérico completo sin espacios.",
+  Importe:
+    "Extrae el importe total a pagar del recibo de IBI. Debe incluir separador de miles con punto, coma decimal y dos decimales siempre. Añade el símbolo € al final sin espacio. Ejemplo correcto: 1.234,56€. Si no aparece importe claro, devuelve 'N/D'.",
+  Contribuyente:
+    "Extrae el nombre completo del sujeto pasivo o contribuyente al que corresponde el recibo de IBI. Devuelve el nombre en formato legible.",
 }
 
 // Función para detectar si es un documento tipo DNI
@@ -491,6 +505,7 @@ function isFacturaIBIDocument(documentType: string): boolean {
     normalizedType.includes("recibo ibi") ||
     normalizedType.includes("impuesto sobre bienes inmuebles") ||
     normalizedType.includes("impuesto bienes inmuebles") ||
+    normalizedType.includes("tributo municipal") ||
     normalizedType === "ibi"
   )
 }

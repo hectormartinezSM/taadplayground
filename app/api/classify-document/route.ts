@@ -161,7 +161,7 @@ ORDEN 2 – "Escrito al juzgado" (evaluar SOLO si NO es Diligencia de ordenació
   CLAVE DIFERENCIADORA: El Escrito al juzgado es presentado POR una parte procesal (procurador, abogado) AL juzgado. Si el documento es emitido por el propio juzgado, NO es un Escrito al juzgado.
 
 ORDEN 3 – "Factura ordinaria" vs "Factura IBI":
-  - "Factura IBI": clasificar como tal si el documento es un recibo o liquidacion del Impuesto sobre Bienes Inmuebles (IBI). Señales: menciones a "IBI", "Impuesto Bienes Inmuebles", "Impuesto sobre Bienes Inmuebles", "Ayuntamiento", "referencia catastral", "valor catastral", "cuota tributaria", "periodo impositivo", "liquidacion del impuesto", "IBI Urbano", "IBI Rustico".
+  - "Factura IBI": clasificar como tal si el documento es un recibo o liquidacion del Impuesto sobre Bienes Inmuebles (IBI). Señales: menciones a "IBI", "Impuesto Bienes Inmuebles", "Impuesto sobre Bienes Inmuebles", "Ayuntamiento", "referencia catastral", "valor catastral", "cuota tributaria", "periodo impositivo", "liquidacion del impuesto", "IBI Urbano", "IBI Rustico", "tributo municipal".
   - "Factura ordinaria": clasificar como tal si el documento es una factura comercial de un proveedor/empresa (con NIF/CIF emisor, concepto de servicio/producto, base imponible, IVA, total). NO clasificar como "Factura ordinaria" si es un recibo de IBI.
 
 LISTA DE TIPOLOGÍAS PERMITIDAS (LITERAL EXACTO):

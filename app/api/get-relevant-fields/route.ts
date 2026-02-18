@@ -75,14 +75,21 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Total factura",
   ],
   FACTURA_IBI: [
-    "Ejercicio_Periodo",
-    "FechaPago",
-    "DireccionInmueble",
-    "TipoImpuesto",
-    "Lineas",
-    "EntidadesColaboradoras",
-    "LocalidadInmueble",
-    "NumeroCuentaBancaria",
+    "Ejercicio y periodo",
+    "Ultimo dia de pago",
+    "Direccion del inmueble",
+    "Tipo de IBI",
+    "Entidades colaboradoras",
+    "Localidad del inmueble",
+    "IBAN para transferencia",
+    "Entidad emisora",
+    "CIF emisora",
+    "Codigo entidad emisora",
+    "Referencia recibo",
+    "Identificador de liquidacion",
+    "Referencia catastral",
+    "Importe",
+    "Contribuyente",
   ],
   // Provisional: mismos campos que Escrito al juzgado (se podrán desacoplar en el futuro)
   DILIGENCIA_DE_ORDENACION: [
@@ -173,6 +180,7 @@ function getPredefinedFields(documentType: string): string[] | null {
     normalizedType.includes("recibo ibi") ||
     normalizedType.includes("impuesto sobre bienes inmuebles") ||
     normalizedType.includes("impuesto bienes inmuebles") ||
+    normalizedType.includes("tributo municipal") ||
     normalizedType === "ibi"
   ) {
     return PREDEFINED_FIELDS["FACTURA_IBI"]
