@@ -363,17 +363,17 @@ const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
     "Extrae el organismo que emite el recibo. Simplifica el nombre a formato legible y corto, como: 'Ayuntamiento de Madrid', 'Diputacion de Valencia'. No incluyas denominaciones administrativas largas. Devuelve unicamente el nombre simplificado.",
   "CIF emisora":
     "Extrae el CIF del organismo emisor. Si no aparece, devuelve 'N/D'.",
-  "Codigo entidad emisora":
-    "Extrae el codigo interno del organismo emisor si aparece. Si no aparece, devuelve 'N/D'.",
   Provincia:
     "Extrae la provincia española a la que pertenece el inmueble o el organismo emisor. Devuelve unicamente el nombre de la provincia.",
   "Ejercicio y periodo":
     "Estas analizando un recibo de IBI en España. Identifica el año y el periodo del impuesto. No confundas con fechas de pago. Si esta fraccionado en dos plazos, consideralo Semestral. Devuelve exactamente en formato: Trimestral → 4T-2024, Semestral → 2S-2024, Anual → A-2024.",
   "Tipo de IBI":
     "Indica si el recibo corresponde a IBI Urbano o IBI Rustico. Devuelve unicamente una de esas dos opciones exactas.",
-  "Referencia recibo":
+  Codigo:
+    "Extrae el codigo interno del organismo emisor o codigo de entidad si aparece en el documento. Si no aparece, devuelve 'N/D'.",
+  Referencia:
     "Extrae la referencia completa necesaria para realizar el pago del recibo. Puede aparecer como 'Referencia', 'Numero de recibo', 'Referencia de pago' o similar. Devuelve el codigo completo sin espacios adicionales.",
-  "Identificador de liquidacion":
+  Identificacion:
     "Si el documento es una liquidacion, extrae el identificador de liquidacion. Si no aparece ningun identificador de liquidacion, devuelve 'N/D'.",
   CPR:
     "Extrae el CPR (Codigo Personal de Recaudacion) si aparece en el documento. Si no aparece, devuelve 'N/D'.",
