@@ -265,6 +265,23 @@ function parseConceptosFacturables(value: string): ConceptoFacturable[] | null {
   return null
 }
 
+function wrapText(text: string, maxChars: number): string[] {
+  if (!text || text.length <= maxChars) return [text]
+  const words = text.split(/\s+/)
+  const lines: string[] = []
+  let current = ""
+  for (const word of words) {
+    if (current && (current.length + 1 + word.length) > maxChars) {
+      lines.push(current)
+      current = word
+    } else {
+      current = current ? current + " " + word : word
+    }
+  }
+  if (current) lines.push(current)
+  return lines
+}
+
 function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturable[] }) {
   const hasCalculated = conceptos.some((c) => c.ivaCalculado)
 
@@ -285,8 +302,12 @@ function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturabl
           <TableBody>
             {conceptos.map((c, idx) => (
               <TableRow key={idx}>
-                <TableCell className="text-sm py-2 max-w-xs">
-                  <span className="break-words" style={{ wordBreak: "break-word" }}>{c.concepto}</span>
+                <TableCell className="text-sm py-2">
+                  <div className="flex flex-col">
+                    {wrapText(c.concepto, 60).map((line, i) => (
+                      <span key={i}>{line}</span>
+                    ))}
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.precioUnitario)}</TableCell>
                 <TableCell className="text-sm py-2 whitespace-nowrap">{c.cantidad}</TableCell>
