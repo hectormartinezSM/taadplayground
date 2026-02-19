@@ -274,7 +274,7 @@ function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturabl
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="text-xs font-semibold whitespace-nowrap w-48">Concepto</TableHead>
+              <TableHead className="text-xs font-semibold whitespace-nowrap min-w-48">Concepto</TableHead>
               <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Precio unitario</TableHead>
               <TableHead className="text-xs font-semibold whitespace-nowrap w-16">Cantidad</TableHead>
               <TableHead className="text-xs font-semibold whitespace-nowrap w-28">Base imponible</TableHead>
@@ -285,7 +285,9 @@ function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturabl
           <TableBody>
             {conceptos.map((c, idx) => (
               <TableRow key={idx}>
-                <TableCell className="text-sm py-2 whitespace-nowrap">{c.concepto}</TableCell>
+                <TableCell className="text-sm py-2 max-w-xs">
+                  <span className="break-words" style={{ wordBreak: "break-word" }}>{c.concepto}</span>
+                </TableCell>
                 <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.precioUnitario)}</TableCell>
                 <TableCell className="text-sm py-2 whitespace-nowrap">{c.cantidad}</TableCell>
                 <TableCell className="text-sm py-2 whitespace-nowrap">{formatImporteEUR(c.baseImponible)}</TableCell>
@@ -322,6 +324,7 @@ function parseDesgloseImpuesto(value: string): DesgloseImpuesto[] | null {
 }
 
 function parseDesgloseRetencion(value: string): DesgloseRetencion | null {
+  if (!value || value.trim() === "N/D") return null
   try {
     const parsed = JSON.parse(value)
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.porcentaje) {

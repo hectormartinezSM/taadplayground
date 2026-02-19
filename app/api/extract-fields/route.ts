@@ -351,13 +351,13 @@ const FACTURA_GENERAL_FIELD_PROMPTS: Record<string, string> = {
   Proveedor:
     "Extrae el nombre o razon social del proveedor (emisor de la factura). Debe extraerse del MISMO BLOQUE donde aparece el CIF/NIF del proveedor, no de cabeceras genericas, pies de pagina ni textos legales. Devuelve el nombre en una sola linea, sin dobles espacios, capitalizado de forma legible (no todo mayusculas), conservando acentos.",
   "CIF/NIF proveedor":
-    "Extrae el CIF o NIF del proveedor. Devuelve el identificador sin espacios. Si no aparece, devuelve 'N/D'.",
+    "Extrae el CIF o NIF del proveedor. IMPORTANTE: un CIF espanol SIEMPRE empieza por una LETRA (A, B, C, D, E, F, G, H, J, N, P, Q, R, S, U, V, W) seguida de 8 digitos. Un NIF empieza por un digito o por X, Y, Z. Si el OCR ha confundido la letra inicial con un digito (ej: '8' en vez de 'B'), corrigelo. Devuelve el identificador sin espacios, en mayusculas. Si no aparece, devuelve 'N/D'.",
   "Direccion proveedor":
     "Extrae la direccion completa del proveedor. Devuelve una sola linea legible, sin dobles espacios, capitalizada de forma legible (no todo mayusculas), conservando acentos. No mezcles con la direccion del cliente. No incluyas textos legales ni informacion irrelevante.",
   Cliente:
     "Extrae el nombre o razon social del cliente (receptor de la factura). Devuelve el nombre en una sola linea, sin dobles espacios, capitalizado de forma legible (no todo mayusculas), conservando acentos.",
   "CIF/NIF cliente":
-    "Extrae el CIF o NIF del cliente. Devuelve el identificador sin espacios. Si no aparece, devuelve 'N/D'.",
+    "Extrae el CIF o NIF del cliente. IMPORTANTE: un CIF espanol SIEMPRE empieza por una LETRA (A, B, C, D, E, F, G, H, J, N, P, Q, R, S, U, V, W) seguida de 8 digitos. Un NIF empieza por un digito o por X, Y, Z. Si el OCR ha confundido la letra inicial con un digito (ej: '8' en vez de 'B'), corrigelo. Devuelve el identificador sin espacios, en mayusculas. Si no aparece, devuelve 'N/D'.",
   "Direccion cliente":
     "Extrae la direccion completa del cliente. Devuelve una sola linea legible, sin dobles espacios, capitalizada de forma legible (no todo mayusculas), conservando acentos. No mezcles con la direccion del proveedor. No incluyas textos legales ni informacion irrelevante.",
   "Conceptos facturables":
@@ -371,7 +371,7 @@ const FACTURA_GENERAL_FIELD_PROMPTS: Record<string, string> = {
   "Tipo de retencion":
     "Identifica si existe una retencion en la factura. Si aparece IRPF, devuelve 'IRPF'. Si no hay retencion, devuelve 'N/D'. No devuelvas texto adicional.",
   "Desglose retencion":
-    `Si existe retencion (IRPF), extrae: porcentaje aplicado, base imponible asociada total, importe retenido. Devuelve EXACTAMENTE un objeto JSON con: porcentaje, base, importe. Formato importes: XX.XXX,XX€. Formato porcentaje: XX%. Si no existe retencion, devuelve {"porcentaje":"N/D","base":"N/D","importe":"N/D"}. Ejemplo: {"porcentaje":"15%","base":"1.000,00€","importe":"150,00€"}`,
+    `Si existe retencion (IRPF), extrae: porcentaje aplicado, base imponible asociada total, importe retenido. Devuelve EXACTAMENTE un objeto JSON con: porcentaje, base, importe. Formato importes: XX.XXX,XX€. Formato porcentaje: XX%. Si NO existe retencion, devuelve exactamente el texto N/D (sin JSON, sin diccionario, solo el literal N/D). Ejemplo con retencion: {"porcentaje":"15%","base":"1.000,00€","importe":"150,00€"}. Ejemplo sin retencion: N/D`,
   "Total factura":
     "Extrae el total final de la factura (importe total a pagar). Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
   "Resumen de la factura":
