@@ -76,6 +76,7 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Conceptos facturables",
     "Impuesto indirecto",
     "Desglose impuesto indirecto",
+    "Base imponible total",
     "Tipo de retencion",
     "Desglose retencion",
     "Total factura",

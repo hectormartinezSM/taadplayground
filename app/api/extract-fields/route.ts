@@ -366,6 +366,8 @@ const FACTURA_GENERAL_FIELD_PROMPTS: Record<string, string> = {
     "Identifica el impuesto indirecto aplicado en la factura. Si detectas IVA, devuelve 'IVA'. Si detectas IGIC, devuelve 'IGIC'. Si no aparece ninguno claramente, devuelve 'N/D'. No devuelvas texto adicional.",
   "Desglose impuesto indirecto":
     `Extrae el desglose del impuesto indirecto (IVA o IGIC) desde el bloque de resumen fiscal de la factura. Para cada tipo impositivo devuelve: porcentaje (ej: 21%), base (base imponible asociada total, formato XX.XXX,XX€), importe (cuota correspondiente, formato XX.XXX,XX€). Devuelve EXACTAMENTE un array JSON con todos los tipos detectados. Manten el orden de aparicion. Si no existe desglose, devuelve []. Ejemplo: [{"porcentaje":"21%","base":"1.000,00€","importe":"210,00€"},{"porcentaje":"10%","base":"200,00€","importe":"20,00€"}]`,
+  "Base imponible total":
+    "Extrae la base imponible total de la factura (suma antes de impuestos). Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
   "Tipo de retencion":
     "Identifica si existe una retencion en la factura. Si aparece IRPF, devuelve 'IRPF'. Si no hay retencion, devuelve 'N/D'. No devuelvas texto adicional.",
   "Desglose retencion":
