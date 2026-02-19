@@ -341,7 +341,7 @@ const DILIGENCIA_DE_ORDENACION_FIELD_PROMPTS: Record<string, string> = {
   ...ESCRITO_AL_JUZGADO_FIELD_PROMPTS,
 }
 
-const FACTURA_FIELD_PROMPTS: Record<string, string> = {
+const FACTURA_GENERAL_FIELD_PROMPTS: Record<string, string> = {
   "Numero de factura":
     "Extrae el numero de factura. Suele aparecer como 'Factura nº', 'Nº Factura', 'Numero', 'Invoice No' o similar. Devuelve el valor completo tal cual, sin texto adicional.",
   Serie:
@@ -366,20 +366,14 @@ const FACTURA_FIELD_PROMPTS: Record<string, string> = {
     "Identifica el impuesto indirecto aplicado en la factura. Si detectas IVA, devuelve 'IVA'. Si detectas IGIC, devuelve 'IGIC'. Si no aparece ninguno claramente, devuelve 'N/D'. No devuelvas texto adicional.",
   "Desglose impuesto indirecto":
     `Extrae el desglose del impuesto indirecto (IVA o IGIC) desde el bloque de resumen fiscal de la factura. Para cada tipo impositivo devuelve: porcentaje (ej: 21%), base (base imponible asociada total, formato XX.XXX,XX€), importe (cuota correspondiente, formato XX.XXX,XX€). Devuelve EXACTAMENTE un array JSON con todos los tipos detectados. Manten el orden de aparicion. Si no existe desglose, devuelve []. Ejemplo: [{"porcentaje":"21%","base":"1.000,00€","importe":"210,00€"},{"porcentaje":"10%","base":"200,00€","importe":"20,00€"}]`,
-  "Base imponible total":
-    "Extrae la base imponible total de la factura (suma antes de impuestos). Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
-  "Importe IVA total":
-    "Extrae el importe total de IVA de la factura. Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
   "Tipo de retencion":
     "Identifica si existe una retencion en la factura. Si aparece IRPF, devuelve 'IRPF'. Si no hay retencion, devuelve 'N/D'. No devuelvas texto adicional.",
   "Desglose retencion":
     `Si existe retencion (IRPF), extrae: porcentaje aplicado, base imponible asociada total, importe retenido. Devuelve EXACTAMENTE un objeto JSON con: porcentaje, base, importe. Formato importes: XX.XXX,XX€. Formato porcentaje: XX%. Si no existe retencion, devuelve {"porcentaje":"N/D","base":"N/D","importe":"N/D"}. Ejemplo: {"porcentaje":"15%","base":"1.000,00€","importe":"150,00€"}`,
-  "Importe IRPF":
-    "Extrae el importe de IRPF si aparece (retencion). Si no aparece IRPF, devuelve '0,00€'. Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio).",
   "Total factura":
     "Extrae el total final de la factura (importe total a pagar). Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
   "Resumen de la factura":
-    "Genera un resumen muy breve del contenido economico de la factura. Debe tener entre 4 y 7 palabras. Debe basarse en los conceptos facturables. No incluir importes, porcentajes, numeros de factura ni datos fiscales. No superar 7 palabras.",
+    "Genera un resumen muy breve de la funcion principal de la factura. Debe indicar PARA QUE es la factura (ej: 'Mantenimiento de ascensores', 'Suministro electrico oficina', 'Servicios juridicos', 'Reparacion cubierta edificio'). Debe tener entre 3 y 7 palabras. No incluir importes, porcentajes, numeros de factura ni datos fiscales. No superar 7 palabras.",
 }
 
 const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
@@ -513,10 +507,11 @@ function isDiligenciaDeOrdenacionDocument(documentType: string): boolean {
   )
 }
 
-function isFacturaDocument(documentType: string): boolean {
+function isFacturaGeneralDocument(documentType: string): boolean {
   const normalizedType = documentType.toLowerCase().trim()
   return (
     normalizedType === "factura" ||
+    normalizedType === "factura general" ||
     normalizedType.includes("factura ordinaria") ||
     normalizedType.includes("factura comercial") ||
     normalizedType.includes("factura proveedor") ||
@@ -584,7 +579,7 @@ export async function POST(request: NextRequest) {
     const isModelo100IRPF = isModelo100IRPFDocument(documentType)
     const isEscritoAlJuzgado = isEscritoAlJuzgadoDocument(documentType)
     const isDiligenciaDeOrdenacion = isDiligenciaDeOrdenacionDocument(documentType)
-    const isFactura = isFacturaDocument(documentType)
+    const isFacturaGeneral = isFacturaGeneralDocument(documentType)
     const isFacturaIBI = isFacturaIBIDocument(documentType)
 
     for (const fieldName of fields) {
@@ -653,10 +648,10 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      if (isFactura && FACTURA_FIELD_PROMPTS[fieldName]) {
+      if (isFacturaGeneral && FACTURA_GENERAL_FIELD_PROMPTS[fieldName]) {
         properties[fieldName] = {
           type: "string",
-          description: FACTURA_FIELD_PROMPTS[fieldName],
+          description: FACTURA_GENERAL_FIELD_PROMPTS[fieldName],
         }
         required.push(fieldName)
         continue

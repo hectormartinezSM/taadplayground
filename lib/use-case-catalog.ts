@@ -12,7 +12,7 @@ const CATALOG: Record<UseCase, string[]> = {
     "nota simple",
   ],
   pagos: [
-    "factura",
+    "factura general",
     "factura ibi",
   ],
 }

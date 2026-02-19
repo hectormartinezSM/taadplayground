@@ -63,7 +63,7 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Fecha de escrito",
     "Fecha de presentación",
   ],
-  FACTURA: [
+  FACTURA_GENERAL: [
     "Numero de factura",
     "Serie",
     "Fecha de emision",
@@ -76,11 +76,8 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "Conceptos facturables",
     "Impuesto indirecto",
     "Desglose impuesto indirecto",
-    "Base imponible total",
-    "Importe IVA total",
     "Tipo de retencion",
     "Desglose retencion",
-    "Importe IRPF",
     "Total factura",
     "Resumen de la factura",
   ],
@@ -196,15 +193,16 @@ function getPredefinedFields(documentType: string): string[] | null {
     return PREDEFINED_FIELDS["FACTURA_IBI"]
   }
 
-  // Detectar Factura (comercial / ordinaria / invoice)
+  // Detectar Factura general (comercial / ordinaria / invoice)
   if (
     normalizedType === "factura" ||
+    normalizedType === "factura general" ||
     normalizedType.includes("factura ordinaria") ||
     normalizedType.includes("factura comercial") ||
     normalizedType.includes("factura proveedor") ||
     normalizedType.includes("invoice")
   ) {
-    return PREDEFINED_FIELDS["FACTURA"]
+    return PREDEFINED_FIELDS["FACTURA_GENERAL"]
   }
 
   return null
