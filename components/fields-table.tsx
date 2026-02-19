@@ -44,6 +44,18 @@ interface Devengo {
   importe: string
 }
 
+interface DesgloseImpuesto {
+  porcentaje: string
+  base: string
+  importe: string
+}
+
+interface DesgloseRetencion {
+  porcentaje: string
+  base: string
+  importe: string
+}
+
 interface ConceptoFacturable {
   concepto: string
   cantidad: string
@@ -293,6 +305,81 @@ function ConceptosFacturablesTable({ conceptos }: { conceptos: ConceptoFacturabl
       {hasCalculated && (
         <p className="text-xs text-muted-foreground mt-1.5 ml-1">* Importe calculado</p>
       )}
+    </div>
+  )
+}
+
+function parseDesgloseImpuesto(value: string): DesgloseImpuesto[] | null {
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].porcentaje) {
+      return parsed as DesgloseImpuesto[]
+    }
+  } catch {
+    // Not JSON
+  }
+  return null
+}
+
+function parseDesgloseRetencion(value: string): DesgloseRetencion | null {
+  try {
+    const parsed = JSON.parse(value)
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.porcentaje) {
+      if (parsed.porcentaje === "N/D" && parsed.base === "N/D" && parsed.importe === "N/D") {
+        return null
+      }
+      return parsed as DesgloseRetencion
+    }
+  } catch {
+    // Not JSON
+  }
+  return null
+}
+
+function DesgloseImpuestoTable({ desglose }: { desglose: DesgloseImpuesto[] }) {
+  return (
+    <div className="rounded-md border border-border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-24">Porcentaje</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-32">Base imponible</TableHead>
+            <TableHead className="text-xs font-semibold text-left">Importe</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {desglose.map((d, idx) => (
+            <TableRow key={idx}>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{d.porcentaje}</TableCell>
+              <TableCell className="text-sm py-2 whitespace-nowrap">{d.base}</TableCell>
+              <TableCell className="text-sm py-2 text-left">{d.importe}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function DesgloseRetencionTable({ desglose }: { desglose: DesgloseRetencion }) {
+  return (
+    <div className="rounded-md border border-border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-24">Porcentaje</TableHead>
+            <TableHead className="text-xs font-semibold whitespace-nowrap w-32">Base imponible</TableHead>
+            <TableHead className="text-xs font-semibold text-left">Importe</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className="text-sm py-2 whitespace-nowrap">{desglose.porcentaje}</TableCell>
+            <TableCell className="text-sm py-2 whitespace-nowrap">{desglose.base}</TableCell>
+            <TableCell className="text-sm py-2 text-left">{desglose.importe}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
   )
 }
@@ -569,6 +656,20 @@ export function FieldsTable({
       }
     }
 
+    if (fieldName.toLowerCase() === "desglose impuesto indirecto") {
+      const desglose = parseDesgloseImpuesto(extracted.value)
+      if (desglose && desglose.length > 0) {
+        return <DesgloseImpuestoTable desglose={desglose} />
+      }
+    }
+
+    if (fieldName.toLowerCase() === "desglose retencion") {
+      const desglose = parseDesgloseRetencion(extracted.value)
+      if (desglose) {
+        return <DesgloseRetencionTable desglose={desglose} />
+      }
+    }
+
     return <span className="animate-in fade-in duration-300">{extracted.value}</span>
   }
 
@@ -596,7 +697,15 @@ export function FieldsTable({
               field.name.toLowerCase() === "conceptos facturables" &&
               extracted &&
               parseConceptosFacturables(extracted.value) !== null
-            const isTableField = isSituaciones || isTitularidades || isRetenciones || isDevengos || isCargas || isConceptos
+            const isDesgloseImpuesto =
+              field.name.toLowerCase() === "desglose impuesto indirecto" &&
+              extracted &&
+              parseDesgloseImpuesto(extracted.value) !== null
+            const isDesgloseRetencion =
+              field.name.toLowerCase() === "desglose retencion" &&
+              extracted &&
+              parseDesgloseRetencion(extracted.value) !== null
+            const isTableField = isSituaciones || isTitularidades || isRetenciones || isDevengos || isCargas || isConceptos || isDesgloseImpuesto || isDesgloseRetencion
 
             return (
               <TableRow key={field.name}>

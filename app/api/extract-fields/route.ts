@@ -362,14 +362,24 @@ const FACTURA_FIELD_PROMPTS: Record<string, string> = {
     "Extrae la direccion completa del cliente. Devuelve una sola linea legible, sin dobles espacios, capitalizada de forma legible (no todo mayusculas), conservando acentos. No mezcles con la direccion del proveedor. No incluyas textos legales ni informacion irrelevante.",
   "Conceptos facturables":
     `Extrae las lineas/conceptos facturables de la factura. Para cada linea devuelve: concepto (descripcion del bien/servicio), cantidad (numero de unidades; si no aparece, pon '1'), precioUnitario (precio por unidad, formato XX.XXX,XX sin simbolo €; si no aparece explicitamente pero hay base imponible y cantidad, calcula precioUnitario = baseImponible / cantidad), baseImponible (importe TOTAL de la linea sin impuestos = cantidad × precioUnitario, formato XX.XXX,XX sin simbolo €), porcentajeIVA (porcentaje de IVA aplicado, con simbolo %), importeIVA (importe de IVA de esa linea, formato XX.XXX,XX sin simbolo €). IMPORTANTE: la baseImponible debe ser el importe total de la linea (cantidad × precio unitario), NO el precio unitario. Devuelve EXACTAMENTE un array JSON, sin texto adicional. Manten el orden de aparicion. Si una linea no tiene alguno de los campos, pon 'N/D'. Ejemplo: [{"concepto":"Servicio X","cantidad":"2","precioUnitario":"50,00","baseImponible":"100,00","porcentajeIVA":"21%","importeIVA":"21,00"},{"concepto":"Producto Y","cantidad":"1","precioUnitario":"50,00","baseImponible":"50,00","porcentajeIVA":"10%","importeIVA":"5,00"}]`,
+  "Impuesto indirecto":
+    "Identifica el impuesto indirecto aplicado en la factura. Si detectas IVA, devuelve 'IVA'. Si detectas IGIC, devuelve 'IGIC'. Si no aparece ninguno claramente, devuelve 'N/D'. No devuelvas texto adicional.",
+  "Desglose impuesto indirecto":
+    `Extrae el desglose del impuesto indirecto (IVA o IGIC) desde el bloque de resumen fiscal de la factura. Para cada tipo impositivo devuelve: porcentaje (ej: 21%), base (base imponible asociada total, formato XX.XXX,XX€), importe (cuota correspondiente, formato XX.XXX,XX€). Devuelve EXACTAMENTE un array JSON con todos los tipos detectados. Manten el orden de aparicion. Si no existe desglose, devuelve []. Ejemplo: [{"porcentaje":"21%","base":"1.000,00€","importe":"210,00€"},{"porcentaje":"10%","base":"200,00€","importe":"20,00€"}]`,
   "Base imponible total":
     "Extrae la base imponible total de la factura (suma antes de impuestos). Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
   "Importe IVA total":
     "Extrae el importe total de IVA de la factura. Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
+  "Tipo de retencion":
+    "Identifica si existe una retencion en la factura. Si aparece IRPF, devuelve 'IRPF'. Si no hay retencion, devuelve 'N/D'. No devuelvas texto adicional.",
+  "Desglose retencion":
+    `Si existe retencion (IRPF), extrae: porcentaje aplicado, base imponible asociada total, importe retenido. Devuelve EXACTAMENTE un objeto JSON con: porcentaje, base, importe. Formato importes: XX.XXX,XX€. Formato porcentaje: XX%. Si no existe retencion, devuelve {"porcentaje":"N/D","base":"N/D","importe":"N/D"}. Ejemplo: {"porcentaje":"15%","base":"1.000,00€","importe":"150,00€"}`,
   "Importe IRPF":
     "Extrae el importe de IRPF si aparece (retencion). Si no aparece IRPF, devuelve '0,00€'. Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio).",
   "Total factura":
     "Extrae el total final de la factura (importe total a pagar). Devuelve en formato XX.XXX,XX€ (punto separador de miles, coma decimal, 2 decimales, simbolo € al final sin espacio). Si no aparece, devuelve 'N/D'.",
+  "Resumen de la factura":
+    "Genera un resumen muy breve del contenido economico de la factura. Debe tener entre 4 y 7 palabras. Debe basarse en los conceptos facturables. No incluir importes, porcentajes, numeros de factura ni datos fiscales. No superar 7 palabras.",
 }
 
 const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
