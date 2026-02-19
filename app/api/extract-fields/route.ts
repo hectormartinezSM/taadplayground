@@ -380,7 +380,7 @@ const FACTURA_GENERAL_FIELD_PROMPTS: Record<string, string> = {
 
 const FACTURA_IBI_FIELD_PROMPTS: Record<string, string> = {
   "Entidad emisora":
-    "Extrae el organismo que emite el recibo. Simplifica el nombre a formato legible y corto, como: 'Ayuntamiento de Madrid', 'Diputacion de Valencia'. No incluyas denominaciones administrativas largas. Devuelve unicamente el nombre simplificado.",
+    "Extrae el organismo que emite el recibo de IBI. Busca EXCLUSIVAMENTE en campos de texto etiquetados como 'Entidad emisora', 'Organismo', 'Organismo emisor', 'Ente emisor' o similares. NO extraigas de logos, sellos, escudos, marcas de agua ni encabezados graficos. Simplifica el nombre a formato legible y corto, como: 'Ayuntamiento de Madrid', 'Diputacion de Valencia'. No incluyas denominaciones administrativas largas. Devuelve unicamente el nombre simplificado.",
   Provincia:
     "Extrae la provincia española a la que pertenece el inmueble o el organismo emisor. Devuelve unicamente el nombre de la provincia.",
   "Ejercicio y periodo":
