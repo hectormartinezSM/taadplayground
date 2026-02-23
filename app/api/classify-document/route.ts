@@ -1,311 +1,101 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { parseCache } from "../check-blank/route"
+import { generateText, Output } from "ai"
+import { z } from "zod"
 
-const LANDING_API_KEY = process.env.VISION_AGENT_API_KEY
-const API_BASE_URL = "https://api.va.eu-west-1.landing.ai"
+const classificationSchema = z.object({
+  tipo_documento: z.enum(["factura_intragrupo", "factura_con_albaran", "otro_documento"]),
+  subtipo: z.string().describe("Subtipo mas especifico si aplica. Para facturas: 'Factura Intragrupo', 'Factura Simple'. Para otros: 'Convenio', 'Contrato', etc."),
+  confianza: z.number().min(0).max(1).describe("Nivel de confianza en la clasificacion, de 0 a 1"),
+})
 
-interface ParseResponse {
-  markdown: string
-}
+const SYSTEM_PROMPT = `Eres un agente clasificador de documentos de Fundacion IberCaja. Tu tarea es clasificar documentos en una de tres categorias.
 
-interface ExtractResponse {
-  extraction: {
-    Clasify?: string
-  }
-}
+REGLAS DE CLASIFICACION:
 
-async function apiParse(imageBase64: string): Promise<string> {
-  if (parseCache.has(imageBase64)) {
-    console.log("[v0] API: Using cached parse result for classification")
-    return parseCache.get(imageBase64)!
-  }
+1. **factura_con_albaran**: El documento es una factura que INCLUYE o REFERENCIA albaranes. Indicadores:
+   - Menciona explicitamente "albaran", "albaran n", "nota de entrega", "delivery note"
+   - Contiene hojas de albaran adjuntas como paginas separadas
+   - La factura resume o consolida datos de uno o mas albaranes
+   - Hay numeros de albaran referenciados en el cuerpo de la factura
 
-  if (!LANDING_API_KEY) {
-    throw new Error("VISION_AGENT_API_KEY environment variable is not configured")
-  }
+2. **factura_intragrupo**: El documento es una factura SIN referencia a albaranes. Incluye:
+   - Facturas intragrupo (entre empresas del mismo grupo Ibercaja)
+   - Facturas simples de proveedores sin albaran
+   - Cualquier factura que NO mencione albaranes
+   - Indicadores: "factura", "invoice", NIF/CIF, importes, IVA, base imponible, numero de factura
 
-  const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "")
-  const buffer = Buffer.from(base64Data, "base64")
+3. **otro_documento**: Cualquier documento que NO sea una factura. Incluye:
+   - Convenios de colaboracion
+   - Contratos
+   - Acuerdos marco
+   - Documentos administrativos, legales, o de otro tipo
 
-  const formData = new FormData()
-  formData.append("document", new Blob([buffer]), "image.jpg")
-  formData.append("model", "dpt-2-latest")
-
-  const response = await fetch(`${API_BASE_URL}/v1/ade/parse`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LANDING_API_KEY}`,
-    },
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const errorBody = await response.text()
-
-    if (response.status === 429) {
-      throw new Error("Rate limit exceeded. Please try again in a few moments.")
-    }
-
-    throw new Error(`Parse API failed: ${response.status} - ${errorBody}`)
-  }
-
-  const contentType = response.headers.get("content-type")
-  if (!contentType || !contentType.includes("application/json")) {
-    const textBody = await response.text()
-    throw new Error(`Unexpected response format: ${textBody.substring(0, 100)}`)
-  }
-
-  const data: ParseResponse = await response.json()
-
-  parseCache.set(imageBase64, data.markdown)
-
-  return data.markdown
-}
-
-async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse> {
-  const formData = new FormData()
-  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
-  formData.append("schema", schema)
-  formData.append("model", "extract-latest")
-
-  const response = await fetch(`${API_BASE_URL}/v1/ade/extract`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LANDING_API_KEY}`,
-    },
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const errorBody = await response.text()
-
-    if (response.status === 429) {
-      throw new Error("Rate limit exceeded. Please try again in a few moments.")
-    }
-
-    throw new Error(`Extract API failed: ${response.status} - ${errorBody}`)
-  }
-
-  const contentType = response.headers.get("content-type")
-  if (!contentType || !contentType.includes("application/json")) {
-    const textBody = await response.text()
-    throw new Error(`Unexpected response format: ${textBody.substring(0, 100)}`)
-  }
-
-  return await response.json()
-}
-
-function joinMarkdowns(markdowns: string[]): string {
-  let finalText = ""
-
-  for (let i = 0; i < markdowns.length; i++) {
-    const newText = `# Página ${i + 1}\n\n${markdowns[i]}\n\n ---\n\n`
-    finalText += newText
-  }
-
-  return finalText
-}
+IMPORTANTE:
+- Si el documento tiene estructura de factura (emisor, receptor, importes, IVA, numero de factura), SIEMPRE es factura_intragrupo o factura_con_albaran.
+- La diferencia entre ambas facturas es UNICAMENTE la presencia/referencia de albaranes.
+- Si dudas entre factura y otro, prioriza factura si hay importes + IVA + numero de factura.`
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageUrls } = await request.json()
+    const { imageUrls, markdown } = await request.json()
 
-    if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-      return NextResponse.json({ error: "Image URLs array is required" }, { status: 400 })
+    if (!markdown && (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0)) {
+      return NextResponse.json({ error: "Markdown or image URLs are required" }, { status: 400 })
     }
 
-    console.log("[v0] API: Classifying document with", imageUrls.length, "pages...")
+    console.log("[v0] API: Classifying document with LLM...")
 
-    const markdowns: string[] = []
-    for (const imageUrl of imageUrls) {
-      const markdown = await apiParse(imageUrl)
-      markdowns.push(markdown)
+    // Use the markdown that was already parsed by the OCR step
+    let documentContent = markdown || ""
+
+    if (!documentContent && imageUrls) {
+      // Fallback: if no markdown provided, we need to parse first
+      // This shouldn't happen in normal flow since page-grid passes markdown
+      return NextResponse.json({ error: "Markdown content is required for classification" }, { status: 400 })
     }
 
-    console.log("[v0] API: All pages parsed, joining markdowns...")
-
-    const joinedMarkdown = joinMarkdowns(markdowns)
-    const lowerMarkdown = joinedMarkdown.toLowerCase()
-
-    // Fast keyword-based pre-classification for invoices
-    // Check for international invoice patterns (foreign currencies, incoterms, commercial invoice)
-    if (
-      (lowerMarkdown.includes('commercial invoice') || lowerMarkdown.includes('proforma invoice')) ||
-      (lowerMarkdown.includes('invoice') && (lowerMarkdown.includes('fob') || lowerMarkdown.includes('cif') || lowerMarkdown.includes('incoterm'))) ||
-      (lowerMarkdown.includes('invoice') && (lowerMarkdown.includes('usd') || lowerMarkdown.includes('gbp') || lowerMarkdown.includes('jpy') || lowerMarkdown.includes('cny')))
-    ) {
-      console.log("[v0] API: Fast classification - Factura Internacional detected by keywords")
-      return NextResponse.json({
-        type: "Factura Internacional",
-        confidence: 1,
-        markdown: joinedMarkdown,
-      })
-    }
-
-    // Check for national invoice patterns (NIF/CIF, IVA, factura)
-    if (
-      (lowerMarkdown.includes('factura') && (lowerMarkdown.includes('iva') || lowerMarkdown.includes('nif') || lowerMarkdown.includes('cif'))) ||
-      (lowerMarkdown.includes('base imponible') && lowerMarkdown.includes('iva'))
-    ) {
-      console.log("[v0] API: Fast classification - Factura Nacional detected by keywords")
-      return NextResponse.json({
-        type: "Factura Nacional",
-        confidence: 1,
-        markdown: joinedMarkdown,
-      })
-    }
-
-    const schemaClasGeneral = JSON.stringify({
-      properties: {
-        Clasify: {
-          anyOf: [{ type: "string" }, { type: "null" }],
-          default: null,
-          description: `INSTRUCCIONES DE CLASIFICACIÓN (OBLIGATORIAS)
-
-Debes clasificar el documento usando IDEALMENTE una de las tipologías EXACTAS de la siguiente lista.
-- Si encaja con una de ellas, devuelve EL MISMO LITERAL (misma ortografía, mayúsculas y acentos).
-- No traduzcas, no reformules, no añadas aclaraciones.
-- Si NO puedes asignarlo con confianza a ninguna tipología de la lista, crea una tipología nueva:
-  - Debe ser lo MÁS CORTA POSIBLE (objetivo <= 25 caracteres).
-  - Sin artículos ("el/la"), sin frases, sin detalles redundantes.
-  - 2-4 palabras máximo.
-
-LISTA DE TIPOLOGÍAS PERMITIDAS (LITERAL EXACTO):
-DNI
-NIE
-Pasaporte
-ID No Español
-Libro de familia
-CIF
-Carnet conducir
-Certificado de nacimiento
-Certificado de matrimonio
-Certificado de defunción
-Sentencia de Separación
-Certificado últimas voluntades
-Certificado de empadronamiento
-Contrato laboral
-Finiquito laboral
-Nomina
-Vida laboral
-Certificado retenciones Seguridad Social
-Certificado corriente pago Seguridad social
-Certificado corriente pago Agencia Tributaria
-Pensión
-Toma posesión funcionario
-Escritura hipotecaria
-Escritura compraventa
-Testamento
-Repartición herencia
-Escritura de poder
-Escritura declaración de obra nueva
-Escritura constitución entidad
-Tasación
-Nota simple registro propiedad
-Contrato alquiler
-Resolución contra alquiler
-Certificado catastral
-Nota registro mercantil
-Declaración de Residencia Fiscal
-Modelo 100 AEAT
-Modelo 130 AEAT
-Modelo 131 AEAT
-Modelo 303 AEAT
-Modelo 200 AEAT
-Modelo 347 AEAT
-Otros modelos tributarios
-Contrato bancario
-Justificante bancario
-Certificado de titularidad de cuenta
-Factura Nacional
-Factura Internacional
-Presupuesto
-Albarán
-Ticket
-Pagaré
-Cheque
-Parte médico
-Fotografía
-Póliza seguros
-Ficha técnica vehículo
-Atestado policial
-Permiso circulación vehículo
-Acta junta propietarios
-Declaración amistosa accidente
-Tarjeta embarque
-Reserva alojamiento
-Sanción
-Pago tasas
-CIRBE
-Auditoría anual empresa
-Licencia obras
-Balance
-Cuenta de pérdidas y ganancias
-Decreto
-Auto
-Denuncia
-Demanda
-Citación judicial
-Recibo IBI
-Recibo contribución urbana
-Recibo IVTM
-Convenio CAE
-Declaración Responsable Ayudas`,
-          title: "Clasify",
+    const { output } = await generateText({
+      model: "anthropic/claude-sonnet-4-20250514",
+      output: Output.object({
+        schema: classificationSchema,
+      }),
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Clasifica el siguiente documento:\n\n${documentContent}`,
         },
-      },
-      title: "TipoGeneral",
-      type: "object",
+      ],
     })
 
-    let classification = "Otros"
-
-    try {
-      console.log("[v0] API: Trying general classification schema...")
-      const result1 = await apiExtract(joinedMarkdown, schemaClasGeneral)
-
-      if (result1.extraction && result1.extraction.Clasify) {
-        classification = result1.extraction.Clasify
-      }
-    } catch (error) {
-      console.log("[v0] API: General classification failed, defaulting to Otros")
-      classification = "Otros"
+    if (!output) {
+      throw new Error("No classification output received from LLM")
     }
 
-    if (classification === "Otros") {
-      const schemaClasOtros = JSON.stringify({
-        properties: {
-          Clasify: {
-            anyOf: [{ type: "string" }, { type: "null" }],
-            default: null,
-            description:
-              "No pudiste clasificar el documento con las tipologías predefinidas. Crea una tipología nueva lo MÁS CORTA POSIBLE (objetivo <= 25 caracteres). Sin artículos, sin frases, 2-4 palabras máximo. Ejemplos: 'Contrato franquicia', 'Informe pericial', 'Recibo donación'.",
-            title: "Clasify",
-          },
-        },
-        title: "TipoOtros",
-        type: "object",
-      })
+    console.log("[v0] API: Document classified as:", output.tipo_documento, "subtipo:", output.subtipo, "confianza:", output.confianza)
 
-      try {
-        console.log('[v0] API: Trying specific "Otros" classification schema...')
-        const result2 = await apiExtract(joinedMarkdown, schemaClasOtros)
-
-        if (result2.extraction && result2.extraction.Clasify) {
-          classification = result2.extraction.Clasify
-        }
-      } catch (error) {
-        console.log("[v0] API: Specific classification also failed, keeping as Otros")
-        classification = "Otros"
-      }
+    // Map internal types to display names
+    let displayType: string
+    switch (output.tipo_documento) {
+      case "factura_intragrupo":
+        displayType = "Factura Intragrupo"
+        break
+      case "factura_con_albaran":
+        displayType = "Factura con Albaran"
+        break
+      case "otro_documento":
+        displayType = output.subtipo || "Otro Documento"
+        break
+      default:
+        displayType = "Otro Documento"
     }
-
-    console.log("[v0] API: Document classified as:", classification)
 
     return NextResponse.json({
-      type: classification,
-      confidence: 1,
-      markdown: joinedMarkdown,
+      type: displayType,
+      internalType: output.tipo_documento,
+      subtipo: output.subtipo,
+      confidence: output.confianza,
+      markdown: documentContent,
     })
   } catch (error) {
     console.error("[v0] API: Error classifying document:", error)

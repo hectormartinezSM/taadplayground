@@ -1,226 +1,275 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { generateText, Output } from "ai"
+import { z } from "zod"
 
-const LANDING_API_KEY = process.env.VISION_AGENT_API_KEY
-const API_BASE_URL = "https://api.va.eu-west-1.landing.ai"
+// --- Zod Schemas ---
 
-interface ExtractResponse {
-  extraction: Record<string, string>
-}
+const facturaSchema = z.object({
+  grupo_impuestos: z.string().describe("Tipo de impuesto aplicado: 'IVA 21%', 'IVA 10%', 'IVA 4%', 'Exento', etc."),
+  grupo_proveedores: z.string().describe("Nombre del proveedor/emisor de la factura"),
+  nif_cif: z.string().describe("NIF o CIF del emisor. Si esta tachado u oscurecido, devolver 'Dato Anonimizado en Origen'"),
+  forma_pago: z.string().describe("Forma de pago: 'Transferencia', 'Recibo', 'Domiciliacion', etc."),
+  cuenta_abono: z.string().describe("IBAN o cuenta bancaria. Si esta tachado u oscurecido, devolver 'Dato Anonimizado en Origen'"),
+  articulos: z.array(z.object({
+    descripcion: z.string().describe("Nombre/descripcion del producto o servicio"),
+    cantidad: z.string().nullable().describe("Cantidad, si aplica"),
+    precio_unitario: z.string().nullable().describe("Precio unitario con formato XX.XXX,XX EUR"),
+    importe: z.string().nullable().describe("Importe de la linea con formato XX.XXX,XX EUR"),
+  })).describe("Lista de articulos/servicios facturados. Puede haber uno o varios."),
+  concepto: z.string().describe("Resumen general del concepto de la factura en una frase corta"),
+  importe_total: z.string().describe("Importe total de la factura con formato XX.XXX,XX EUR"),
+  numero_factura: z.string().describe("Numero de factura tal como aparece en el documento, SIN espacios"),
+  fecha_documento: z.string().describe("Fecha de la factura en formato DD/MM/AAAA"),
+  fecha_registro: z.string().describe("Fecha de registro (igual a fecha de factura) en formato DD/MM/AAAA"),
+  fecha_vencimiento: z.string().nullable().describe("Fecha de vencimiento en formato DD/MM/AAAA, o null si no aparece"),
+  datos_anonimizados: z.array(z.string()).describe("Lista de nombres de campos cuyo valor esta tachado/oscurecido en el documento original"),
+})
 
-async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse | null> {
-  const formData = new FormData()
-  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
-  formData.append("schema", schema)
-  formData.append("model", "extract-latest")
+const facturaConAlbaranSchema = facturaSchema.extend({
+  albaranes: z.array(z.object({
+    numero: z.string().describe("Numero del albaran"),
+    fecha: z.string().describe("Fecha del albaran en formato DD/MM/AAAA"),
+    lineas: z.array(z.object({
+      descripcion: z.string().describe("Descripcion del producto/servicio"),
+      cantidad: z.string().describe("Cantidad"),
+      precio_unitario: z.string().describe("Precio unitario con formato XX.XXX,XX EUR"),
+      importe: z.string().describe("Importe de la linea con formato XX.XXX,XX EUR"),
+    })).describe("Lineas de detalle del albaran"),
+  })).describe("Albaranes asociados a la factura con su desglose"),
+})
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/v1/ade/extract`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LANDING_API_KEY}`,
-      },
-      body: formData,
-    })
+const otroDocumentoSchema = z.object({
+  tipo_documento: z.string().describe("Tipo especifico del documento: 'Convenio', 'Contrato', 'Acuerdo Marco', etc."),
+  partes_involucradas: z.string().describe("Partes que intervienen, separadas por ' | '"),
+  objeto_descripcion: z.string().describe("Objeto o descripcion resumida del documento en 1-2 frases"),
+  importe_total: z.string().nullable().describe("Importe total si existe, con formato XX.XXX,XX EUR"),
+  forma_pago: z.string().nullable().describe("Forma de pago si se especifica"),
+  cuenta_abono: z.string().nullable().describe("Cuenta bancaria si aparece. Si esta tachada, 'Dato Anonimizado en Origen'"),
+  fechas_clave: z.string().describe("Fechas importantes separadas por ' | '. Formato: 'Descripcion: DD/MM/AAAA'"),
+  personas_clave: z.string().describe("Personas relevantes separadas por ' | '. Formato: 'Nombre - Cargo/Rol'"),
+  duracion_vigencia: z.string().nullable().describe("Duracion o vigencia del documento"),
+  datos_anonimizados: z.array(z.string()).describe("Lista de nombres de campos cuyo valor esta tachado/oscurecido"),
+})
 
-    if (!response.ok) {
-      const errorBody = await response.text()
-      console.log("[v0] API: Field extraction failed -", response.status, errorBody)
-      return null
-    }
+// --- System prompts ---
 
-    return await response.json()
-  } catch (error) {
-    console.error("[v0] API: Field extraction error:", error)
-    return null
+const FACTURA_SYSTEM_PROMPT = `Eres un agente extractor de datos de facturas para Fundacion IberCaja. Tu tarea es extraer con precision todos los campos solicitados de facturas.
+
+REGLAS OBLIGATORIAS:
+
+1. FORMATO DE FECHAS: DD/MM/AAAA (ejemplo: 31/12/2025)
+2. FORMATO DE IMPORTES: XX.XXX,XX EUR (separador miles: punto, decimal: coma, moneda: EUR)
+3. NUMERO DE FACTURA: Exactamente como aparece en el documento, SIN espacios ni caracteres adicionales.
+4. DATOS ANONIMIZADOS: Si un campo esta tachado con una caja negra, oscurecido, o es ilegible por anonimizacion, el valor del campo debe ser "Dato Anonimizado en Origen" y ademas debes incluir el nombre del campo en la lista datos_anonimizados.
+5. ARTICULOS: Extrae TODOS los productos/servicios facturados como elementos individuales del array.
+6. GRUPO DE IMPUESTOS: Indica el tipo y porcentaje (ej: "IVA 21%", "IVA 10%", "Exento").
+7. CONCEPTO: Resume el concepto general de la factura en una frase corta y clara.
+8. Si un campo no existe en el documento y NO esta anonimizado, usa "N/D".`
+
+const FACTURA_ALBARAN_SYSTEM_PROMPT = `${FACTURA_SYSTEM_PROMPT}
+
+REGLAS ADICIONALES PARA FACTURAS CON ALBARAN:
+9. ALBARANES: Extrae TODOS los albaranes referenciados, con su numero, fecha, y TODAS las lineas de detalle de cada uno.
+10. Si la factura consolida varios albaranes, desglosarlos individualmente.
+11. Para cada linea de albaran, extrae: descripcion, cantidad, precio unitario e importe.`
+
+const OTRO_DOCUMENTO_SYSTEM_PROMPT = `Eres un agente extractor de datos de documentos para Fundacion IberCaja. Tu tarea es extraer la informacion mas relevante de documentos como convenios, contratos, acuerdos y otros.
+
+REGLAS OBLIGATORIAS:
+
+1. FORMATO DE FECHAS: DD/MM/AAAA
+2. FORMATO DE IMPORTES: XX.XXX,XX EUR
+3. DATOS ANONIMIZADOS: Si un campo esta tachado/oscurecido, el valor debe ser "Dato Anonimizado en Origen".
+4. PARTES: Lista todas las partes que firman o intervienen, separadas por " | ".
+5. PERSONAS CLAVE: Formato "Nombre Apellidos - Cargo/Rol", separadas por " | ".
+6. FECHAS CLAVE: Formato "Descripcion: DD/MM/AAAA", separadas por " | ".
+7. Se conciso y directo. Sin explicaciones largas.
+8. Si un campo no aplica, usa "N/D".`
+
+// --- Flattening functions ---
+
+function flattenFacturaData(
+  data: z.infer<typeof facturaSchema>,
+  fields: string[],
+): Record<string, { value: string; confidence: number }> {
+  const result: Record<string, { value: string; confidence: number }> = {}
+
+  const fieldMap: Record<string, () => string> = {
+    "Grupo de Impuestos": () => data.grupo_impuestos,
+    "Grupo de Proveedores": () => data.grupo_proveedores,
+    "NIF/CIF": () => data.nif_cif,
+    "Forma de Pago": () => data.forma_pago,
+    "Cuenta de Abono": () => data.cuenta_abono,
+    "Articulo(s)": () => {
+      if (data.articulos.length === 0) return "N/D"
+      return data.articulos
+        .map((a) => {
+          const parts = [a.descripcion]
+          if (a.cantidad) parts.push(a.cantidad)
+          if (a.precio_unitario) parts.push(a.precio_unitario)
+          if (a.importe) parts.push(a.importe)
+          return parts.join("; ")
+        })
+        .join(" | ")
+    },
+    "Concepto": () => data.concepto,
+    "Importe Total": () => data.importe_total,
+    "Numero de Factura": () => data.numero_factura,
+    "Fecha de Documento": () => data.fecha_documento,
+    "Fecha de Registro": () => data.fecha_registro,
+    "Fecha de Vencimiento": () => data.fecha_vencimiento || "N/D",
   }
+
+  for (const field of fields) {
+    const getter = fieldMap[field]
+    if (getter) {
+      result[field] = { value: getter(), confidence: 1 }
+    }
+  }
+
+  return result
 }
+
+function flattenFacturaConAlbaranData(
+  data: z.infer<typeof facturaConAlbaranSchema>,
+  fields: string[],
+): Record<string, { value: string; confidence: number }> {
+  // First, get all base factura fields
+  const result = flattenFacturaData(data, fields)
+
+  // Flatten albaranes
+  if (fields.includes("Albaranes Asociados") && data.albaranes) {
+    const albaranesStr = data.albaranes
+      .map((a) => `N ${a.numero} (${a.fecha})`)
+      .join(" | ")
+    result["Albaranes Asociados"] = { value: albaranesStr || "N/D", confidence: 1 }
+  }
+
+  if (fields.includes("Detalle por Albaran") && data.albaranes) {
+    const detalleLines: string[] = []
+    for (const albaran of data.albaranes) {
+      detalleLines.push(`--- Albaran ${albaran.numero} (${albaran.fecha}) ---`)
+      for (const linea of albaran.lineas) {
+        detalleLines.push(`${linea.descripcion}; ${linea.cantidad}; ${linea.precio_unitario}; ${linea.importe}`)
+      }
+    }
+    result["Detalle por Albaran"] = { value: detalleLines.join(" | ") || "N/D", confidence: 1 }
+  }
+
+  return result
+}
+
+function flattenOtroDocumentoData(
+  data: z.infer<typeof otroDocumentoSchema>,
+  fields: string[],
+): Record<string, { value: string; confidence: number }> {
+  const result: Record<string, { value: string; confidence: number }> = {}
+
+  const fieldMap: Record<string, () => string> = {
+    "Tipo de Documento": () => data.tipo_documento,
+    "Partes Involucradas": () => data.partes_involucradas,
+    "Objeto / Descripcion": () => data.objeto_descripcion,
+    "Importe Total": () => data.importe_total || "N/D",
+    "Forma de Pago": () => data.forma_pago || "N/D",
+    "Cuenta de Abono": () => data.cuenta_abono || "N/D",
+    "Fechas Clave": () => data.fechas_clave,
+    "Personas Clave": () => data.personas_clave,
+    "Duracion / Vigencia": () => data.duracion_vigencia || "N/D",
+  }
+
+  for (const field of fields) {
+    const getter = fieldMap[field]
+    if (getter) {
+      result[field] = { value: getter(), confidence: 1 }
+    }
+  }
+
+  return result
+}
+
+// --- Main handler ---
 
 export async function POST(request: NextRequest) {
   try {
     const { markdown, fields, documentType } = await request.json()
 
     if (!markdown || !fields || !Array.isArray(fields) || !documentType) {
-      return NextResponse.json({ error: "Markdown, fields array, and document type are required" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Markdown, fields array, and document type are required" },
+        { status: 400 },
+      )
     }
 
     console.log("[v0] API: Extracting", fields.length, "fields for document type:", documentType)
 
-    const properties: Record<string, any> = {}
-    const required: string[] = []
+    const lower = documentType.toLowerCase()
+    const isFacturaConAlbaran = lower.includes("albaran")
+    const isFactura = isFacturaConAlbaran || lower.includes("factura") || lower.includes("intragrupo")
 
-    // Check if this is an invoice document for special field handling
-    const isFacturaNacional = documentType === 'Factura Nacional' || 
-      (documentType.toLowerCase().includes('factura') && !documentType.toLowerCase().includes('internacional'))
+    let extractedData: Record<string, { value: string; confidence: number }>
 
-    const isFacturaInternacional = documentType === 'Factura Internacional' || 
-      (documentType.toLowerCase().includes('factura') && documentType.toLowerCase().includes('internacional')) ||
-      documentType.toLowerCase().includes('commercial invoice')
+    if (isFacturaConAlbaran) {
+      console.log("[v0] API: Using factura con albaran schema")
+      const { output } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        output: Output.object({ schema: facturaConAlbaranSchema }),
+        system: FACTURA_ALBARAN_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: `Extrae todos los datos de esta factura con albaranes:\n\n${markdown}`,
+          },
+        ],
+      })
 
-    const isFactura = isFacturaNacional || isFacturaInternacional
+      if (!output) throw new Error("No extraction output from LLM")
+      extractedData = flattenFacturaConAlbaranData(output, fields)
 
-    for (const fieldName of fields) {
-      if (!fieldName) continue
+    } else if (isFactura) {
+      console.log("[v0] API: Using factura intragrupo schema")
+      const { output } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        output: Output.object({ schema: facturaSchema }),
+        system: FACTURA_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: `Extrae todos los datos de esta factura:\n\n${markdown}`,
+          },
+        ],
+      })
 
-      // Special handling for invoice line items / conceptos
-      if (isFactura && (fieldName === 'Conceptos / Líneas de Detalle')) {
-        properties[fieldName] = {
-          type: "string",
-          description: `Extrae TODAS las líneas de detalle / conceptos de la factura.
-Para cada línea, extrae: descripción, cantidad, precio unitario e importe.
-Devuelve cada línea separada por " | " con el formato:
-"Descripción; Cantidad; Precio Unitario; Importe"
+      if (!output) throw new Error("No extraction output from LLM")
+      extractedData = flattenFacturaData(output, fields)
 
-Si hay múltiples líneas, sepáralas con " | ".
-Ejemplo: "Servicio consultoría; 10 horas; 50,00 €; 500,00 € | Material oficina; 3 uds; 12,00 €; 36,00 €"
+    } else {
+      console.log("[v0] API: Using otro documento schema")
+      const { output } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        output: Output.object({ schema: otroDocumentoSchema }),
+        system: OTRO_DOCUMENTO_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: `Extrae los datos mas relevantes de este documento:\n\n${markdown}`,
+          },
+        ],
+      })
 
-Si algún campo de la línea no existe, pon "-".
-Preserva TODOS los decimales y formatea importes con separador de miles punto y decimal coma.`
-        }
-        required.push(fieldName)
-        continue
-      }
-
-      // Special handling for Documento Firmado (Sí/No)
-      if (isFactura && fieldName === 'Documento Firmado') {
-        properties[fieldName] = {
-          type: "string",
-          enum: ["Sí", "No"],
-          description: `Determina si la factura está firmada o no.
-Busca cualquier tipo de firma en el documento: firma manuscrita, firma digital, sello de empresa, firma electrónica o cualquier indicación de firma.
-Devuelve "Sí" si hay alguna firma o sello presente en el documento.
-Devuelve "No" si no hay ninguna firma ni sello visible.`
-        }
-        required.push(fieldName)
-        continue
-      }
-
-      // Special handling for Tipo Impositivo (IVA, IGIC, VAT, GST, etc.)
-      if (isFactura && fieldName === 'Tipo Impositivo') {
-        properties[fieldName] = {
-          type: "string",
-          description: `Identifica el TIPO de impuesto aplicado en la factura.
-NO devuelvas el porcentaje, sino el NOMBRE del tipo impositivo.
-Ejemplos de tipos impositivos: "IVA", "IGIC", "IPSI", "VAT", "GST", "Sales Tax", "Consumption Tax", "HST", "Service Tax".
-- Para facturas españolas suele ser "IVA" (o "IGIC" en Canarias, "IPSI" en Ceuta/Melilla).
-- Para facturas internacionales puede ser "VAT", "GST", "Sales Tax", etc.
-- Si la factura está exenta de impuestos, devuelve "Exento".
-- Si no se identifica ningún impuesto, devuelve "N/D".
-Devuelve SOLO el nombre del tipo impositivo, sin porcentaje ni importe.`
-        }
-        required.push(fieldName)
-        continue
-      }
-
-      properties[fieldName] = {
-        type: "string",
-        description: `Extrae el valor de ${fieldName} del documento tipo ${documentType}.
-
-Tu objetivo es devolver los campos solicitados de forma MUY CONCISA: cuanto más breve, resumida y sintetizada sea la respuesta, mejor, sin perder información clave.
-
-REGLAS DE FORMATO (OBLIGATORIAS):
-
-1) Brevedad extrema:
-   - Cada valor debe ser lo más corto posible.
-   - Objetivo: <= 50 caracteres por campo.
-   - Si te pasas de 50, reescribe y acorta (elimina palabras redundantes, abrevia lo obvio).
-   - Prohibido: frases completas, explicaciones, coletillas ("según el documento…", "parece…").
-   - Solo el dato final. Si falta: "N/D".
-
-2) Nombres de personas:
-   - Formato obligatorio: "Nombre Apellidos"
-   - Si el documento trae "Apellidos, Nombre" o "APELLIDOS, NOMBRE": invierte a "Nombre Apellidos".
-   - Capitalización normal: Primera letra en mayúscula y resto en minúsculas (respetando tildes).
-   - Elimina comas en el nombre final.
-   - Ejemplos:
-     - "PÉREZ GARCÍA, JUAN" → "Juan Pérez García"
-     - "GARCIA, ANA" → "Ana Garcia"
-     - "Juan Pérez García" → "Juan Pérez García"
-
-3) Nombres de empresas:
-   - Primera letra en MAYÚSCULA y el resto en minúsculas.
-   - Mantén siglas y formas societarias en mayúsculas cuando aplique (ej.: "S.A.", "S.L.", "S.L.U.", "U.T.E.", "B.V.", "GmbH").
-   - Ejemplo:
-     - "SERIMAG SOLUCIONES DIGITALES S.L." → "Serimag Soluciones Digitales S.L."
-
-4) Importes:
-   - Formato numérico: XX.XXX.XXX,XX
-   - Separador de miles: punto (.)
-   - Separador decimal: coma (,)
-   - Añade el símbolo de moneda (preferentemente detrás si no se indica lo contrario): "1.234,56 €"
-   - Si hay unidad adicional, usa formato simbólico (ej.: "%", "€/mes", "€/día", "u.").
-   - Ejemplos:
-     - "1234.5 EUR" → "1.234,50 €"
-     - "10 percent" → "10 %"
-
-5) Fechas:
-   - Formato: DD/MM/AAAA
-   - Si es un intervalo o periodo: DD/MM/AAAA - DD/MM/AAAA
-   - Ejemplos:
-     - "2025-01-08" → "08/01/2025"
-     - "del 1 de enero al 31 de marzo de 2025" → "01/01/2025 - 31/03/2025"`,
-      }
-      required.push(fieldName)
+      if (!output) throw new Error("No extraction output from LLM")
+      extractedData = flattenOtroDocumentoData(output, fields)
     }
 
-    const schema = JSON.stringify({
-      type: "object",
-      properties,
-      required,
-    })
-
-    console.log("[v0] API: Extracting all fields in a single call")
-
-    const result: Record<string, { value: string; confidence: number }> = {}
-
-    try {
-      const extractionResult = await apiExtract(markdown, schema)
-
-      if (extractionResult && extractionResult.extraction) {
-        // Map the extraction results to our format
-        for (const fieldName of fields) {
-          const valor = extractionResult.extraction[fieldName]
-
-          // Handle different value types (string, number, etc.)
-          if (valor !== null && valor !== undefined && valor !== "") {
-            // Convert numbers to string for display, preserve string values
-            const valueStr = typeof valor === "number" ? valor.toString() : String(valor).trim()
-            result[fieldName] = {
-              value: valueStr,
-              confidence: 1,
-            }
-            console.log("[v0] API: Field", fieldName, "extracted:", valueStr)
-          } else {
-            result[fieldName] = {
-              value: "N/D",
-              confidence: 1,
-            }
-            console.log("[v0] API: No response for field:", fieldName)
-          }
-        }
-      } else {
-        console.log("[v0] API: No extraction results")
-        // Set all fields to N/D
-        for (const fieldName of fields) {
-          result[fieldName] = {
-            value: "N/D",
-            confidence: 1,
-          }
-        }
-      }
-    } catch (error) {
-      console.log("[v0] API: Error extracting fields -", error)
-      // Set all fields to N/D on error
-      for (const fieldName of fields) {
-        result[fieldName] = {
-          value: "N/D",
-          confidence: 1,
-        }
+    // Ensure all requested fields have a value
+    for (const field of fields) {
+      if (!extractedData[field]) {
+        extractedData[field] = { value: "N/D", confidence: 1 }
       }
     }
 
     console.log("[v0] API: All fields extracted successfully")
 
-    return NextResponse.json({ extractedData: result })
+    return NextResponse.json({ extractedData })
   } catch (error) {
     console.error("[v0] API: Error extracting fields:", error)
 

@@ -375,7 +375,7 @@ export function PageGrid({
       })
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Classification timeout after 60s")), 60000),
+        setTimeout(() => reject(new Error("Classification timeout after 120s")), 120000),
       )
 
       const classificationResponse = (await Promise.race([classificationPromise, timeoutPromise])) as Response
