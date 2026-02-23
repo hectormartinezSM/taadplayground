@@ -255,19 +255,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                           Documento {index + 1}
                           {doc.documentType && ` - ${doc.documentType.type}`}
                         </CardTitle>
-                        {doc.status === "complete" && (
-                          docIsComplete ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                              <CheckCircle2 className="h-3 w-3" />
-                              OK
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                              <AlertCircle className="h-3 w-3" />
-                              Incompleto
-                            </span>
-                          )
-                        )}
+
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {docPages.length} {docPages.length === 1 ? "página" : "páginas"}
