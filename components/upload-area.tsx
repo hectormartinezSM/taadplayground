@@ -375,6 +375,22 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                         <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
                         Facturas Internacionales
                       </li>
+                      <li className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                        Facturas Intragrupo
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                        Albaranes
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                        Convenios
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                        Otros Documentos
+                      </li>
                     </ul>
                   </div>
                 </>

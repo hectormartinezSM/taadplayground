@@ -148,6 +148,15 @@ export default function Home() {
                 className="h-10 w-auto object-contain"
               />
             </div>
+            <div className="border-l pl-10">
+              <Image
+                src="/images/fundacion-ibercaja-logo.png"
+                alt="Fundacion IberCaja"
+                width={200}
+                height={60}
+                className="h-10 w-auto object-contain"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">Agentic Workflow Demo</span>
