@@ -1,0 +1,332 @@
+================================================================================
+  ESPECIFICACION DE CLASIFICACION Y EXTRACCION DE FACTURAS
+  Documento generado automaticamente desde la configuracion del sistema
+================================================================================
+
+
+1. CLASIFICACION
+================================================================================
+
+El sistema clasifica dos tipologias de factura:
+
+  - "Factura general"
+  - "Factura IBI"
+
+Orden de evaluacion: ORDEN 3 (tras Diligencia de ordenacion y Escrito al juzgado)
+
+Criterios de clasificacion:
+  - "Factura IBI": recibo o liquidacion del Impuesto sobre Bienes Inmuebles.
+    Senales: menciones a "IBI", "Impuesto Bienes Inmuebles", "Impuesto sobre
+    Bienes Inmuebles", "Ayuntamiento", "referencia catastral", "valor catastral",
+    "cuota tributaria", "periodo impositivo", "liquidacion del impuesto",
+    "IBI Urbano", "IBI Rustico", "tributo municipal".
+
+  - "Factura general": factura comercial de un proveedor/empresa (con NIF/CIF
+    emisor, concepto de servicio/producto, base imponible, IVA, total).
+    Tambien si contiene "invoice".
+    NO clasificar como "Factura general" si es un recibo de IBI.
+
+
+================================================================================
+2. FACTURA GENERAL - CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (16 en total, en este orden):
+
+  1.  Numero de factura
+  2.  Serie
+  3.  Fecha de emision
+  4.  Proveedor
+  5.  CIF/NIF proveedor
+  6.  Direccion proveedor
+  7.  Cliente
+  8.  CIF/NIF cliente
+  9.  Direccion cliente
+  10. Conceptos facturables          (JSON array)
+  11. Base imponible total
+  12. Tipo impuesto indirecto
+  13. Desglose impuesto indirecto    (JSON array)
+  14. Tipo de retencion
+  15. Desglose retencion             (JSON objeto o "N/D")
+  16. Total factura
+  17. Resumen de la factura
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Numero de factura
+  Extrae el numero de factura. Suele aparecer como 'Factura n', 'N Factura',
+  'Numero', 'Invoice No' o similar. Devuelve el valor completo tal cual, sin
+  texto adicional.
+
+CAMPO: Serie
+  Extrae la serie de la factura si aparece (por ejemplo 'A', '2024', 'SERIE B').
+  Si no aparece una serie separada del numero, devuelve 'N/D'.
+
+CAMPO: Fecha de emision
+  Extrae la fecha de emision de la factura. No confundas con fechas de
+  vencimiento, entrega o pago. Devuelve la fecha en formato DD/MM/AAAA.
+  Si no aparece, devuelve 'N/D'.
+
+CAMPO: Proveedor
+  Extrae el nombre o razon social del proveedor (emisor de la factura). Debe
+  extraerse del MISMO BLOQUE donde aparece el CIF/NIF del proveedor, no de
+  cabeceras genericas, pies de pagina ni textos legales. Devuelve el nombre en
+  una sola linea, sin dobles espacios, capitalizado de forma legible (no todo
+  mayusculas), conservando acentos.
+
+CAMPO: CIF/NIF proveedor
+  Extrae el CIF o NIF del proveedor. IMPORTANTE: un CIF espanol SIEMPRE empieza
+  por una LETRA (A, B, C, D, E, F, G, H, J, N, P, Q, R, S, U, V, W) seguida
+  de 8 digitos. Un NIF empieza por un digito o por X, Y, Z. Si el OCR ha
+  confundido la letra inicial con un digito (ej: '8' en vez de 'B'), corrigelo.
+  Devuelve el identificador sin espacios, en mayusculas. Si no aparece, 'N/D'.
+
+CAMPO: Direccion proveedor
+  Extrae la direccion completa del proveedor. Devuelve una sola linea legible,
+  sin dobles espacios, capitalizada de forma legible (no todo mayusculas),
+  conservando acentos. No mezcles con la direccion del cliente. No incluyas
+  textos legales ni informacion irrelevante.
+
+CAMPO: Cliente
+  Extrae el nombre o razon social del cliente (receptor de la factura). Devuelve
+  el nombre en una sola linea, sin dobles espacios, capitalizado de forma legible
+  (no todo mayusculas), conservando acentos.
+
+CAMPO: CIF/NIF cliente
+  Extrae el CIF o NIF del cliente. Mismas reglas que CIF/NIF proveedor (letra
+  inicial obligatoria para CIF, correccion OCR). Devuelve sin espacios, en
+  mayusculas. Si no aparece, 'N/D'.
+
+CAMPO: Direccion cliente
+  Extrae la direccion completa del cliente. Devuelve una sola linea legible,
+  sin dobles espacios, capitalizada de forma legible. No mezcles con la
+  direccion del proveedor. No incluyas textos legales.
+
+CAMPO: Conceptos facturables (JSON array)
+  Extrae las lineas/conceptos facturables de la factura. Para cada linea:
+    - concepto: descripcion del bien/servicio
+    - cantidad: numero de unidades (si no aparece, '1')
+    - precioUnitario: precio por unidad, formato XX.XXX,XX sin simbolo EUR
+      (si no aparece pero hay base y cantidad, calcula precioUnitario = base / cantidad)
+    - baseImponible: importe TOTAL de la linea sin impuestos = cantidad x precioUnitario
+      formato XX.XXX,XX sin simbolo EUR
+      IMPORTANTE: debe ser el importe total (cantidad x precio unitario), NO el
+      precio unitario
+    - porcentajeIVA: porcentaje de IVA aplicado, con simbolo %
+    - importeIVA: importe de IVA de esa linea, formato XX.XXX,XX sin simbolo EUR
+
+  Formato de salida: array JSON exacto, sin texto adicional.
+  Si falta algun campo en una linea, poner 'N/D'.
+
+  Ejemplo:
+  [
+    {
+      "concepto": "Servicio X",
+      "cantidad": "2",
+      "precioUnitario": "50,00",
+      "baseImponible": "100,00",
+      "porcentajeIVA": "21%",
+      "importeIVA": "21,00"
+    },
+    {
+      "concepto": "Producto Y",
+      "cantidad": "1",
+      "precioUnitario": "50,00",
+      "baseImponible": "50,00",
+      "porcentajeIVA": "10%",
+      "importeIVA": "5,00"
+    }
+  ]
+
+  Visualizacion en tabla:
+    - Columnas: Concepto | Precio unitario | Cantidad | Base imponible | % IVA | Importe IVA
+    - El concepto se muestra en varias lineas si supera 60 caracteres
+    - Si el importe IVA no aparece en la factura pero se puede calcular
+      (base x porcentaje), se calcula automaticamente y se marca con asterisco (*)
+    - Al pie de la tabla: "* Importe calculado"
+
+CAMPO: Base imponible total
+  Extrae la base imponible total de la factura (suma antes de impuestos).
+  Formato: XX.XXX,XX EUR (punto miles, coma decimal, 2 decimales, simbolo EUR
+  al final sin espacio). Si no aparece, 'N/D'.
+
+CAMPO: Tipo impuesto indirecto
+  Identifica el impuesto indirecto aplicado en la factura.
+  Si detectas IVA, devuelve 'IVA'.
+  Si detectas IGIC, devuelve 'IGIC'.
+  Si no aparece ninguno, devuelve 'N/D'.
+
+CAMPO: Desglose impuesto indirecto (JSON array)
+  Extrae el desglose del impuesto indirecto desde el bloque de resumen fiscal.
+  Para cada tipo impositivo:
+    - porcentaje: ej 21%
+    - base: base imponible asociada total, formato XX.XXX,XX EUR
+    - importe: cuota correspondiente, formato XX.XXX,XX EUR
+
+  Formato: array JSON. Si no existe desglose, devuelve [].
+
+  Ejemplo:
+  [
+    {"porcentaje": "21%", "base": "1.000,00EUR", "importe": "210,00EUR"},
+    {"porcentaje": "10%", "base": "200,00EUR", "importe": "20,00EUR"}
+  ]
+
+  Visualizacion en tabla:
+    - Columnas: Porcentaje | Base imponible | Importe
+
+CAMPO: Tipo de retencion
+  Identifica si existe una retencion en la factura.
+  Si aparece IRPF, devuelve 'IRPF'.
+  Si no hay retencion, devuelve 'N/D'.
+
+CAMPO: Desglose retencion (JSON objeto o "N/D")
+  Si existe retencion (IRPF), extrae:
+    - porcentaje: porcentaje aplicado (formato XX%)
+    - base: base imponible asociada total (formato XX.XXX,XX EUR)
+    - importe: importe retenido (formato XX.XXX,XX EUR)
+
+  Si NO existe retencion, devuelve exactamente el literal: N/D
+  (sin JSON, sin diccionario, solo el texto N/D)
+
+  Ejemplo con retencion:
+    {"porcentaje": "15%", "base": "1.000,00EUR", "importe": "150,00EUR"}
+
+  Ejemplo sin retencion:
+    N/D
+
+  Visualizacion en tabla:
+    - Columnas: Porcentaje | Base imponible | Importe
+
+CAMPO: Total factura
+  Extrae el total final de la factura (importe total a pagar).
+  Formato: XX.XXX,XX EUR. Si no aparece, 'N/D'.
+
+CAMPO: Resumen de la factura
+  Genera un resumen muy breve de la FUNCION PRINCIPAL de la factura. Debe
+  indicar PARA QUE es la factura.
+  Ejemplos: 'Mantenimiento de ascensores', 'Suministro electrico oficina',
+  'Servicios juridicos', 'Reparacion cubierta edificio'.
+  Entre 3 y 7 palabras. No incluir importes, porcentajes, numeros de factura
+  ni datos fiscales.
+
+
+================================================================================
+3. FACTURA IBI - CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (15 en total, en este orden):
+
+  1.  Entidad emisora
+  2.  Provincia
+  3.  Ejercicio y periodo
+  4.  Tipo de IBI
+  5.  Codigo
+  6.  Referencia
+  7.  Identificacion
+  8.  Referencia catastral
+  9.  Localidad del inmueble
+  10. Sujeto pasivo
+  11. NIF/CIF sujeto pasivo
+  12. Importe
+  13. Ultimo dia de pago
+  14. IBAN para transferencia
+  15. Entidades colaboradoras
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Entidad emisora
+  Extrae el VALOR que aparece asociado a la etiqueta 'Entidad emisora',
+  'Organismo' u 'Organismo emisor' en el recibo de IBI. El valor suele estar
+  justo encima, debajo o al lado de esa etiqueta. Normalmente es un Ayuntamiento
+  (ej: 'Ayuntamiento de Camas', 'Ayuntamiento de Madrid'). NO devolver la
+  Diputacion, organismo recaudador ni entidad gestora de cobro (ej: 'Diputacion
+  de Sevilla', 'SUMA', 'ORGT') salvo que sea realmente el valor del campo
+  'Entidad emisora'. NO extraer de logos, sellos, escudos ni marcas de agua.
+  Nombre simplificado, legible y corto.
+
+CAMPO: Provincia
+  Extrae la provincia espanola a la que pertenece el inmueble o el organismo
+  emisor. Devuelve unicamente el nombre de la provincia.
+
+CAMPO: Ejercicio y periodo
+  Identifica el ano y el periodo del impuesto. No confundir con fechas de pago.
+  Si esta fraccionado en dos plazos, considerarlo Semestral.
+  Formato exacto: Trimestral -> 4T-2024, Semestral -> 2S-2024, Anual -> A-2024.
+
+CAMPO: Tipo de IBI
+  Indica si corresponde a IBI Urbano o IBI Rustico.
+  Devuelve unicamente una de esas dos opciones exactas.
+
+CAMPO: Codigo
+  Extrae el codigo interno del organismo emisor o codigo de entidad si aparece
+  en el documento. Si no aparece, devuelve 'N/D'.
+
+CAMPO: Referencia
+  Extrae la referencia completa necesaria para realizar el pago del recibo.
+  Puede aparecer como 'Referencia', 'Numero de recibo', 'Referencia de pago'
+  o similar. Devuelve el codigo completo sin espacios adicionales.
+
+CAMPO: Identificacion
+  Si el documento es una liquidacion, extrae el identificador de liquidacion.
+  Si no aparece, devuelve 'N/D'.
+
+CAMPO: Referencia catastral
+  Extrae la referencia catastral completa del inmueble. Debe ser el codigo
+  oficial alfanumerico completo sin espacios.
+
+CAMPO: Localidad del inmueble
+  Extrae el municipio del inmueble al que corresponde el IBI. Debe ser un
+  municipio de Espana. No confundir con la localidad del organismo emisor.
+
+CAMPO: Sujeto pasivo
+  Extrae el nombre completo del sujeto pasivo del IBI. Devuelve el nombre en
+  formato legible.
+
+CAMPO: NIF/CIF sujeto pasivo
+  Extrae el NIF o CIF del sujeto pasivo. Si no aparece, devuelve 'N/D'.
+
+CAMPO: Importe
+  Extrae el importe total a pagar del recibo de IBI. Formato: separador de
+  miles con punto, coma decimal, dos decimales siempre. Simbolo EUR al final
+  sin espacio. Ejemplo correcto: 1.234,56EUR. Si no aparece, 'N/D'.
+
+CAMPO: Ultimo dia de pago
+  Extrae el ultimo dia para pagar el IBI en periodo voluntario. Si existen
+  varios periodos, devuelve la fecha final del periodo voluntario.
+  No inventar fechas. Formato obligatorio DD/MM/AAAA.
+
+CAMPO: IBAN para transferencia
+  Busca si el documento indica un IBAN donde pueda realizarse una transferencia
+  para pagar el IBI. Si existe un IBAN valido, extraerlo completo sin espacios.
+  Si no aparece ningun IBAN para pago por transferencia, devuelve 'N/D'.
+  No confundir con cuenta para domiciliacion.
+
+CAMPO: Entidades colaboradoras
+  Extrae todas las entidades colaboradoras donde puede pagarse el IBI. Devuelve
+  unicamente los nombres de los bancos o entidades financieras mencionadas.
+
+
+================================================================================
+4. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta ambas tipologias mediante normalizacion del tipo de documento:
+
+Factura general - se activa si el tipo normalizado:
+  - Es exactamente "factura" o "factura general"
+  - Contiene "factura ordinaria", "factura comercial", "factura proveedor"
+  - Contiene "invoice"
+
+Factura IBI - se activa si el tipo normalizado:
+  - Contiene "factura ibi" o "ibi"
+  - Contiene "impuesto bienes inmuebles"
+  - Contiene "recibo ibi"
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
