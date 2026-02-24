@@ -28,6 +28,9 @@ const ALBARAN_FIELDS = [
   "Cliente",
   "Referencia Pedido",
   "Conceptos Entregados",
+  "Base Imponible Total",
+  "Desglose Impuesto Indirecto",
+  "Total Albaran",
 ]
 
 function getFieldsForType(documentType: string): string[] {

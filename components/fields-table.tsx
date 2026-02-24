@@ -54,9 +54,7 @@ interface DesgloseRetencion {
 
 interface ConceptoEntregado {
   concepto: string;
-  codigoArticulo: string;
   cantidadEntregada: string;
-  unidad: string;
   precioUnitario: string;
   importeLinea: string;
 }
@@ -158,9 +156,7 @@ function ConceptosEntregadosTable({ conceptos }: { conceptos: ConceptoEntregado[
         <TableHeader>
           <TableRow className="text-xs">
             <TableHead className="py-1.5 px-2 text-xs">Concepto</TableHead>
-            <TableHead className="py-1.5 px-2 text-xs">Cod. Art.</TableHead>
             <TableHead className="py-1.5 px-2 text-xs text-right">Cant.</TableHead>
-            <TableHead className="py-1.5 px-2 text-xs">Unidad</TableHead>
             <TableHead className="py-1.5 px-2 text-xs text-right">P. Unit.</TableHead>
             <TableHead className="py-1.5 px-2 text-xs text-right">Importe</TableHead>
           </TableRow>
@@ -169,9 +165,7 @@ function ConceptosEntregadosTable({ conceptos }: { conceptos: ConceptoEntregado[
           {conceptos.map((c, i) => (
             <TableRow key={i} className="text-xs">
               <TableCell className="py-1.5 px-2 max-w-[200px] truncate">{c.concepto}</TableCell>
-              <TableCell className="py-1.5 px-2 whitespace-nowrap">{c.codigoArticulo}</TableCell>
               <TableCell className="py-1.5 px-2 text-right whitespace-nowrap">{c.cantidadEntregada}</TableCell>
-              <TableCell className="py-1.5 px-2 whitespace-nowrap">{c.unidad}</TableCell>
               <TableCell className="py-1.5 px-2 text-right whitespace-nowrap">{c.precioUnitario}</TableCell>
               <TableCell className="py-1.5 px-2 text-right whitespace-nowrap">{c.importeLinea}</TableCell>
             </TableRow>

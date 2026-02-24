@@ -46,7 +46,7 @@ const facturaProveedorSchema = z.object({
 
 const conceptoEntregadoSchema = z.object({
   concepto: z.string().describe("Descripcion del concepto/producto entregado"),
-  cantidadEntregada: z.string().describe("Cantidad entregada"),
+  cantidadEntregada: z.string().describe("Solo el numero de cantidad entregada, SIN unidad de medida. Ejemplo: '5', '12', '1.5'. NO poner 'kg', 'uds', 'l' ni nada mas."),
   precioUnitario: z.string().describe("Precio unitario con formato XX.XXX,XX€. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
   importeLinea: z.string().describe("Importe de la linea con formato XX.XXX,XX€. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
 })
@@ -59,6 +59,9 @@ const albaranSchema = z.object({
   cliente: z.string().describe("Nombre del cliente en formato Title Case (primera letra mayuscula de cada palabra). Si no aparece: 'N/D'"),
   referencia_pedido: z.string().describe("Referencia del pedido. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   conceptos_entregados: z.array(conceptoEntregadoSchema).describe("Array de conceptos/productos entregados. No inventar importes. No calcular impuestos."),
+  base_imponible_total: z.string().describe("Base imponible total del albaran con formato XX.XXX,XX€. Si no aparece: 'N/D'"),
+  desglose_impuesto_indirecto: z.array(desgloseImpuestoSchema).describe("Desglose del impuesto indirecto por tramos (ej: IVA 10%, IVA 21%). Si no hay impuesto: array vacio"),
+  total_albaran: z.string().describe("Total del albaran con formato XX.XXX,XX€. Si no aparece: 'N/D'"),
   datos_anonimizados: z.array(z.string()).describe("Lista de nombres de campos cuyo valor esta cubierto/tapado por una caja negra, rectangulo negro, pegote o pixelado. Solo si hay evidencia visual clara de ocultacion deliberada."),
 })
 
@@ -103,10 +106,12 @@ REGLAS OBLIGATORIAS:
 3. CIF/NIF: Siempre en MAYUSCULAS y SIN espacios
 3b. NOMBRES (Proveedor, Cliente): Siempre en formato Title Case (primera letra mayuscula de cada palabra). Ejemplo: "Catering Subiron S.L." en vez de "CATERING SUBIRON S.L."
 4. CONCEPTOS ENTREGADOS: Extrae TODOS los productos/conceptos entregados
+   - cantidadEntregada: SOLO el numero, SIN unidad de medida. Ejemplo: "5", "12", "1.5". NO poner "kg", "uds", "l".
    - NO inventar importes
    - NO calcular impuestos
    - Si precioUnitario o importeLinea no aparecen: "N/D"
-5. Si un campo simplemente no aparece en el documento: "N/D"
+5. BASE IMPONIBLE TOTAL, DESGLOSE IMPUESTO INDIRECTO, TOTAL ALBARAN: Extraer igual que en facturas. Si no aparecen: "N/D" o array vacio.
+6. Si un campo simplemente no aparece en el documento: "N/D"
 
 REGLA DE ANONIMIZACION:
 - Si un campo esta cubierto por una caja negra, tapado por un rectangulo negro, ocultado mediante pegote negro, pixelado de forma intencionada o totalmente tachado de forma opaca, Y no es posible recuperar el contenido:
@@ -174,6 +179,11 @@ function flattenAlbaranData(
     return JSON.stringify(data.conceptos_entregados)
   }
 
+  const formatDesgloseImpuesto = () => {
+    if (!data.desglose_impuesto_indirecto || data.desglose_impuesto_indirecto.length === 0) return "N/D"
+    return JSON.stringify(data.desglose_impuesto_indirecto)
+  }
+
   const fieldMap: Record<string, () => string> = {
     "Numero de Albaran": () => data.numero_albaran,
     "Fecha de Albaran": () => data.fecha_albaran,
@@ -182,6 +192,9 @@ function flattenAlbaranData(
     "Cliente": () => data.cliente,
     "Referencia Pedido": () => data.referencia_pedido,
     "Conceptos Entregados": formatConceptos,
+    "Base Imponible Total": () => data.base_imponible_total,
+    "Desglose Impuesto Indirecto": formatDesgloseImpuesto,
+    "Total Albaran": () => data.total_albaran,
   }
 
   for (const field of fields) {
