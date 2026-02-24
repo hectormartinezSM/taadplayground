@@ -13,6 +13,12 @@ const conceptoFacturableSchema = z.object({
   importeIVA: z.string().describe("Importe del IVA. Si no aparece pero puede calcularse, calcularlo. Si no: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
 })
 
+const grupoAlbaranSchema = z.object({
+  numAlbaran: z.string().describe("Numero de albaran asociado a este grupo de conceptos. Si no hay albaran asociado: 'N/D'"),
+  fechaAlbaran: z.string().describe("Fecha del albaran en formato DD/MM/AAAA. Si no hay fecha: 'N/D'"),
+  conceptos: z.array(conceptoFacturableSchema).describe("Conceptos facturables de este albaran"),
+})
+
 const desgloseImpuestoSchema = z.object({
   tipo: z.string().describe("Tipo de impuesto, ej: 'IVA 21%', 'IVA 10%'"),
   base: z.string().describe("Base imponible de este tramo con formato XX.XXX,XX"),
@@ -34,7 +40,7 @@ const facturaProveedorSchema = z.object({
   direccion_proveedor: z.string().describe("Direccion del proveedor. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   cliente: z.string().describe("Nombre del cliente/receptor"),
   cif_nif_cliente: z.string().describe("CIF/NIF del cliente en mayusculas, sin espacios. Si esta tapado: 'Dato anonimizado en origen'"),
-  conceptos_facturables: z.array(conceptoFacturableSchema).describe("Array de conceptos facturables. baseImponible = cantidad x precioUnitario. Si importeIVA no aparece pero puede calcularse, calcularlo."),
+  conceptos_facturables: z.array(grupoAlbaranSchema).describe("Conceptos facturables agrupados por albaran. Si la factura tiene albaranes asociados, agrupar los conceptos bajo cada albaran con su numAlbaran y fechaAlbaran. Si la factura NO tiene albaranes, crear un unico grupo con numAlbaran='N/D' y fechaAlbaran='N/D'. baseImponible = cantidad x precioUnitario. Si importeIVA no aparece pero puede calcularse, calcularlo."),
   base_imponible_total: z.string().describe("Base imponible total con formato XX.XXX,XX"),
   tipo_impuesto_indirecto: z.string().describe("Tipo de impuesto indirecto: 'IVA', 'IGIC', o 'N/D' si no aplica"),
   desglose_impuesto_indirecto: z.array(desgloseImpuestoSchema).describe("Desglose del impuesto indirecto por tramos. Si no hay impuesto: array vacio"),
@@ -76,7 +82,10 @@ REGLAS OBLIGATORIAS:
 2. FORMATO DE IMPORTES: XX.XXX,XX (separador miles: punto, decimal: coma). Ejemplo: 1.442,74
 3. CIF/NIF: Siempre en MAYUSCULAS y SIN espacios. Ejemplo: B50012345, G50000652
 4. NUMERO DE FACTURA: Exactamente como aparece en el documento, SIN espacios.
-5. CONCEPTOS FACTURABLES: Extrae TODOS los conceptos/lineas de la factura.
+5. CONCEPTOS FACTURABLES: Extrae TODOS los conceptos/lineas de la factura, AGRUPADOS POR ALBARAN.
+   - Si la factura referencia albaranes (ej: "N Albaran: 2511047 Fecha: 05/12/2025"), crear un grupo por cada albaran con su numAlbaran y fechaAlbaran
+   - Si la factura NO tiene albaranes asociados, crear un unico grupo con numAlbaran="N/D" y fechaAlbaran="N/D"
+   - Cada grupo contiene un array "conceptos" con las lineas de producto de ese albaran
    - baseImponible = cantidad x precioUnitario (calcularlo si los datos estan disponibles)
    - Si importeIVA no aparece pero puede calcularse a partir del porcentajeIVA y la base, CALCULARLO
    - Si falta informacion que no se puede deducir: "N/D"
@@ -124,17 +133,18 @@ function flattenFacturaData(
 
   const formatConceptos = () => {
     if (!data.conceptos_facturables || data.conceptos_facturables.length === 0) return "N/D"
-    return JSON.stringify(data.conceptos_facturables, null, 2)
+    // Keep the grouped structure: array of { numAlbaran, fechaAlbaran, conceptos: [...] }
+    return JSON.stringify(data.conceptos_facturables)
   }
 
   const formatDesgloseImpuesto = () => {
     if (!data.desglose_impuesto_indirecto || data.desglose_impuesto_indirecto.length === 0) return "N/D"
-    return JSON.stringify(data.desglose_impuesto_indirecto, null, 2)
+    return JSON.stringify(data.desglose_impuesto_indirecto)
   }
 
   const formatDesgloseRetencion = () => {
     if (!data.desglose_retencion) return "N/D"
-    return JSON.stringify(data.desglose_retencion, null, 2)
+    return JSON.stringify(data.desglose_retencion)
   }
 
   const fieldMap: Record<string, () => string> = {
@@ -174,7 +184,7 @@ function flattenAlbaranData(
 
   const formatConceptos = () => {
     if (!data.conceptos_entregados || data.conceptos_entregados.length === 0) return "N/D"
-    return JSON.stringify(data.conceptos_entregados, null, 2)
+    return JSON.stringify(data.conceptos_entregados)
   }
 
   const fieldMap: Record<string, () => string> = {
