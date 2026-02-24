@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
     if (isAlbaran) {
       console.log("[v0] API: Using albaran schema")
       const { output } = await generateText({
-        model: "anthropic/claude-sonnet-4-20250514",
+        model: "anthropic/claude-sonnet-4.6",
         output: Output.object({ schema: albaranSchema }),
         system: ALBARAN_SYSTEM_PROMPT,
         messages: [
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     } else {
       console.log("[v0] API: Using factura proveedor schema")
       const { output } = await generateText({
-        model: "anthropic/claude-sonnet-4-20250514",
+        model: "anthropic/claude-sonnet-4.6",
         output: Output.object({ schema: facturaProveedorSchema }),
         system: FACTURA_SYSTEM_PROMPT,
         messages: [
