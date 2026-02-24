@@ -25,12 +25,6 @@ const desgloseImpuestoSchema = z.object({
   cuota: z.string().describe("Cuota/importe del impuesto con formato XX.XXX,XX"),
 })
 
-const desgloseRetencionSchema = z.object({
-  tipo: z.string().describe("Tipo de retencion, ej: 'IRPF 15%'"),
-  base: z.string().describe("Base de la retencion con formato XX.XXX,XX"),
-  cuota: z.string().describe("Cuota/importe de la retencion con formato XX.XXX,XX"),
-}).nullable()
-
 const facturaProveedorSchema = z.object({
   numero_factura: z.string().describe("Numero de factura tal como aparece en el documento, SIN espacios"),
   serie: z.string().describe("Serie de la factura. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
@@ -42,12 +36,11 @@ const facturaProveedorSchema = z.object({
   cif_nif_cliente: z.string().describe("CIF/NIF del cliente en mayusculas, sin espacios. Si esta tapado: 'Dato anonimizado en origen'"),
   conceptos_facturables: z.array(grupoAlbaranSchema).describe("Conceptos facturables agrupados por albaran. Si la factura tiene albaranes asociados, agrupar los conceptos bajo cada albaran con su numAlbaran y fechaAlbaran. Si la factura NO tiene albaranes, crear un unico grupo con numAlbaran='N/D' y fechaAlbaran='N/D'. baseImponible = cantidad x precioUnitario. Si importeIVA no aparece pero puede calcularse, calcularlo."),
   base_imponible_total: z.string().describe("Base imponible total con formato XX.XXX,XX"),
-  tipo_impuesto_indirecto: z.string().describe("Tipo de impuesto indirecto: 'IVA', 'IGIC', o 'N/D' si no aplica"),
-  desglose_impuesto_indirecto: z.array(desgloseImpuestoSchema).describe("Desglose del impuesto indirecto por tramos. Si no hay impuesto: array vacio"),
-  tipo_retencion: z.string().describe("Tipo de retencion: 'IRPF' o 'N/D' si no aplica"),
-  desglose_retencion: desgloseRetencionSchema.describe("Desglose de la retencion. null si no aplica"),
+  desglose_impuesto_indirecto: z.array(desgloseImpuestoSchema).describe("Desglose del impuesto indirecto por tramos (ej: IVA 21%, IVA 10%). Si no hay impuesto: array vacio"),
   total_factura: z.string().describe("Total de la factura con formato XX.XXX,XX"),
-  resumen_factura: z.string().describe("Resumen de la factura en 3-7 palabras"),
+  resumen_factura_concepto: z.string().describe("Resumen del concepto de la factura en 3-7 palabras (ej: 'Catering evento corporativo', 'Suministro alimentacion')"),
+  forma_pago: z.string().describe("Forma de pago: 'Transferencia', 'Recibo', 'Domiciliacion', etc. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
+  numero_cuenta: z.string().describe("Numero de cuenta bancaria / IBAN. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   datos_anonimizados: z.array(z.string()).describe("Lista de nombres de campos cuyo valor esta cubierto/tapado por una caja negra, rectangulo negro, pegote o pixelado. Solo si hay evidencia visual clara de ocultacion deliberada."),
 })
 
@@ -89,9 +82,10 @@ REGLAS OBLIGATORIAS:
    - baseImponible = cantidad x precioUnitario (calcularlo si los datos estan disponibles)
    - Si importeIVA no aparece pero puede calcularse a partir del porcentajeIVA y la base, CALCULARLO
    - Si falta informacion que no se puede deducir: "N/D"
-6. DESGLOSE IMPUESTO INDIRECTO: Indica tipo_impuesto_indirecto como "IVA", "IGIC" o "N/D". Desglosa por tramos si hay varios tipos de IVA.
-7. RETENCIONES: Si hay IRPF u otra retencion, indicar tipo y desglose. Si no hay: tipo_retencion = "N/D", desglose_retencion = null.
-8. RESUMEN: Resumen de la factura en 3-7 palabras (ej: "Servicio alojamiento web Drupal", "Catering evento corporativo").
+6. DESGLOSE IMPUESTO INDIRECTO: Desglosa por tramos si hay varios tipos de IVA (ej: IVA 21%, IVA 10%). Si no hay impuesto: array vacio.
+7. RESUMEN DE FACTURA, CONCEPTO: Resumen del concepto de la factura en 3-7 palabras (ej: "Servicio alojamiento web Drupal", "Suministro alimentacion catering").
+8. FORMA DE PAGO: Indica la forma de pago si aparece (Transferencia, Recibo, Domiciliacion, etc.). Si no aparece: "N/D". Si esta tapado: "Dato anonimizado en origen".
+9. NUMERO DE CUENTA: Numero de cuenta bancaria / IBAN. Si no aparece: "N/D". Si esta tapado: "Dato anonimizado en origen".
 
 REGLA DE ANONIMIZACION:
 - Si un campo esta cubierto por una caja negra, tapado por un rectangulo negro, ocultado mediante pegote negro, pixelado de forma intencionada o totalmente tachado de forma opaca, Y no es posible recuperar el contenido:
@@ -142,11 +136,6 @@ function flattenFacturaData(
     return JSON.stringify(data.desglose_impuesto_indirecto)
   }
 
-  const formatDesgloseRetencion = () => {
-    if (!data.desglose_retencion) return "N/D"
-    return JSON.stringify(data.desglose_retencion)
-  }
-
   const fieldMap: Record<string, () => string> = {
     "Numero de Factura": () => data.numero_factura,
     "Serie": () => data.serie,
@@ -158,12 +147,11 @@ function flattenFacturaData(
     "CIF/NIF Cliente": () => data.cif_nif_cliente,
     "Conceptos Facturables": formatConceptos,
     "Base Imponible Total": () => data.base_imponible_total,
-    "Tipo Impuesto Indirecto": () => data.tipo_impuesto_indirecto,
     "Desglose Impuesto Indirecto": formatDesgloseImpuesto,
-    "Tipo de Retencion": () => data.tipo_retencion,
-    "Desglose Retencion": formatDesgloseRetencion,
     "Total Factura": () => data.total_factura,
-    "Resumen de la Factura": () => data.resumen_factura,
+    "Resumen de Factura, Concepto": () => data.resumen_factura_concepto,
+    "Forma de Pago": () => data.forma_pago,
+    "Numero de Cuenta": () => data.numero_cuenta,
   }
 
   for (const field of fields) {

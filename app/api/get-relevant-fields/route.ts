@@ -13,12 +13,11 @@ const FACTURA_PROVEEDOR_FIELDS = [
   "CIF/NIF Cliente",
   "Conceptos Facturables",
   "Base Imponible Total",
-  "Tipo Impuesto Indirecto",
   "Desglose Impuesto Indirecto",
-  "Tipo de Retencion",
-  "Desglose Retencion",
   "Total Factura",
-  "Resumen de la Factura",
+  "Resumen de Factura, Concepto",
+  "Forma de Pago",
+  "Numero de Cuenta",
 ]
 
 const ALBARAN_FIELDS = [
