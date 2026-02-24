@@ -1,86 +1,100 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateText, Output } from "ai"
-import { z } from "zod"
+import { retryWithBackoff } from "@/lib/api-retry"
 
-export const maxDuration = 60
+const LANDING_API_KEY = process.env.VISION_AGENT_API_KEY
+const API_BASE_URL = "https://api.va.eu-west-1.landing.ai"
 
-const classificationSchema = z.object({
-  tipo_documento: z.enum(["albaran", "factura_proveedor"]),
-  confianza: z.number().min(0).max(1).describe("Nivel de confianza en la clasificacion, de 0 a 1"),
-  razon: z.string().describe("Breve justificacion de la clasificacion en 1-2 frases"),
+interface ExtractResponse {
+  extraction: {
+    tipo_documento?: string
+    confianza?: number
+    razon?: string
+  }
+}
+
+async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse> {
+  const formData = new FormData()
+  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
+  formData.append("schema", schema)
+  formData.append("model", "extract-latest")
+
+  const response = await retryWithBackoff(async () => {
+    const res = await fetch(`${API_BASE_URL}/v1/ade/extract`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LANDING_API_KEY}`,
+      },
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      if (res.status === 429 || errorText.includes("Too Many")) {
+        throw new Error(`Rate limit: ${res.status} - ${errorText}`)
+      }
+      throw new Error(`Extract API failed: ${res.status} ${res.statusText} - ${errorText}`)
+    }
+
+    return res
+  })
+
+  return await response.json()
+}
+
+const CLASSIFICATION_SCHEMA = JSON.stringify({
+  properties: {
+    tipo_documento: {
+      description: `Clasifica el documento EXCLUSIVAMENTE en una de estas dos categorias:
+- "albaran" si el documento es un albaran, nota de entrega, delivery note, o documento de entrega. Contiene productos/cantidades pero NO tiene estructura fiscal completa (base imponible + desglose IVA + total estructurado).
+- "factura_proveedor" si el documento es una factura, invoice, con base imponible, desglose de IVA, total factura y CIF/NIF emisor.
+
+ORDEN DE EVALUACION OBLIGATORIO: Primero evalua si es un ALBARAN. Solo si NO es albaran, evalua si es factura proveedor.
+REGLA CLAVE: Si el documento tiene estructura fiscal completa (base + IVA + total), es factura_proveedor. Si tiene productos/cantidades pero sin estructura fiscal completa, es albaran.`,
+      type: "string",
+      enum: ["albaran", "factura_proveedor"],
+    },
+    confianza: {
+      description: "Nivel de confianza en la clasificacion, de 0 a 1",
+      type: "number",
+    },
+    razon: {
+      description: "Breve justificacion de la clasificacion en 1-2 frases",
+      type: "string",
+    },
+  },
+  required: ["tipo_documento", "confianza", "razon"],
+  title: "ClasificacionDocumental",
+  type: "object",
 })
-
-const SYSTEM_PROMPT = `Eres un agente clasificador de documentos para Fundacion IberCaja. Tu tarea es clasificar documentos EXCLUSIVAMENTE en dos categorias:
-
-- albaran
-- factura_proveedor
-
-ORDEN DE EVALUACION (obligatorio):
-Primero evalua si es un ALBARAN. Solo si NO es albaran, evalua si es factura proveedor.
-Esto evita clasificaciones erroneas cuando existan importes sin estructura fiscal completa.
-
-CRITERIOS DE CLASIFICACION:
-
-1. **albaran** — Se clasificara como Albaran si contiene senales como:
-   - "Albaran", "Albaran de entrega", "Nota de entrega", "Delivery note", "N albaran", "Documento de entrega"
-   - Puede contener cantidades y precios
-   - NO contiene estructura fiscal formal completa (base imponible + desglose IVA + total estructurado)
-
-2. **factura_proveedor** — Se clasificara como Factura proveedor si contiene:
-   - "Factura", "Factura n", "Invoice", "N factura"
-   - Base imponible
-   - Desglose de IVA
-   - Total factura
-   - CIF/NIF emisor
-   - Nunca debera clasificarse como factura si el documento responde claramente a estructura de albaran.
-
-REGLA CLAVE: Si el documento tiene estructura fiscal completa (base + IVA + total), es factura_proveedor. Si tiene productos/cantidades pero sin estructura fiscal completa, es albaran.`
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageUrls, markdown } = await request.json()
+    const { markdown } = await request.json()
 
-    if (!markdown && (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0)) {
-      return NextResponse.json({ error: "Markdown or image URLs are required" }, { status: 400 })
-    }
-
-    console.log("[v0] API: Classifying document with LLM...")
-
-    const documentContent = markdown || ""
-
-    if (!documentContent) {
+    if (!markdown) {
       return NextResponse.json({ error: "Markdown content is required for classification" }, { status: 400 })
     }
 
-    const { output } = await generateText({
-      model: "anthropic/claude-sonnet-4.6",
-      output: Output.object({
-        schema: classificationSchema,
-      }),
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `Clasifica el siguiente documento:\n\n${documentContent}`,
-        },
-      ],
-    })
+    console.log("[v0] API: Classifying document with Landing AI, markdown length:", markdown.length)
 
-    if (!output) {
-      throw new Error("No classification output received from LLM")
-    }
+    const result = await apiExtract(markdown, CLASSIFICATION_SCHEMA)
 
-    console.log("[v0] API: Document classified as:", output.tipo_documento, "confianza:", output.confianza, "razon:", output.razon)
+    console.log("[v0] API: Classification result:", JSON.stringify(result.extraction))
 
-    // Map internal types to display names
-    const displayType = output.tipo_documento === "albaran" ? "Albaran" : "Factura Proveedor"
+    const tipo = result.extraction?.tipo_documento || "factura_proveedor"
+    const confianza = result.extraction?.confianza || 0.5
+    const razon = result.extraction?.razon || ""
+
+    const displayType = tipo === "albaran" ? "Albaran" : "Factura Proveedor"
+
+    console.log("[v0] API: Document classified as:", displayType, "confianza:", confianza)
 
     return NextResponse.json({
       type: displayType,
-      internalType: output.tipo_documento,
-      confidence: output.confianza,
-      razon: output.razon,
-      markdown: documentContent,
+      internalType: tipo,
+      confidence: confianza,
+      razon,
+      markdown,
     })
   } catch (error) {
     console.error("[v0] API: Error classifying document:", error)

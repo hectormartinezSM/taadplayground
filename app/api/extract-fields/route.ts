@@ -1,163 +1,253 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateText, Output } from "ai"
-import { z } from "zod"
+import { retryWithBackoff } from "@/lib/api-retry"
 
-export const maxDuration = 120
+const LANDING_API_KEY = process.env.VISION_AGENT_API_KEY
+const API_BASE_URL = "https://api.va.eu-west-1.landing.ai"
 
-// --- Zod Schemas matching the spec exactly ---
+// --- Landing AI extract helper (same pattern as parse-and-check-blank / segment-documents) ---
 
-const conceptoFacturableSchema = z.object({
-  concepto: z.string().describe("Descripcion del concepto facturable"),
-  cantidad: z.string().describe("Cantidad. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  precioUnitario: z.string().describe("Precio unitario con formato XX.XXX,XX€ (con simbolo euro). Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  baseImponible: z.string().describe("Base imponible = cantidad x precioUnitario con formato XX.XXX,XX€. Si no se puede calcular: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  porcentajeIVA: z.string().describe("Porcentaje de IVA aplicado. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  importeIVA: z.string().describe("Importe del IVA con formato XX.XXX,XX€. Si no aparece pero puede calcularse, calcularlo. Si no: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
+async function apiExtract(markdown: string, schema: string): Promise<any> {
+  const formData = new FormData()
+  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
+  formData.append("schema", schema)
+  formData.append("model", "extract-latest")
+
+  const response = await retryWithBackoff(async () => {
+    const res = await fetch(`${API_BASE_URL}/v1/ade/extract`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LANDING_API_KEY}`,
+      },
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      if (res.status === 429 || errorText.includes("Too Many")) {
+        throw new Error(`Rate limit: ${res.status} - ${errorText}`)
+      }
+      throw new Error(`Extract API failed: ${res.status} ${res.statusText} - ${errorText}`)
+    }
+
+    return res
+  })
+
+  const data = await response.json()
+  return data.extraction || {}
+}
+
+// --- JSON Schemas for Landing AI ---
+
+const FACTURA_SCHEMA = JSON.stringify({
+  properties: {
+    numero_factura: {
+      description: "Numero de factura SIN espacios y SIN ceros a la izquierda. Ejemplo: '02503378' -> '2503378'.",
+      type: "string",
+    },
+    serie: {
+      description: "Serie de la factura. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+    fecha_emision: {
+      description: "Fecha de emision en formato DD/MM/AAAA",
+      type: "string",
+    },
+    proveedor: {
+      description: "Nombre del proveedor en formato Title Case (primera mayuscula cada palabra). Ej: 'Catering Subiron S.L.' en vez de 'CATERING SUBIRON S.L.'",
+      type: "string",
+    },
+    cif_nif_proveedor: {
+      description: "CIF/NIF del proveedor en MAYUSCULAS sin espacios. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+    direccion_proveedor: {
+      description: "Direccion del proveedor. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+    cliente: {
+      description: "Nombre del cliente en formato Title Case. Ej: 'Fundacion Ibercaja' en vez de 'FUNDACION IBERCAJA'",
+      type: "string",
+    },
+    cif_nif_cliente: {
+      description: "CIF/NIF del cliente en MAYUSCULAS sin espacios. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+    conceptos_facturables: {
+      description: "Conceptos facturables AGRUPADOS POR ALBARAN. Si la factura referencia albaranes, crear un grupo por cada albaran. Si NO tiene albaranes, crear un unico grupo con numAlbaran='N/D' y fechaAlbaran='N/D'. TODOS los importes en formato XX.XXX,XX€.",
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          numAlbaran: { description: "Numero de albaran asociado. Si no hay: 'N/D'", type: "string" },
+          fechaAlbaran: { description: "Fecha del albaran DD/MM/AAAA. Si no hay: 'N/D'", type: "string" },
+          conceptos: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                concepto: { description: "Descripcion del concepto", type: "string" },
+                cantidad: { description: "Cantidad. Si no aparece: 'N/D'", type: "string" },
+                precioUnitario: { description: "Precio unitario formato XX.XXX,XX€. Si no aparece: 'N/D'", type: "string" },
+                baseImponible: { description: "Base imponible = cantidad x precioUnitario formato XX.XXX,XX€", type: "string" },
+                porcentajeIVA: { description: "Porcentaje de IVA. Si no aparece: 'N/D'", type: "string" },
+                importeIVA: { description: "Importe IVA formato XX.XXX,XX€. Calcularlo si es posible", type: "string" },
+              },
+              required: ["concepto", "cantidad", "precioUnitario", "baseImponible", "porcentajeIVA", "importeIVA"],
+            },
+          },
+        },
+        required: ["numAlbaran", "fechaAlbaran", "conceptos"],
+      },
+    },
+    base_imponible_total: {
+      description: "Base imponible total formato XX.XXX,XX€",
+      type: "string",
+    },
+    desglose_impuesto_indirecto: {
+      description: "Desglose impuesto indirecto por tramos (IVA 21%, IVA 10%, etc.)",
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          tipo: { description: "Tipo de impuesto, ej: 'IVA 21%', 'IVA 10%'", type: "string" },
+          base: { description: "Base imponible de este tramo formato XX.XXX,XX€", type: "string" },
+          cuota: { description: "Cuota del impuesto formato XX.XXX,XX€", type: "string" },
+        },
+        required: ["tipo", "base", "cuota"],
+      },
+    },
+    total_factura: {
+      description: "Total de la factura formato XX.XXX,XX€",
+      type: "string",
+    },
+    resumen_factura_concepto: {
+      description: "Resumen del concepto de la factura en 3-7 palabras",
+      type: "string",
+    },
+    forma_pago: {
+      description: "Forma de pago: Transferencia, Recibo, Domiciliacion, etc. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+    numero_cuenta: {
+      description: "Numero de cuenta bancaria / IBAN. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+  },
+  required: [
+    "numero_factura", "serie", "fecha_emision", "proveedor", "cif_nif_proveedor",
+    "direccion_proveedor", "cliente", "cif_nif_cliente", "conceptos_facturables",
+    "base_imponible_total", "desglose_impuesto_indirecto", "total_factura",
+    "resumen_factura_concepto", "forma_pago", "numero_cuenta",
+  ],
+  title: "FacturaProveedor",
+  type: "object",
 })
 
-const grupoAlbaranSchema = z.object({
-  numAlbaran: z.string().describe("Numero de albaran asociado a este grupo de conceptos. Si no hay albaran asociado: 'N/D'"),
-  fechaAlbaran: z.string().describe("Fecha del albaran en formato DD/MM/AAAA. Si no hay fecha: 'N/D'"),
-  conceptos: z.array(conceptoFacturableSchema).describe("Conceptos facturables de este albaran"),
+const ALBARAN_SCHEMA = JSON.stringify({
+  properties: {
+    numero_albaran: {
+      description: "Numero de albaran SIN ceros a la izquierda. '02511047' -> '2511047'. '0.2511047' -> '2511047'.",
+      type: "string",
+    },
+    fecha_albaran: {
+      description: "Fecha del albaran en formato DD/MM/AAAA",
+      type: "string",
+    },
+    proveedor: {
+      description: "Nombre del proveedor en formato Title Case. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    cif_nif_proveedor: {
+      description: "CIF/NIF del proveedor en MAYUSCULAS sin espacios. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    cliente: {
+      description: "Nombre del cliente en formato Title Case. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    referencia_pedido: {
+      description: "Referencia del pedido. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    conceptos_entregados: {
+      description: "Conceptos/productos entregados. TODOS los importes en formato XX.XXX,XX€. cantidadEntregada: SOLO el numero, SIN unidad de medida.",
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          concepto: { description: "Descripcion del producto entregado", type: "string" },
+          cantidadEntregada: { description: "Solo el numero de cantidad. NO poner unidades (kg, uds, l)", type: "string" },
+          precioUnitario: { description: "Precio unitario formato XX.XXX,XX€. Si no aparece: 'N/D'", type: "string" },
+          importeLinea: { description: "Importe de la linea formato XX.XXX,XX€. Si no aparece: 'N/D'", type: "string" },
+        },
+        required: ["concepto", "cantidadEntregada", "precioUnitario", "importeLinea"],
+      },
+    },
+    base_imponible_total: {
+      description: "Base imponible total formato XX.XXX,XX€. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    desglose_impuesto_indirecto: {
+      description: "Desglose impuesto indirecto por tramos",
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          tipo: { description: "Tipo de impuesto, ej: 'IVA 10%'", type: "string" },
+          base: { description: "Base imponible de este tramo formato XX.XXX,XX€", type: "string" },
+          cuota: { description: "Cuota del impuesto formato XX.XXX,XX€", type: "string" },
+        },
+        required: ["tipo", "base", "cuota"],
+      },
+    },
+    total_albaran: {
+      description: "Total del albaran formato XX.XXX,XX€. Si no aparece: 'N/D'",
+      type: "string",
+    },
+  },
+  required: [
+    "numero_albaran", "fecha_albaran", "proveedor", "cif_nif_proveedor",
+    "cliente", "referencia_pedido", "conceptos_entregados",
+    "base_imponible_total", "desglose_impuesto_indirecto", "total_albaran",
+  ],
+  title: "Albaran",
+  type: "object",
 })
-
-const desgloseImpuestoSchema = z.object({
-  tipo: z.string().describe("Tipo de impuesto, ej: 'IVA 21%', 'IVA 10%'"),
-  base: z.string().describe("Base imponible de este tramo con formato XX.XXX,XX€"),
-  cuota: z.string().describe("Cuota/importe del impuesto con formato XX.XXX,XX€"),
-})
-
-const facturaProveedorSchema = z.object({
-  numero_factura: z.string().describe("Numero de factura tal como aparece en el documento, SIN espacios y SIN ceros a la izquierda. Ejemplo: si el documento dice '02503378', devolver '2503378'. Si dice 'F-001234', devolver 'F-1234'."),
-  serie: z.string().describe("Serie de la factura. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  fecha_emision: z.string().describe("Fecha de emision en formato DD/MM/AAAA"),
-  proveedor: z.string().describe("Nombre del proveedor/emisor en formato Title Case (primera letra mayuscula de cada palabra). Ej: 'Catering Subiron S.L.' en vez de 'CATERING SUBIRON S.L.'"),
-  cif_nif_proveedor: z.string().describe("CIF/NIF del proveedor en mayusculas, sin espacios. Si esta tapado: 'Dato anonimizado en origen'"),
-  direccion_proveedor: z.string().describe("Direccion del proveedor. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  cliente: z.string().describe("Nombre del cliente/receptor en formato Title Case (primera letra mayuscula de cada palabra). Ej: 'Fundacion Ibercaja' en vez de 'FUNDACION IBERCAJA'"),
-  cif_nif_cliente: z.string().describe("CIF/NIF del cliente en mayusculas, sin espacios. Si esta tapado: 'Dato anonimizado en origen'"),
-  conceptos_facturables: z.array(grupoAlbaranSchema).describe("Conceptos facturables agrupados por albaran. Si la factura tiene albaranes asociados, agrupar los conceptos bajo cada albaran con su numAlbaran y fechaAlbaran. Si la factura NO tiene albaranes, crear un unico grupo con numAlbaran='N/D' y fechaAlbaran='N/D'. baseImponible = cantidad x precioUnitario. Si importeIVA no aparece pero puede calcularse, calcularlo."),
-  base_imponible_total: z.string().describe("Base imponible total con formato XX.XXX,XX€ (con simbolo euro)"),
-  desglose_impuesto_indirecto: z.array(desgloseImpuestoSchema).describe("Desglose del impuesto indirecto por tramos (ej: IVA 21%, IVA 10%). Si no hay impuesto: array vacio"),
-  total_factura: z.string().describe("Total de la factura con formato XX.XXX,XX€ (con simbolo euro)"),
-  resumen_factura_concepto: z.string().describe("Resumen del concepto de la factura en 3-7 palabras (ej: 'Catering evento corporativo', 'Suministro alimentacion')"),
-  forma_pago: z.string().describe("Forma de pago: 'Transferencia', 'Recibo', 'Domiciliacion', etc. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  numero_cuenta: z.string().describe("Numero de cuenta bancaria / IBAN. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  datos_anonimizados: z.array(z.string()).describe("Lista de nombres de campos cuyo valor esta cubierto/tapado por una caja negra, rectangulo negro, pegote o pixelado. Solo si hay evidencia visual clara de ocultacion deliberada."),
-})
-
-const conceptoEntregadoSchema = z.object({
-  concepto: z.string().describe("Descripcion del concepto/producto entregado"),
-  cantidadEntregada: z.string().describe("Solo el numero de cantidad entregada, SIN unidad de medida. Ejemplo: '5', '12', '1.5'. NO poner 'kg', 'uds', 'l' ni nada mas."),
-  precioUnitario: z.string().describe("Precio unitario con formato XX.XXX,XX€. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
-  importeLinea: z.string().describe("Importe de la linea con formato XX.XXX,XX€. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
-})
-
-const albaranSchema = z.object({
-  numero_albaran: z.string().describe("Numero de albaran SIN ceros a la izquierda. Si empieza por '0.' eliminar el '0.' tambien. Ejemplo: '02511047' -> '2511047', '0.2511047' -> '2511047'."),
-  fecha_albaran: z.string().describe("Fecha del albaran en formato DD/MM/AAAA"),
-  proveedor: z.string().describe("Nombre del proveedor en formato Title Case (primera letra mayuscula de cada palabra). Si no aparece: 'N/D'"),
-  cif_nif_proveedor: z.string().describe("CIF/NIF del proveedor en mayusculas, sin espacios. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  cliente: z.string().describe("Nombre del cliente en formato Title Case (primera letra mayuscula de cada palabra). Si no aparece: 'N/D'"),
-  referencia_pedido: z.string().describe("Referencia del pedido. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  conceptos_entregados: z.array(conceptoEntregadoSchema).describe("Array de conceptos/productos entregados. No inventar importes. No calcular impuestos."),
-  base_imponible_total: z.string().describe("Base imponible total del albaran con formato XX.XXX,XX€. Si no aparece: 'N/D'"),
-  desglose_impuesto_indirecto: z.array(desgloseImpuestoSchema).describe("Desglose del impuesto indirecto por tramos (ej: IVA 10%, IVA 21%). Si no hay impuesto: array vacio"),
-  total_albaran: z.string().describe("Total del albaran con formato XX.XXX,XX€. Si no aparece: 'N/D'"),
-  datos_anonimizados: z.array(z.string()).describe("Lista de nombres de campos cuyo valor esta cubierto/tapado por una caja negra, rectangulo negro, pegote o pixelado. Solo si hay evidencia visual clara de ocultacion deliberada."),
-})
-
-// --- System Prompts matching the spec ---
-
-const FACTURA_SYSTEM_PROMPT = `Eres un agente extractor de datos de facturas de proveedor para Fundacion IberCaja. Tu tarea es extraer con maxima precision todos los campos de la factura.
-
-REGLAS OBLIGATORIAS:
-
-1. FORMATO DE FECHAS: DD/MM/AAAA (ejemplo: 31/12/2025)
-2. FORMATO DE IMPORTES: XX.XXX,XX€ (separador miles: punto, decimal: coma, con simbolo euro al final). Ejemplo: 1.442,74€, 418,16€, 41,82€. Aplica a TODOS los importes: precio unitario, base imponible, importe IVA, total factura, cuotas de impuesto, etc.
-3. CIF/NIF: Siempre en MAYUSCULAS y SIN espacios. Ejemplo: B50012345, G50000652
- 4. NUMERO DE FACTURA: SIN espacios y SIN ceros a la izquierda. Ejemplo: "02503378" -> "2503378". Los ceros iniciales NO son la serie, deben eliminarse.
-4b. NOMBRES (Proveedor, Cliente): Siempre en formato Title Case (primera letra mayuscula de cada palabra). Ejemplo: "Catering Subiron S.L." en vez de "CATERING SUBIRON S.L.", "Fundacion Ibercaja" en vez de "FUNDACION IBERCAJA".
-5. CONCEPTOS FACTURABLES: Extrae TODOS los conceptos/lineas de la factura, AGRUPADOS POR ALBARAN.
-   - Si la factura referencia albaranes (ej: "N Albaran: 2511047 Fecha: 05/12/2025"), crear un grupo por cada albaran con su numAlbaran y fechaAlbaran
-   - Si la factura NO tiene albaranes asociados, crear un unico grupo con numAlbaran="N/D" y fechaAlbaran="N/D"
-   - Cada grupo contiene un array "conceptos" con las lineas de producto de ese albaran
-   - baseImponible = cantidad x precioUnitario (calcularlo si los datos estan disponibles)
-   - Si importeIVA no aparece pero puede calcularse a partir del porcentajeIVA y la base, CALCULARLO
-   - Si falta informacion que no se puede deducir: "N/D"
-6. DESGLOSE IMPUESTO INDIRECTO: Desglosa por tramos si hay varios tipos de IVA (ej: IVA 21%, IVA 10%). Si no hay impuesto: array vacio.
-7. RESUMEN DE FACTURA, CONCEPTO: Resumen del concepto de la factura en 3-7 palabras (ej: "Servicio alojamiento web Drupal", "Suministro alimentacion catering").
-8. FORMA DE PAGO: Indica la forma de pago si aparece (Transferencia, Recibo, Domiciliacion, etc.). Si no aparece: "N/D". Si esta tapado: "Dato anonimizado en origen".
-9. NUMERO DE CUENTA: Numero de cuenta bancaria / IBAN. Si no aparece: "N/D". Si esta tapado: "Dato anonimizado en origen".
-
-REGLA DE ANONIMIZACION:
-- Si un campo esta cubierto por una caja negra, tapado por un rectangulo negro, ocultado mediante pegote negro, pixelado de forma intencionada o totalmente tachado de forma opaca, Y no es posible recuperar el contenido:
-  - El valor del campo DEBE ser exactamente: "Dato anonimizado en origen"
-  - Ademas, incluir el nombre del campo en datos_anonimizados
-  - NO intentar inferir ni estimar el dato
-  - NO devolver "N/D" en estos casos (N/D es para campos que simplemente no aparecen)
-
-9. Si un campo no existe en el documento y NO esta anonimizado: "N/D".`
-
-const ALBARAN_SYSTEM_PROMPT = `Eres un agente extractor de datos de albaranes para Fundacion IberCaja. Tu tarea es extraer con maxima precision todos los campos del albaran.
-
-REGLAS OBLIGATORIAS:
-
-1. FORMATO DE FECHAS: DD/MM/AAAA (ejemplo: 31/12/2025)
-2. FORMATO DE IMPORTES: XX.XXX,XX€ (separador miles: punto, decimal: coma, con simbolo euro al final). Ejemplo: 1.442,74€, 418,16€, 41,82€. Aplica a TODOS los importes: precio unitario, importe linea, base imponible total, cuotas de impuesto, total albaran, etc. SIEMPRE con el simbolo € al final.
-3. CIF/NIF: Siempre en MAYUSCULAS y SIN espacios
-3b. NOMBRES (Proveedor, Cliente): Siempre en formato Title Case (primera letra mayuscula de cada palabra). Ejemplo: "Catering Subiron S.L." en vez de "CATERING SUBIRON S.L."
-4. CONCEPTOS ENTREGADOS: Extrae TODOS los productos/conceptos entregados
-   - cantidadEntregada: SOLO el numero, SIN unidad de medida. Ejemplo: "5", "12", "1.5". NO poner "kg", "uds", "l".
-   - NO inventar importes
-   - NO calcular impuestos
-   - Si precioUnitario o importeLinea no aparecen: "N/D"
-5. BASE IMPONIBLE TOTAL, DESGLOSE IMPUESTO INDIRECTO, TOTAL ALBARAN: Extraer igual que en facturas. Si no aparecen: "N/D" o array vacio.
-6. Si un campo simplemente no aparece en el documento: "N/D"
-
-REGLA DE ANONIMIZACION:
-- Si un campo esta cubierto por una caja negra, tapado por un rectangulo negro, ocultado mediante pegote negro, pixelado de forma intencionada o totalmente tachado de forma opaca, Y no es posible recuperar el contenido:
-  - El valor del campo DEBE ser exactamente: "Dato anonimizado en origen"
-  - Ademas, incluir el nombre del campo en datos_anonimizados
-  - NO intentar inferir ni estimar el dato
-  - NO devolver "N/D" en estos casos (N/D es para campos que simplemente no aparecen)
-  - Esta regla aplica a TODOS los campos definidos`
 
 // --- Flattening functions ---
 
 function flattenFacturaData(
-  data: z.infer<typeof facturaProveedorSchema>,
+  data: any,
   fields: string[],
 ): Record<string, { value: string; confidence: number }> {
   const result: Record<string, { value: string; confidence: number }> = {}
 
   const formatConceptos = () => {
-    if (!data.conceptos_facturables || data.conceptos_facturables.length === 0) return "N/D"
-    // Keep the grouped structure: array of { numAlbaran, fechaAlbaran, conceptos: [...] }
+    if (!data.conceptos_facturables || !Array.isArray(data.conceptos_facturables) || data.conceptos_facturables.length === 0) return "N/D"
     return JSON.stringify(data.conceptos_facturables)
   }
 
   const formatDesgloseImpuesto = () => {
-    if (!data.desglose_impuesto_indirecto || data.desglose_impuesto_indirecto.length === 0) return "N/D"
+    if (!data.desglose_impuesto_indirecto || !Array.isArray(data.desglose_impuesto_indirecto) || data.desglose_impuesto_indirecto.length === 0) return "N/D"
     return JSON.stringify(data.desglose_impuesto_indirecto)
   }
 
   const fieldMap: Record<string, () => string> = {
-    "Numero de Factura": () => data.numero_factura,
-    "Serie": () => data.serie,
-    "Fecha de Emision": () => data.fecha_emision,
-    "Proveedor": () => data.proveedor,
-    "CIF/NIF Proveedor": () => data.cif_nif_proveedor,
-    "Direccion Proveedor": () => data.direccion_proveedor,
-    "Cliente": () => data.cliente,
-    "CIF/NIF Cliente": () => data.cif_nif_cliente,
+    "Numero de Factura": () => data.numero_factura || "N/D",
+    "Serie": () => data.serie || "N/D",
+    "Fecha de Emision": () => data.fecha_emision || "N/D",
+    "Proveedor": () => data.proveedor || "N/D",
+    "CIF/NIF Proveedor": () => data.cif_nif_proveedor || "N/D",
+    "Direccion Proveedor": () => data.direccion_proveedor || "N/D",
+    "Cliente": () => data.cliente || "N/D",
+    "CIF/NIF Cliente": () => data.cif_nif_cliente || "N/D",
     "Conceptos Facturables": formatConceptos,
-    "Base Imponible Total": () => data.base_imponible_total,
+    "Base Imponible Total": () => data.base_imponible_total || "N/D",
     "Desglose Impuesto Indirecto": formatDesgloseImpuesto,
-    "Total Factura": () => data.total_factura,
-    "Concepto": () => data.resumen_factura_concepto,
-    "Forma de Pago": () => data.forma_pago,
-    "Numero de Cuenta": () => data.numero_cuenta,
+    "Total Factura": () => data.total_factura || "N/D",
+    "Concepto": () => data.resumen_factura_concepto || "N/D",
+    "Forma de Pago": () => data.forma_pago || "N/D",
+    "Numero de Cuenta": () => data.numero_cuenta || "N/D",
   }
 
   for (const field of fields) {
@@ -171,32 +261,32 @@ function flattenFacturaData(
 }
 
 function flattenAlbaranData(
-  data: z.infer<typeof albaranSchema>,
+  data: any,
   fields: string[],
 ): Record<string, { value: string; confidence: number }> {
   const result: Record<string, { value: string; confidence: number }> = {}
 
   const formatConceptos = () => {
-    if (!data.conceptos_entregados || data.conceptos_entregados.length === 0) return "N/D"
+    if (!data.conceptos_entregados || !Array.isArray(data.conceptos_entregados) || data.conceptos_entregados.length === 0) return "N/D"
     return JSON.stringify(data.conceptos_entregados)
   }
 
   const formatDesgloseImpuesto = () => {
-    if (!data.desglose_impuesto_indirecto || data.desglose_impuesto_indirecto.length === 0) return "N/D"
+    if (!data.desglose_impuesto_indirecto || !Array.isArray(data.desglose_impuesto_indirecto) || data.desglose_impuesto_indirecto.length === 0) return "N/D"
     return JSON.stringify(data.desglose_impuesto_indirecto)
   }
 
   const fieldMap: Record<string, () => string> = {
-    "Numero de Albaran": () => data.numero_albaran,
-    "Fecha de Albaran": () => data.fecha_albaran,
+    "Numero de Albaran": () => data.numero_albaran || "N/D",
+    "Fecha de Albaran": () => data.fecha_albaran || "N/D",
     "Proveedor": () => "Valor anonimizado en origen",
     "CIF/NIF Proveedor": () => "Valor anonimizado en origen",
-    "Cliente": () => data.cliente,
-    "Referencia Pedido": () => data.referencia_pedido,
+    "Cliente": () => data.cliente || "N/D",
+    "Referencia Pedido": () => data.referencia_pedido || "N/D",
     "Conceptos Entregados": formatConceptos,
-    "Base Imponible Total": () => data.base_imponible_total,
+    "Base Imponible Total": () => data.base_imponible_total || "N/D",
     "Desglose Impuesto Indirecto": formatDesgloseImpuesto,
-    "Total Albaran": () => data.total_albaran,
+    "Total Albaran": () => data.total_albaran || "N/D",
   }
 
   for (const field of fields) {
@@ -230,41 +320,18 @@ export async function POST(request: NextRequest) {
     let extractedData: Record<string, { value: string; confidence: number }>
 
     if (isAlbaran) {
-      console.log("[v0] API: Using albaran schema")
-      const { output } = await generateText({
-        model: "anthropic/claude-sonnet-4.6",
-        output: Output.object({ schema: albaranSchema }),
-        system: ALBARAN_SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: `Extrae todos los datos de este albaran:\n\n${markdown}`,
-          },
-        ],
-      })
-
-      if (!output) throw new Error("No extraction output from LLM")
-      extractedData = flattenAlbaranData(output, fields)
-
+      console.log("[v0] API: Using albaran schema via Landing AI")
+      const data = await apiExtract(markdown, ALBARAN_SCHEMA)
+      console.log("[v0] API: Albaran extraction result keys:", Object.keys(data))
+      extractedData = flattenAlbaranData(data, fields)
     } else {
-      console.log("[v0] API: Using factura proveedor schema")
-      const { output } = await generateText({
-        model: "anthropic/claude-sonnet-4.6",
-        output: Output.object({ schema: facturaProveedorSchema }),
-        system: FACTURA_SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: `Extrae todos los datos de esta factura de proveedor:\n\n${markdown}`,
-          },
-        ],
-      })
-
-      if (!output) throw new Error("No extraction output from LLM")
-      extractedData = flattenFacturaData(output, fields)
+      console.log("[v0] API: Using factura proveedor schema via Landing AI")
+      const data = await apiExtract(markdown, FACTURA_SCHEMA)
+      console.log("[v0] API: Factura extraction result keys:", Object.keys(data))
+      extractedData = flattenFacturaData(data, fields)
 
       // --- Demo override: force anonymized fields for specific invoice ---
-      const invoiceNumber = output.numero_factura?.replace(/\s/g, "")
+      const invoiceNumber = (data.numero_factura || "").replace(/\s/g, "")
       if (invoiceNumber === "02503378" || invoiceNumber === "2503378") {
         const forcedAnonymized = [
           "Proveedor",
