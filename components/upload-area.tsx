@@ -118,52 +118,37 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
     [handleFiles],
   )
 
-  useEffect(() => {
-    const createSession = async () => {
-      console.log("[v0] Creating QR session...")
-      try {
-        const response = await fetch("/api/upload-session", {
-          method: "POST",
-        })
+  // QR session is created on-demand when user clicks "show QR", not on mount
+  const createQrSession = useCallback(async () => {
+    if (qrSession) return // already created
+    console.log("[v0] Creating QR session...")
+    try {
+      const response = await fetch("/api/upload-session", {
+        method: "POST",
+      })
 
-        if (!response.ok) {
-          const text = await response.text()
-          console.error("[v0] Session creation failed:", response.status, text)
-          throw new Error(`Failed to create session: ${response.status}`)
-        }
-
-        const data = await response.json()
-        console.log("[v0] Session created successfully:", data)
-
-        // This ensures we use the correct URL that doesn't require authentication
-        const mobileUploadUrl = `${data.baseUrl}/mobile-upload?sessionId=${data.sessionId}&token=${encodeURIComponent(data.token)}`
-
-        setQrSession({
-          sessionId: data.sessionId,
-          mobileUploadUrl,
-        })
-        console.log("[v0] Created QR session:", data.sessionId)
-        console.log("[v0] Mobile upload URL:", mobileUploadUrl)
-
-        generateQRCode(mobileUploadUrl)
-
-        startPolling(data.sessionId)
-      } catch (error) {
-        console.error("[v0] Error creating session:", error)
-        addActivityLog({
-          type: "error",
-          message: "No se pudo generar el código QR",
-          details: error instanceof Error ? error.message : "Error desconocido",
-        })
+      if (!response.ok) {
+        const text = await response.text()
+        console.error("[v0] Session creation failed:", response.status, text)
+        throw new Error(`Failed to create session: ${response.status}`)
       }
-    }
 
-    createSession()
+      const data = await response.json()
+      console.log("[v0] Session created successfully:", data)
 
-    return () => {
-      setIsPolling(false)
+      const mobileUploadUrl = `${data.baseUrl}/mobile-upload?sessionId=${data.sessionId}&token=${encodeURIComponent(data.token)}`
+
+      setQrSession({
+        sessionId: data.sessionId,
+        mobileUploadUrl,
+      })
+
+      generateQRCode(mobileUploadUrl)
+      startPolling(data.sessionId)
+    } catch (error) {
+      console.error("[v0] Error creating session:", error)
     }
-  }, [])
+  }, [qrSession, generateQRCode, startPolling])
 
   const startPolling = useCallback(
     (sessionId: string) => {

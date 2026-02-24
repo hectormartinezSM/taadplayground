@@ -261,12 +261,12 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                           doc.documentType.type.toLowerCase().includes('factura') || 
                           doc.documentType.type.toLowerCase().includes('albaran') ||
                           doc.documentType.type.toLowerCase().includes('albarán')
-                        ) && (
+                        ) ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                             <CheckCircle2 className="h-3 w-3" />
                             Tipologia aceptada
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {docPages.length} {docPages.length === 1 ? "página" : "páginas"}
