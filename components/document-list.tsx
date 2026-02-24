@@ -9,6 +9,7 @@ import { ImageViewer } from "./image-viewer"
 import { Button } from "@/components/ui/button"
 import { jsPDF } from "jspdf"
 import { downloadDocumentJSON, downloadDocumentCSV } from "@/lib/export-utils"
+import { ValidationChecks } from "./validation-checks"
 
 interface DocumentListProps {
   documents: Document[]
@@ -352,6 +353,14 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                         ? (fieldName) => handleAddCustomField(doc.id, fieldName, doc.documentType!.type)
                         : undefined
                     }
+                  />
+                )}
+
+                {/* Validation Checks */}
+                {doc.status === "complete" && doc.extractedData && doc.documentType && (
+                  <ValidationChecks
+                    extractedData={doc.extractedData}
+                    documentType={doc.documentType.type}
                   />
                 )}
               </CardContent>
