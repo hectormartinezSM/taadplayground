@@ -7,10 +7,10 @@ import { z } from "zod"
 const conceptoFacturableSchema = z.object({
   concepto: z.string().describe("Descripcion del concepto facturable"),
   cantidad: z.string().describe("Cantidad. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  precioUnitario: z.string().describe("Precio unitario con formato XX.XXX,XX. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  baseImponible: z.string().describe("Base imponible = cantidad x precioUnitario. Si no se puede calcular: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
+  precioUnitario: z.string().describe("Precio unitario con formato XX.XXX,XX€ (con simbolo euro). Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
+  baseImponible: z.string().describe("Base imponible = cantidad x precioUnitario con formato XX.XXX,XX€. Si no se puede calcular: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   porcentajeIVA: z.string().describe("Porcentaje de IVA aplicado. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  importeIVA: z.string().describe("Importe del IVA. Si no aparece pero puede calcularse, calcularlo. Si no: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
+  importeIVA: z.string().describe("Importe del IVA con formato XX.XXX,XX€. Si no aparece pero puede calcularse, calcularlo. Si no: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
 })
 
 const grupoAlbaranSchema = z.object({
@@ -21,23 +21,23 @@ const grupoAlbaranSchema = z.object({
 
 const desgloseImpuestoSchema = z.object({
   tipo: z.string().describe("Tipo de impuesto, ej: 'IVA 21%', 'IVA 10%'"),
-  base: z.string().describe("Base imponible de este tramo con formato XX.XXX,XX"),
-  cuota: z.string().describe("Cuota/importe del impuesto con formato XX.XXX,XX"),
+  base: z.string().describe("Base imponible de este tramo con formato XX.XXX,XX€"),
+  cuota: z.string().describe("Cuota/importe del impuesto con formato XX.XXX,XX€"),
 })
 
 const facturaProveedorSchema = z.object({
   numero_factura: z.string().describe("Numero de factura tal como aparece en el documento, SIN espacios"),
   serie: z.string().describe("Serie de la factura. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   fecha_emision: z.string().describe("Fecha de emision en formato DD/MM/AAAA"),
-  proveedor: z.string().describe("Nombre del proveedor/emisor"),
+  proveedor: z.string().describe("Nombre del proveedor/emisor en formato Title Case (primera letra mayuscula de cada palabra). Ej: 'Catering Subiron S.L.' en vez de 'CATERING SUBIRON S.L.'"),
   cif_nif_proveedor: z.string().describe("CIF/NIF del proveedor en mayusculas, sin espacios. Si esta tapado: 'Dato anonimizado en origen'"),
   direccion_proveedor: z.string().describe("Direccion del proveedor. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  cliente: z.string().describe("Nombre del cliente/receptor"),
+  cliente: z.string().describe("Nombre del cliente/receptor en formato Title Case (primera letra mayuscula de cada palabra). Ej: 'Fundacion Ibercaja' en vez de 'FUNDACION IBERCAJA'"),
   cif_nif_cliente: z.string().describe("CIF/NIF del cliente en mayusculas, sin espacios. Si esta tapado: 'Dato anonimizado en origen'"),
   conceptos_facturables: z.array(grupoAlbaranSchema).describe("Conceptos facturables agrupados por albaran. Si la factura tiene albaranes asociados, agrupar los conceptos bajo cada albaran con su numAlbaran y fechaAlbaran. Si la factura NO tiene albaranes, crear un unico grupo con numAlbaran='N/D' y fechaAlbaran='N/D'. baseImponible = cantidad x precioUnitario. Si importeIVA no aparece pero puede calcularse, calcularlo."),
-  base_imponible_total: z.string().describe("Base imponible total con formato XX.XXX,XX"),
+  base_imponible_total: z.string().describe("Base imponible total con formato XX.XXX,XX€ (con simbolo euro)"),
   desglose_impuesto_indirecto: z.array(desgloseImpuestoSchema).describe("Desglose del impuesto indirecto por tramos (ej: IVA 21%, IVA 10%). Si no hay impuesto: array vacio"),
-  total_factura: z.string().describe("Total de la factura con formato XX.XXX,XX"),
+  total_factura: z.string().describe("Total de la factura con formato XX.XXX,XX€ (con simbolo euro)"),
   resumen_factura_concepto: z.string().describe("Resumen del concepto de la factura en 3-7 palabras (ej: 'Catering evento corporativo', 'Suministro alimentacion')"),
   forma_pago: z.string().describe("Forma de pago: 'Transferencia', 'Recibo', 'Domiciliacion', etc. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   numero_cuenta: z.string().describe("Numero de cuenta bancaria / IBAN. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
@@ -49,16 +49,16 @@ const conceptoEntregadoSchema = z.object({
   codigoArticulo: z.string().describe("Codigo de articulo. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   cantidadEntregada: z.string().describe("Cantidad entregada"),
   unidad: z.string().describe("Unidad de medida. Si no aparece: 'N/D'"),
-  precioUnitario: z.string().describe("Precio unitario. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
-  importeLinea: z.string().describe("Importe de la linea. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
+  precioUnitario: z.string().describe("Precio unitario con formato XX.XXX,XX€. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
+  importeLinea: z.string().describe("Importe de la linea con formato XX.XXX,XX€. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
 })
 
 const albaranSchema = z.object({
   numero_albaran: z.string().describe("Numero de albaran tal como aparece en el documento"),
   fecha_albaran: z.string().describe("Fecha del albaran en formato DD/MM/AAAA"),
-  proveedor: z.string().describe("Nombre del proveedor. Si no aparece: 'N/D'"),
+  proveedor: z.string().describe("Nombre del proveedor en formato Title Case (primera letra mayuscula de cada palabra). Si no aparece: 'N/D'"),
   cif_nif_proveedor: z.string().describe("CIF/NIF del proveedor en mayusculas, sin espacios. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
-  cliente: z.string().describe("Nombre del cliente. Si no aparece: 'N/D'"),
+  cliente: z.string().describe("Nombre del cliente en formato Title Case (primera letra mayuscula de cada palabra). Si no aparece: 'N/D'"),
   referencia_pedido: z.string().describe("Referencia del pedido. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   conceptos_entregados: z.array(conceptoEntregadoSchema).describe("Array de conceptos/productos entregados. No inventar importes. No calcular impuestos."),
   observaciones: z.string().describe("Observaciones si existen. Si no: 'N/D'"),
@@ -72,9 +72,10 @@ const FACTURA_SYSTEM_PROMPT = `Eres un agente extractor de datos de facturas de 
 REGLAS OBLIGATORIAS:
 
 1. FORMATO DE FECHAS: DD/MM/AAAA (ejemplo: 31/12/2025)
-2. FORMATO DE IMPORTES: XX.XXX,XX (separador miles: punto, decimal: coma). Ejemplo: 1.442,74
+2. FORMATO DE IMPORTES: XX.XXX,XX€ (separador miles: punto, decimal: coma, con simbolo euro al final). Ejemplo: 1.442,74€, 418,16€, 41,82€. Aplica a TODOS los importes: precio unitario, base imponible, importe IVA, total factura, cuotas de impuesto, etc.
 3. CIF/NIF: Siempre en MAYUSCULAS y SIN espacios. Ejemplo: B50012345, G50000652
 4. NUMERO DE FACTURA: Exactamente como aparece en el documento, SIN espacios.
+4b. NOMBRES (Proveedor, Cliente): Siempre en formato Title Case (primera letra mayuscula de cada palabra). Ejemplo: "Catering Subiron S.L." en vez de "CATERING SUBIRON S.L.", "Fundacion Ibercaja" en vez de "FUNDACION IBERCAJA".
 5. CONCEPTOS FACTURABLES: Extrae TODOS los conceptos/lineas de la factura, AGRUPADOS POR ALBARAN.
    - Si la factura referencia albaranes (ej: "N Albaran: 2511047 Fecha: 05/12/2025"), crear un grupo por cada albaran con su numAlbaran y fechaAlbaran
    - Si la factura NO tiene albaranes asociados, crear un unico grupo con numAlbaran="N/D" y fechaAlbaran="N/D"
@@ -101,8 +102,9 @@ const ALBARAN_SYSTEM_PROMPT = `Eres un agente extractor de datos de albaranes pa
 REGLAS OBLIGATORIAS:
 
 1. FORMATO DE FECHAS: DD/MM/AAAA (ejemplo: 31/12/2025)
-2. FORMATO DE IMPORTES: XX.XXX,XX (separador miles: punto, decimal: coma) — solo si el importe aparece explicitamente
+2. FORMATO DE IMPORTES: XX.XXX,XX€ (separador miles: punto, decimal: coma, con simbolo euro al final) — solo si el importe aparece explicitamente. Aplica a precio unitario, importe linea, etc.
 3. CIF/NIF: Siempre en MAYUSCULAS y SIN espacios
+3b. NOMBRES (Proveedor, Cliente): Siempre en formato Title Case (primera letra mayuscula de cada palabra). Ejemplo: "Catering Subiron S.L." en vez de "CATERING SUBIRON S.L."
 4. CONCEPTOS ENTREGADOS: Extrae TODOS los productos/conceptos entregados
    - NO inventar importes
    - NO calcular impuestos
