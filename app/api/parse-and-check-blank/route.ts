@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] API: Starting combined parse + blank check")
+    console.log("[v0] API: VISION_AGENT_API_KEY present:", !!LANDING_API_KEY, "length:", LANDING_API_KEY?.length || 0)
+    console.log("[v0] API: imageUrl present:", !!imageUrl, "length:", imageUrl?.length || 0)
 
     // Step 1: Parse the image to markdown
     const markdown = await apiParse(imageUrl)
@@ -91,7 +93,10 @@ export async function POST(request: NextRequest) {
       isBlank,
     })
   } catch (error) {
-    console.error("[v0] API: Error in parse-and-check-blank:", error)
+    const errorMsg = error instanceof Error ? error.message : "Unknown error"
+    const errorStack = error instanceof Error ? error.stack : ""
+    console.error("[v0] API: CRITICAL ERROR in parse-and-check-blank:", errorMsg)
+    console.error("[v0] API: Error stack:", errorStack)
 
     // Return a safe default to not block processing
     return NextResponse.json(
@@ -99,7 +104,7 @@ export async function POST(request: NextRequest) {
         success: false,
         markdown: "",
         isBlank: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMsg,
       },
       { status: 200 },
     )
@@ -129,16 +134,19 @@ async function apiParse(imageBase64: string): Promise<string> {
 
     if (!res.ok) {
       const errorBody = await res.text()
+      console.error("[v0] API: Landing AI Parse FAILED:", res.status, errorBody.substring(0, 500))
       if (res.status === 429 || errorBody.includes("Too Many")) {
         throw new Error(`Rate limit: ${res.status} - ${errorBody}`)
       }
       throw new Error(`Parse API failed: ${res.status} - ${errorBody}`)
     }
 
+    console.log("[v0] API: Landing AI Parse response status:", res.status)
     return res
   })
 
   const data: ParseResponse = await response.json()
+  console.log("[v0] API: Landing AI Parse result markdown length:", data.markdown?.length || 0)
   return data.markdown
 }
 

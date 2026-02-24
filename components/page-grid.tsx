@@ -94,6 +94,14 @@ export function PageGrid({
 
             const data = await response.json()
 
+            console.log("[v0] Page", index + 1, "parse response:", {
+              status: response.status,
+              success: data.success,
+              markdownLength: data.markdown?.length || 0,
+              isBlank: data.isBlank,
+              error: data.error || "none",
+            })
+
             if (data.success) {
               processedPageIds.current.add(page.id)
 
@@ -135,6 +143,7 @@ export function PageGrid({
               }
             }
 
+            console.warn("[v0] Page", index + 1, "parse FAILED (success=false), skipping. Error:", data.error)
             return null
           } catch (error) {
             console.error("[v0] Error processing page", index + 1, error)
