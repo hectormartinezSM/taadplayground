@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { generateText, Output } from "ai"
 import { z } from "zod"
 
+export const maxDuration = 60
+
 const classificationSchema = z.object({
   tipo_documento: z.enum(["albaran", "factura_proveedor"]),
   confianza: z.number().min(0).max(1).describe("Nivel de confianza en la clasificacion, de 0 a 1"),

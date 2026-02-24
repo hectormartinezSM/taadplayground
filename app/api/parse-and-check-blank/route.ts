@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { retryWithBackoff } from "@/lib/api-retry"
 
+// Allow large bodies (base64 images can be several MB)
+export const maxDuration = 60
+
 const LANDING_API_KEY = process.env.VISION_AGENT_API_KEY
 const API_BASE_URL = "https://api.va.eu-west-1.landing.ai"
 
