@@ -102,7 +102,7 @@ const ALBARAN_SYSTEM_PROMPT = `Eres un agente extractor de datos de albaranes pa
 REGLAS OBLIGATORIAS:
 
 1. FORMATO DE FECHAS: DD/MM/AAAA (ejemplo: 31/12/2025)
-2. FORMATO DE IMPORTES: XX.XXX,XX€ (separador miles: punto, decimal: coma, con simbolo euro al final) — solo si el importe aparece explicitamente. Aplica a precio unitario, importe linea, etc.
+2. FORMATO DE IMPORTES: XX.XXX,XX€ (separador miles: punto, decimal: coma, con simbolo euro al final). Ejemplo: 1.442,74€, 418,16€, 41,82€. Aplica a TODOS los importes: precio unitario, importe linea, base imponible total, cuotas de impuesto, total albaran, etc. SIEMPRE con el simbolo € al final.
 3. CIF/NIF: Siempre en MAYUSCULAS y SIN espacios
 3b. NOMBRES (Proveedor, Cliente): Siempre en formato Title Case (primera letra mayuscula de cada palabra). Ejemplo: "Catering Subiron S.L." en vez de "CATERING SUBIRON S.L."
 4. CONCEPTOS ENTREGADOS: Extrae TODOS los productos/conceptos entregados
