@@ -26,7 +26,7 @@ const desgloseImpuestoSchema = z.object({
 })
 
 const facturaProveedorSchema = z.object({
-  numero_factura: z.string().describe("Numero de factura tal como aparece en el documento, SIN espacios"),
+  numero_factura: z.string().describe("Numero de factura tal como aparece en el documento, SIN espacios y SIN ceros a la izquierda. Ejemplo: si el documento dice '02503378', devolver '2503378'. Si dice 'F-001234', devolver 'F-1234'."),
   serie: z.string().describe("Serie de la factura. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   fecha_emision: z.string().describe("Fecha de emision en formato DD/MM/AAAA"),
   proveedor: z.string().describe("Nombre del proveedor/emisor en formato Title Case (primera letra mayuscula de cada palabra). Ej: 'Catering Subiron S.L.' en vez de 'CATERING SUBIRON S.L.'"),
@@ -74,7 +74,7 @@ REGLAS OBLIGATORIAS:
 1. FORMATO DE FECHAS: DD/MM/AAAA (ejemplo: 31/12/2025)
 2. FORMATO DE IMPORTES: XX.XXX,XX€ (separador miles: punto, decimal: coma, con simbolo euro al final). Ejemplo: 1.442,74€, 418,16€, 41,82€. Aplica a TODOS los importes: precio unitario, base imponible, importe IVA, total factura, cuotas de impuesto, etc.
 3. CIF/NIF: Siempre en MAYUSCULAS y SIN espacios. Ejemplo: B50012345, G50000652
-4. NUMERO DE FACTURA: Exactamente como aparece en el documento, SIN espacios.
+ 4. NUMERO DE FACTURA: SIN espacios y SIN ceros a la izquierda. Ejemplo: "02503378" -> "2503378". Los ceros iniciales NO son la serie, deben eliminarse.
 4b. NOMBRES (Proveedor, Cliente): Siempre en formato Title Case (primera letra mayuscula de cada palabra). Ejemplo: "Catering Subiron S.L." en vez de "CATERING SUBIRON S.L.", "Fundacion Ibercaja" en vez de "FUNDACION IBERCAJA".
 5. CONCEPTOS FACTURABLES: Extrae TODOS los conceptos/lineas de la factura, AGRUPADOS POR ALBARAN.
    - Si la factura referencia albaranes (ej: "N Albaran: 2511047 Fecha: 05/12/2025"), crear un grupo por cada albaran con su numAlbaran y fechaAlbaran
