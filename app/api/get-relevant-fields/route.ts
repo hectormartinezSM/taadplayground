@@ -1,52 +1,46 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-// Hardcoded field definitions per document type - no LLM needed here
+// Hardcoded field definitions per document type matching the spec exactly
 
-const FACTURA_FIELDS = [
-  "Grupo de Impuestos",
-  "Grupo de Proveedores",
-  "NIF/CIF",
-  "Forma de Pago",
-  "Cuenta de Abono",
-  "Articulo(s)",
-  "Concepto",
-  "Importe Total",
+const FACTURA_PROVEEDOR_FIELDS = [
   "Numero de Factura",
-  "Fecha de Documento",
-  "Fecha de Registro",
-  "Fecha de Vencimiento",
+  "Serie",
+  "Fecha de Emision",
+  "Proveedor",
+  "CIF/NIF Proveedor",
+  "Direccion Proveedor",
+  "Cliente",
+  "CIF/NIF Cliente",
+  "Conceptos Facturables",
+  "Base Imponible Total",
+  "Tipo Impuesto Indirecto",
+  "Desglose Impuesto Indirecto",
+  "Tipo de Retencion",
+  "Desglose Retencion",
+  "Total Factura",
+  "Resumen de la Factura",
 ]
 
-const FACTURA_CON_ALBARAN_EXTRA_FIELDS = [
-  "Albaranes Asociados",
-  "Detalle por Albaran",
-]
-
-const OTRO_DOCUMENTO_FIELDS = [
-  "Tipo de Documento",
-  "Partes Involucradas",
-  "Objeto / Descripcion",
-  "Importe Total",
-  "Forma de Pago",
-  "Cuenta de Abono",
-  "Fechas Clave",
-  "Personas Clave",
-  "Duracion / Vigencia",
+const ALBARAN_FIELDS = [
+  "Numero de Albaran",
+  "Fecha de Albaran",
+  "Proveedor",
+  "CIF/NIF Proveedor",
+  "Cliente",
+  "Referencia Pedido",
+  "Conceptos Entregados",
+  "Observaciones",
 ]
 
 function getFieldsForType(documentType: string): string[] {
   const lower = documentType.toLowerCase()
 
-  if (lower.includes("albaran") || lower === "factura con albaran") {
-    return [...FACTURA_FIELDS, ...FACTURA_CON_ALBARAN_EXTRA_FIELDS]
+  if (lower.includes("albaran") && !lower.includes("factura")) {
+    return [...ALBARAN_FIELDS]
   }
 
-  if (lower.includes("factura") || lower.includes("intragrupo")) {
-    return [...FACTURA_FIELDS]
-  }
-
-  // Convenios, contratos, and any other document type
-  return [...OTRO_DOCUMENTO_FIELDS]
+  // Default to factura proveedor
+  return [...FACTURA_PROVEEDOR_FIELDS]
 }
 
 export async function POST(request: NextRequest) {

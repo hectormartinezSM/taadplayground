@@ -3,37 +3,36 @@ import { generateText, Output } from "ai"
 import { z } from "zod"
 
 const classificationSchema = z.object({
-  tipo_documento: z.enum(["factura_intragrupo", "factura_con_albaran", "otro_documento"]),
-  subtipo: z.string().describe("Subtipo mas especifico si aplica. Para facturas: 'Factura Intragrupo', 'Factura Simple'. Para otros: 'Convenio', 'Contrato', etc."),
+  tipo_documento: z.enum(["albaran", "factura_proveedor"]),
   confianza: z.number().min(0).max(1).describe("Nivel de confianza en la clasificacion, de 0 a 1"),
+  razon: z.string().describe("Breve justificacion de la clasificacion en 1-2 frases"),
 })
 
-const SYSTEM_PROMPT = `Eres un agente clasificador de documentos de Fundacion IberCaja. Tu tarea es clasificar documentos en una de tres categorias.
+const SYSTEM_PROMPT = `Eres un agente clasificador de documentos para Fundacion IberCaja. Tu tarea es clasificar documentos EXCLUSIVAMENTE en dos categorias:
 
-REGLAS DE CLASIFICACION:
+- albaran
+- factura_proveedor
 
-1. **factura_con_albaran**: El documento es una factura que INCLUYE o REFERENCIA albaranes. Indicadores:
-   - Menciona explicitamente "albaran", "albaran n", "nota de entrega", "delivery note"
-   - Contiene hojas de albaran adjuntas como paginas separadas
-   - La factura resume o consolida datos de uno o mas albaranes
-   - Hay numeros de albaran referenciados en el cuerpo de la factura
+ORDEN DE EVALUACION (obligatorio):
+Primero evalua si es un ALBARAN. Solo si NO es albaran, evalua si es factura proveedor.
+Esto evita clasificaciones erroneas cuando existan importes sin estructura fiscal completa.
 
-2. **factura_intragrupo**: El documento es una factura SIN referencia a albaranes. Incluye:
-   - Facturas intragrupo (entre empresas del mismo grupo Ibercaja)
-   - Facturas simples de proveedores sin albaran
-   - Cualquier factura que NO mencione albaranes
-   - Indicadores: "factura", "invoice", NIF/CIF, importes, IVA, base imponible, numero de factura
+CRITERIOS DE CLASIFICACION:
 
-3. **otro_documento**: Cualquier documento que NO sea una factura. Incluye:
-   - Convenios de colaboracion
-   - Contratos
-   - Acuerdos marco
-   - Documentos administrativos, legales, o de otro tipo
+1. **albaran** — Se clasificara como Albaran si contiene senales como:
+   - "Albaran", "Albaran de entrega", "Nota de entrega", "Delivery note", "N albaran", "Documento de entrega"
+   - Puede contener cantidades y precios
+   - NO contiene estructura fiscal formal completa (base imponible + desglose IVA + total estructurado)
 
-IMPORTANTE:
-- Si el documento tiene estructura de factura (emisor, receptor, importes, IVA, numero de factura), SIEMPRE es factura_intragrupo o factura_con_albaran.
-- La diferencia entre ambas facturas es UNICAMENTE la presencia/referencia de albaranes.
-- Si dudas entre factura y otro, prioriza factura si hay importes + IVA + numero de factura.`
+2. **factura_proveedor** — Se clasificara como Factura proveedor si contiene:
+   - "Factura", "Factura n", "Invoice", "N factura"
+   - Base imponible
+   - Desglose de IVA
+   - Total factura
+   - CIF/NIF emisor
+   - Nunca debera clasificarse como factura si el documento responde claramente a estructura de albaran.
+
+REGLA CLAVE: Si el documento tiene estructura fiscal completa (base + IVA + total), es factura_proveedor. Si tiene productos/cantidades pero sin estructura fiscal completa, es albaran.`
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,12 +44,9 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] API: Classifying document with LLM...")
 
-    // Use the markdown that was already parsed by the OCR step
-    let documentContent = markdown || ""
+    const documentContent = markdown || ""
 
-    if (!documentContent && imageUrls) {
-      // Fallback: if no markdown provided, we need to parse first
-      // This shouldn't happen in normal flow since page-grid passes markdown
+    if (!documentContent) {
       return NextResponse.json({ error: "Markdown content is required for classification" }, { status: 400 })
     }
 
@@ -72,29 +68,16 @@ export async function POST(request: NextRequest) {
       throw new Error("No classification output received from LLM")
     }
 
-    console.log("[v0] API: Document classified as:", output.tipo_documento, "subtipo:", output.subtipo, "confianza:", output.confianza)
+    console.log("[v0] API: Document classified as:", output.tipo_documento, "confianza:", output.confianza, "razon:", output.razon)
 
     // Map internal types to display names
-    let displayType: string
-    switch (output.tipo_documento) {
-      case "factura_intragrupo":
-        displayType = "Factura Intragrupo"
-        break
-      case "factura_con_albaran":
-        displayType = "Factura con Albaran"
-        break
-      case "otro_documento":
-        displayType = output.subtipo || "Otro Documento"
-        break
-      default:
-        displayType = "Otro Documento"
-    }
+    const displayType = output.tipo_documento === "albaran" ? "Albaran" : "Factura Proveedor"
 
     return NextResponse.json({
       type: displayType,
       internalType: output.tipo_documento,
-      subtipo: output.subtipo,
       confidence: output.confianza,
+      razon: output.razon,
       markdown: documentContent,
     })
   } catch (error) {
