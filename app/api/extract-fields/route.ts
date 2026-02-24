@@ -151,7 +151,7 @@ function flattenFacturaData(
     "Base Imponible Total": () => data.base_imponible_total,
     "Desglose Impuesto Indirecto": formatDesgloseImpuesto,
     "Total Factura": () => data.total_factura,
-    "Resumen de Factura, Concepto": () => data.resumen_factura_concepto,
+    "Concepto": () => data.resumen_factura_concepto,
     "Forma de Pago": () => data.forma_pago,
     "Numero de Cuenta": () => data.numero_cuenta,
   }

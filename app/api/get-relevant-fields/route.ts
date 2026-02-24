@@ -15,7 +15,7 @@ const FACTURA_PROVEEDOR_FIELDS = [
   "Base Imponible Total",
   "Desglose Impuesto Indirecto",
   "Total Factura",
-  "Resumen de Factura, Concepto",
+  "Concepto",
   "Forma de Pago",
   "Numero de Cuenta",
 ]
