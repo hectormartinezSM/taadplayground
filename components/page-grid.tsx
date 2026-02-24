@@ -380,11 +380,15 @@ export function PageGrid({
 
       const classificationResponse = (await Promise.race([classificationPromise, timeoutPromise])) as Response
 
+      console.log("[v0] Classification response status:", classificationResponse.status)
       if (!classificationResponse.ok) {
-        throw new Error(`Classification failed with status ${classificationResponse.status}`)
+        const errorText = await classificationResponse.text()
+        console.error("[v0] Classification HTTP error:", classificationResponse.status, errorText)
+        throw new Error(`Classification failed with status ${classificationResponse.status}: ${errorText}`)
       }
 
       const classificationData = await classificationResponse.json()
+      console.log("[v0] Classification result:", JSON.stringify(classificationData))
       documentType = { type: classificationData.type || "undefined" }
 
       allDocs[docIndex] = {
@@ -444,8 +448,10 @@ export function PageGrid({
         }),
       })
 
+      console.log("[v0] Extract-fields response status:", response.status)
       if (response.ok) {
         const data = await response.json()
+        console.log("[v0] Extract-fields result keys:", Object.keys(data.extractedData || {}))
         const extractedData = data.extractedData || {}
 
         allDocs[docIndex] = {
@@ -464,7 +470,8 @@ export function PageGrid({
           }
         }
       } else {
-        console.error("[v0] Error extracting fields for document", docIndex + 1)
+        const errorText = await response.text()
+        console.error("[v0] Error extracting fields for document", docIndex + 1, "status:", response.status, "body:", errorText)
         const extractedData: Record<string, ExtractedField> = {}
         for (const fieldName of fieldNames) {
           extractedData[fieldName] = { value: "N/A", confidence: 1 }
