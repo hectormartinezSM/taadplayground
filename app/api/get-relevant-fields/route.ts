@@ -28,7 +28,6 @@ const ALBARAN_FIELDS = [
   "Cliente",
   "Referencia Pedido",
   "Conceptos Entregados",
-  "Observaciones",
 ]
 
 function getFieldsForType(documentType: string): string[] {

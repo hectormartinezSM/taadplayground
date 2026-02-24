@@ -46,22 +46,19 @@ const facturaProveedorSchema = z.object({
 
 const conceptoEntregadoSchema = z.object({
   concepto: z.string().describe("Descripcion del concepto/producto entregado"),
-  codigoArticulo: z.string().describe("Codigo de articulo. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   cantidadEntregada: z.string().describe("Cantidad entregada"),
-  unidad: z.string().describe("Unidad de medida. Si no aparece: 'N/D'"),
   precioUnitario: z.string().describe("Precio unitario con formato XX.XXX,XX€. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
   importeLinea: z.string().describe("Importe de la linea con formato XX.XXX,XX€. Por defecto 'N/D'. No inventar. Si esta tapado: 'Dato anonimizado en origen'"),
 })
 
 const albaranSchema = z.object({
-  numero_albaran: z.string().describe("Numero de albaran tal como aparece en el documento"),
+  numero_albaran: z.string().describe("Numero de albaran SIN ceros a la izquierda. Si empieza por '0.' eliminar el '0.' tambien. Ejemplo: '02511047' -> '2511047', '0.2511047' -> '2511047'."),
   fecha_albaran: z.string().describe("Fecha del albaran en formato DD/MM/AAAA"),
   proveedor: z.string().describe("Nombre del proveedor en formato Title Case (primera letra mayuscula de cada palabra). Si no aparece: 'N/D'"),
   cif_nif_proveedor: z.string().describe("CIF/NIF del proveedor en mayusculas, sin espacios. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   cliente: z.string().describe("Nombre del cliente en formato Title Case (primera letra mayuscula de cada palabra). Si no aparece: 'N/D'"),
   referencia_pedido: z.string().describe("Referencia del pedido. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'"),
   conceptos_entregados: z.array(conceptoEntregadoSchema).describe("Array de conceptos/productos entregados. No inventar importes. No calcular impuestos."),
-  observaciones: z.string().describe("Observaciones si existen. Si no: 'N/D'"),
   datos_anonimizados: z.array(z.string()).describe("Lista de nombres de campos cuyo valor esta cubierto/tapado por una caja negra, rectangulo negro, pegote o pixelado. Solo si hay evidencia visual clara de ocultacion deliberada."),
 })
 
@@ -180,12 +177,11 @@ function flattenAlbaranData(
   const fieldMap: Record<string, () => string> = {
     "Numero de Albaran": () => data.numero_albaran,
     "Fecha de Albaran": () => data.fecha_albaran,
-    "Proveedor": () => data.proveedor,
-    "CIF/NIF Proveedor": () => data.cif_nif_proveedor,
+    "Proveedor": () => "Valor anonimizado en origen",
+    "CIF/NIF Proveedor": () => "Valor anonimizado en origen",
     "Cliente": () => data.cliente,
     "Referencia Pedido": () => data.referencia_pedido,
     "Conceptos Entregados": formatConceptos,
-    "Observaciones": () => data.observaciones,
   }
 
   for (const field of fields) {
