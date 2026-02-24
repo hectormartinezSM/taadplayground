@@ -1,18 +1,15 @@
 'use client'
 
-import { CheckCircle2, XCircle, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertTriangle, ShieldCheck, Search } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { Document, ExtractedField } from '@/lib/types'
 
 interface CrossDocumentValidationProps {
   documents: Document[]
 }
 
-interface CheckResult {
-  label: string
-  status: 'ok' | 'error' | 'skip'
-  detail: string
-}
+type CheckStatus = 'ok' | 'error' | 'warning' | 'skip'
 
 // --- Helpers ---
 
@@ -32,14 +29,14 @@ function approxEqual(a: number, b: number, tolerance = 0.10): boolean {
 }
 
 function normalizeAlbaranNum(num: string): string {
-  // Strip leading zeros, "0.", spaces
   return num.replace(/^0\.?\s*/, '').replace(/^0+/, '').trim()
 }
 
-// --- Extract info from documents ---
+// --- Data extraction ---
 
 interface FacturaInfo {
   docIndex: number
+  numeroFactura: string
   baseImponibleTotal: number | null
   totalFactura: number | null
   albaranesReferenciados: { num: string; fecha: string; baseAlbaran: number | null }[]
@@ -55,12 +52,12 @@ interface AlbaranInfo {
 
 function extractFacturaInfo(doc: Document, docIndex: number): FacturaInfo | null {
   if (!doc.extractedData || !doc.documentType?.type.toLowerCase().includes('factura')) return null
-
   const data = doc.extractedData
+
+  const numeroFactura = data['Numero de Factura']?.value || 'desconocida'
   const baseImponibleTotal = parseAmount(data['Base Imponible Total']?.value || '')
   const totalFactura = parseAmount(data['Total Factura']?.value || '')
 
-  // Extract albaran references from conceptos facturables
   const albaranesReferenciados: { num: string; fecha: string; baseAlbaran: number | null }[] = []
   try {
     const conceptosRaw = data['Conceptos Facturables']?.value || ''
@@ -68,16 +65,12 @@ function extractFacturaInfo(doc: Document, docIndex: number): FacturaInfo | null
     if (Array.isArray(parsed)) {
       for (const grupo of parsed) {
         if (grupo.numAlbaran && grupo.numAlbaran !== 'N/D') {
-          // Sum bases of conceptos in this albaran group
           let groupBase = 0
           let hasBase = false
           if (Array.isArray(grupo.conceptos)) {
             for (const c of grupo.conceptos) {
               const bi = parseAmount(c.baseImponible)
-              if (bi !== null) {
-                groupBase += bi
-                hasBase = true
-              }
+              if (bi !== null) { groupBase += bi; hasBase = true }
             }
           }
           albaranesReferenciados.push({
@@ -90,12 +83,11 @@ function extractFacturaInfo(doc: Document, docIndex: number): FacturaInfo | null
     }
   } catch { /* ignore */ }
 
-  return { docIndex, baseImponibleTotal, totalFactura, albaranesReferenciados }
+  return { docIndex, numeroFactura, baseImponibleTotal, totalFactura, albaranesReferenciados }
 }
 
 function extractAlbaranInfo(doc: Document, docIndex: number): AlbaranInfo | null {
   if (!doc.extractedData || !doc.documentType?.type.toLowerCase().includes('albaran')) return null
-
   const data = doc.extractedData
   return {
     docIndex,
@@ -106,163 +98,186 @@ function extractAlbaranInfo(doc: Document, docIndex: number): AlbaranInfo | null
   }
 }
 
-// --- Cross-document checks ---
-
-function runCrossDocumentChecks(facturas: FacturaInfo[], albaranes: AlbaranInfo[]): CheckResult[] {
-  const checks: CheckResult[] = []
-
-  if (facturas.length === 0) {
-    checks.push({
-      label: 'Presencia de factura',
-      status: 'skip',
-      detail: 'No se encontro ninguna factura en el expediente',
-    })
-    return checks
+// --- Status icon helper ---
+function StatusIcon({ status }: { status: CheckStatus }) {
+  switch (status) {
+    case 'ok': return <CheckCircle2 className="h-4 w-4 text-green-600" />
+    case 'error': return <XCircle className="h-4 w-4 text-red-500" />
+    case 'warning': return <AlertTriangle className="h-4 w-4 text-amber-500" />
+    case 'skip': return <AlertTriangle className="h-4 w-4 text-gray-400" />
   }
+}
 
-  for (const factura of facturas) {
-    const facLabel = `Factura (Doc ${factura.docIndex + 1})`
-
-    // 1. All albaranes referenced in the factura exist as standalone documents
-    if (factura.albaranesReferenciados.length > 0) {
-      const missing: string[] = []
-      const found: string[] = []
-
-      for (const ref of factura.albaranesReferenciados) {
-        const match = albaranes.find(a => normalizeAlbaranNum(a.numero) === normalizeAlbaranNum(ref.num))
-        if (match) {
-          found.push(ref.num)
-        } else {
-          missing.push(ref.num)
-        }
-      }
-
-      if (missing.length === 0) {
-        checks.push({
-          label: `${facLabel}: Todos los albaranes referenciados estan presentes`,
-          status: 'ok',
-          detail: `Albaranes referenciados: ${factura.albaranesReferenciados.map(r => r.num).join(', ')} - todos encontrados en el expediente`,
-        })
-      } else {
-        checks.push({
-          label: `${facLabel}: Albaranes referenciados faltantes`,
-          status: 'error',
-          detail: `Albaranes encontrados: ${found.join(', ') || 'ninguno'}. Faltan: ${missing.join(', ')}`,
-        })
-      }
-
-      // 2. Base imponible per albaran matches between factura and standalone albaran
-      for (const ref of factura.albaranesReferenciados) {
-        const match = albaranes.find(a => normalizeAlbaranNum(a.numero) === normalizeAlbaranNum(ref.num))
-        if (match && ref.baseAlbaran !== null && match.baseImponibleTotal !== null) {
-          const ok = approxEqual(ref.baseAlbaran, match.baseImponibleTotal)
-          checks.push({
-            label: `Albaran ${ref.num}: Cuadra base imponible factura vs albaran`,
-            status: ok ? 'ok' : 'error',
-            detail: ok
-              ? `Base en factura (${fmt(ref.baseAlbaran)}) = Base en albaran (${fmt(match.baseImponibleTotal)})`
-              : `Base en factura (${fmt(ref.baseAlbaran)}) ≠ Base en albaran (${fmt(match.baseImponibleTotal)})`,
-          })
-        } else if (match) {
-          checks.push({
-            label: `Albaran ${ref.num}: Cuadra base imponible factura vs albaran`,
-            status: 'skip',
-            detail: 'No se pudieron obtener ambas bases imponibles para comparar',
-          })
-        }
-      }
-
-      // 3. Sum of albaran bases (from standalone albaranes matched) == factura base imponible total
-      if (factura.baseImponibleTotal !== null) {
-        const matchedAlbaranes = factura.albaranesReferenciados
-          .map(ref => albaranes.find(a => normalizeAlbaranNum(a.numero) === normalizeAlbaranNum(ref.num)))
-          .filter((a): a is AlbaranInfo => a !== undefined)
-
-        const albaranBases = matchedAlbaranes.map(a => a.baseImponibleTotal).filter((b): b is number => b !== null)
-
-        if (albaranBases.length > 0) {
-          const sumAlbaranBases = albaranBases.reduce((acc, b) => acc + b, 0)
-          const ok = approxEqual(sumAlbaranBases, factura.baseImponibleTotal)
-          checks.push({
-            label: `${facLabel}: Suma bases albaranes = Base Imponible Total factura`,
-            status: ok ? 'ok' : 'error',
-            detail: ok
-              ? `Suma bases albaranes (${fmt(sumAlbaranBases)}) = Base Imponible Total factura (${fmt(factura.baseImponibleTotal)})`
-              : `Suma bases albaranes (${fmt(sumAlbaranBases)}) ≠ Base Imponible Total factura (${fmt(factura.baseImponibleTotal)})`,
-          })
-        }
-      }
-
-      // 4. Dates: albaranes should be dated before or on the factura date
-      // (We don't have factura date easily, but we check albaran dates are consistent)
-
-    } else {
-      checks.push({
-        label: `${facLabel}: Albaranes referenciados`,
-        status: 'skip',
-        detail: 'La factura no referencia albaranes explicitamente',
-      })
-    }
-
-    // 5. Check for standalone albaranes not referenced in any factura
-    const referencedNums = new Set(
-      facturas.flatMap(f => f.albaranesReferenciados.map(r => normalizeAlbaranNum(r.num)))
-    )
-    const unreferenced = albaranes.filter(a => !referencedNums.has(normalizeAlbaranNum(a.numero)))
-
-    if (unreferenced.length > 0) {
-      checks.push({
-        label: 'Albaranes no referenciados en ninguna factura',
-        status: 'error',
-        detail: `Los siguientes albaranes no aparecen en ninguna factura: ${unreferenced.map(a => a.numero).join(', ')}`,
-      })
-    } else if (albaranes.length > 0) {
-      checks.push({
-        label: 'Todos los albaranes estan referenciados en facturas',
-        status: 'ok',
-        detail: `Los ${albaranes.length} albaran(es) del expediente estan referenciados en las facturas`,
-      })
-    }
+function statusColor(status: CheckStatus): string {
+  switch (status) {
+    case 'ok': return 'text-green-700 dark:text-green-400'
+    case 'error': return 'text-red-600 dark:text-red-400'
+    case 'warning': return 'text-amber-600 dark:text-amber-400'
+    case 'skip': return 'text-gray-500'
   }
-
-  return checks
 }
 
 // --- Component ---
 
 export function CrossDocumentValidation({ documents }: CrossDocumentValidationProps) {
-  // Only show when ALL documents are complete
   const allComplete = documents.length > 0 && documents.every(d => d.status === 'complete')
   if (!allComplete) return null
 
-  // Need at least 1 factura and 1 albaran to do cross-validation
-  const facturas = documents
-    .map((d, i) => extractFacturaInfo(d, i))
-    .filter((f): f is FacturaInfo => f !== null)
-
-  const albaranes = documents
-    .map((d, i) => extractAlbaranInfo(d, i))
-    .filter((a): a is AlbaranInfo => a !== null)
+  const facturas = documents.map((d, i) => extractFacturaInfo(d, i)).filter((f): f is FacturaInfo => f !== null)
+  const albaranes = documents.map((d, i) => extractAlbaranInfo(d, i)).filter((a): a is AlbaranInfo => a !== null)
 
   if (facturas.length === 0 && albaranes.length === 0) return null
 
-  const checks = runCrossDocumentChecks(facturas, albaranes)
+  // Track global result
+  let hasErrors = false
+  let hasWarnings = false
 
-  if (checks.length === 0) return null
+  // --- Build sections per factura ---
+  const sections = facturas.map(factura => {
+    const facLabel = `Factura ${factura.numeroFactura}`
 
-  const allOk = checks.every(c => c.status === 'ok')
-  const hasErrors = checks.some(c => c.status === 'error')
+    // 1. Verificacion de referencias
+    let refStatus: CheckStatus = 'skip'
+    let refMessage = ''
+    let refDetail = ''
+    const refsFound: string[] = []
+    const refsMissing: string[] = []
+
+    if (factura.albaranesReferenciados.length > 0) {
+      for (const ref of factura.albaranesReferenciados) {
+        const match = albaranes.find(a => normalizeAlbaranNum(a.numero) === normalizeAlbaranNum(ref.num))
+        if (match) { refsFound.push(ref.num) } else { refsMissing.push(ref.num) }
+      }
+      if (refsMissing.length === 0) {
+        refStatus = 'ok'
+        refMessage = 'La factura referencia correctamente todos los albaranes indicados.'
+        refDetail = `Albaranes vinculados: ${factura.albaranesReferenciados.map(r => r.num).join(', ')}`
+      } else {
+        refStatus = 'error'
+        hasErrors = true
+        refMessage = 'Existen albaranes referenciados que no estan presentes en el expediente.'
+        refDetail = `Encontrados: ${refsFound.join(', ') || 'ninguno'}. Faltan: ${refsMissing.join(', ')}`
+      }
+    } else {
+      refStatus = 'skip'
+      refMessage = 'La factura no referencia albaranes explicitamente.'
+    }
+
+    // 2. Verificacion de importes por albaran (table data)
+    const importeRows: { albaran: string; baseFactura: string; baseAlbaran: string; status: CheckStatus }[] = []
+    let allImportesMatch = true
+    let hasImporteData = false
+
+    for (const ref of factura.albaranesReferenciados) {
+      const match = albaranes.find(a => normalizeAlbaranNum(a.numero) === normalizeAlbaranNum(ref.num))
+      if (match && ref.baseAlbaran !== null && match.baseImponibleTotal !== null) {
+        hasImporteData = true
+        const ok = approxEqual(ref.baseAlbaran, match.baseImponibleTotal)
+        if (!ok) { allImportesMatch = false; hasErrors = true }
+        importeRows.push({
+          albaran: ref.num,
+          baseFactura: fmt(ref.baseAlbaran),
+          baseAlbaran: fmt(match.baseImponibleTotal),
+          status: ok ? 'ok' : 'error',
+        })
+      } else if (match) {
+        importeRows.push({
+          albaran: ref.num,
+          baseFactura: ref.baseAlbaran !== null ? fmt(ref.baseAlbaran) : 'N/D',
+          baseAlbaran: match.baseImponibleTotal !== null ? fmt(match.baseImponibleTotal) : 'N/D',
+          status: 'skip',
+        })
+      }
+    }
+
+    // 3. Cuadre global acumulado
+    let globalStatus: CheckStatus = 'skip'
+    let globalSumaAlbaranes = ''
+    let globalBaseFactura = ''
+    let globalMessage = ''
+
+    if (factura.baseImponibleTotal !== null) {
+      const matchedAlbaranes = factura.albaranesReferenciados
+        .map(ref => albaranes.find(a => normalizeAlbaranNum(a.numero) === normalizeAlbaranNum(ref.num)))
+        .filter((a): a is AlbaranInfo => a !== undefined)
+
+      const albaranBases = matchedAlbaranes.map(a => a.baseImponibleTotal).filter((b): b is number => b !== null)
+
+      if (albaranBases.length > 0) {
+        const sum = albaranBases.reduce((acc, b) => acc + b, 0)
+        const ok = approxEqual(sum, factura.baseImponibleTotal)
+        globalStatus = ok ? 'ok' : 'error'
+        if (!ok) hasErrors = true
+        globalSumaAlbaranes = fmt(sum)
+        globalBaseFactura = fmt(factura.baseImponibleTotal)
+        globalMessage = ok
+          ? 'El total acumulado de los albaranes coincide con la base imponible total de la factura.'
+          : 'El total acumulado NO coincide con la base imponible total de la factura.'
+      }
+    }
+
+    return {
+      facLabel,
+      refStatus, refMessage, refDetail,
+      importeRows, allImportesMatch, hasImporteData,
+      globalStatus, globalSumaAlbaranes, globalBaseFactura, globalMessage,
+    }
+  })
+
+  // 4. Comprobacion de albaranes pendientes (global)
+  const allReferencedNums = new Set(
+    facturas.flatMap(f => f.albaranesReferenciados.map(r => normalizeAlbaranNum(r.num)))
+  )
+  const unreferencedAlbaranes = albaranes.filter(a => !allReferencedNums.has(normalizeAlbaranNum(a.numero)))
+  let pendientesStatus: CheckStatus = 'ok'
+  let pendientesMessage = ''
+
+  if (unreferencedAlbaranes.length > 0) {
+    pendientesStatus = 'warning'
+    hasWarnings = true
+    pendientesMessage = `Existen albaranes no incluidos en la factura: ${unreferencedAlbaranes.map(a => a.numero).join(', ')}`
+  } else if (albaranes.length > 0) {
+    pendientesMessage = 'Todos los albaranes del expediente estan incluidos en la factura.'
+  } else {
+    pendientesStatus = 'skip'
+    pendientesMessage = 'No hay albaranes en el expediente.'
+  }
+
+  // Resultado final
+  let resultadoStatus: CheckStatus = 'ok'
+  let resultadoText = 'MATCH INTERDOCUMENTAL CORRECTO'
+  if (hasErrors) {
+    resultadoStatus = 'error'
+    resultadoText = 'MATCH CON ERRORES'
+  } else if (hasWarnings) {
+    resultadoStatus = 'warning'
+    resultadoText = 'MATCH CON ADVERTENCIAS'
+  }
+
+  const borderColor = resultadoStatus === 'ok'
+    ? 'border-green-300 dark:border-green-700'
+    : resultadoStatus === 'error'
+    ? 'border-red-300 dark:border-red-700'
+    : 'border-amber-300 dark:border-amber-700'
+
+  const iconBg = resultadoStatus === 'ok'
+    ? 'bg-green-100 dark:bg-green-900/30'
+    : resultadoStatus === 'error'
+    ? 'bg-red-100 dark:bg-red-900/30'
+    : 'bg-amber-100 dark:bg-amber-900/30'
+
+  const iconColor = resultadoStatus === 'ok'
+    ? 'text-green-600'
+    : resultadoStatus === 'error'
+    ? 'text-red-500'
+    : 'text-amber-500'
 
   return (
-    <Card className={`shadow-sm ${allOk ? 'border-green-300 dark:border-green-700' : hasErrors ? 'border-red-300 dark:border-red-700' : 'border-amber-300 dark:border-amber-700'}`}>
+    <Card className={`shadow-sm ${borderColor}`}>
       <CardHeader className="border-b px-6 py-5">
         <div className="flex items-center gap-4">
-          <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ${
-            allOk ? 'bg-green-100 dark:bg-green-900/30' : hasErrors ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30'
-          }`}>
-            <ShieldCheck className={`h-6 w-6 ${
-              allOk ? 'text-green-600' : hasErrors ? 'text-red-500' : 'text-amber-500'
-            }`} />
+          <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ${iconBg}`}>
+            <Search className={`h-6 w-6 ${iconColor}`} />
           </div>
           <div>
             <CardTitle className="text-lg font-semibold">Validaciones Interdocumentales</CardTitle>
@@ -272,28 +287,115 @@ export function CrossDocumentValidation({ documents }: CrossDocumentValidationPr
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="space-y-3">
-          {checks.map((check, i) => (
-            <div key={i} className="flex items-start gap-3 text-sm">
-              <div className="mt-0.5 shrink-0">
-                {check.status === 'ok' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                {check.status === 'error' && <XCircle className="h-4 w-4 text-red-500" />}
-                {check.status === 'skip' && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-              </div>
-              <div>
-                <span className={`font-medium ${
-                  check.status === 'ok' ? 'text-green-700 dark:text-green-400' :
-                  check.status === 'error' ? 'text-red-600 dark:text-red-400' :
-                  'text-amber-600 dark:text-amber-400'
-                }`}>
-                  {check.label}
-                </span>
-                <p className="text-xs text-muted-foreground mt-0.5">{check.detail}</p>
+      <CardContent className="p-6 space-y-8">
+
+        {sections.map((s, si) => (
+          <div key={si} className="space-y-6">
+
+            {/* 1. Verificacion de referencias */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-base">1.</span> Verificacion de referencias
+              </h4>
+              <div className="flex items-start gap-2.5 text-sm">
+                <StatusIcon status={s.refStatus} />
+                <div>
+                  <p className={`font-medium ${statusColor(s.refStatus)}`}>{s.refMessage}</p>
+                  {s.refDetail && <p className="text-xs text-muted-foreground mt-0.5">{s.refDetail}</p>}
+                </div>
               </div>
             </div>
-          ))}
+
+            {/* 2. Verificacion de importes por albaran */}
+            {s.importeRows.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <span className="text-base">2.</span> Verificacion de importes por albaran
+                </h4>
+                <div className="overflow-x-auto rounded border border-border/50">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="text-xs">
+                        <TableHead className="py-1.5 px-3 text-xs">Albaran</TableHead>
+                        <TableHead className="py-1.5 px-3 text-xs text-right">Base factura</TableHead>
+                        <TableHead className="py-1.5 px-3 text-xs text-right">Base albaran</TableHead>
+                        <TableHead className="py-1.5 px-3 text-xs text-center">Resultado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {s.importeRows.map((row, ri) => (
+                        <TableRow key={ri} className="text-xs">
+                          <TableCell className="py-1.5 px-3 font-medium">{row.albaran}</TableCell>
+                          <TableCell className="py-1.5 px-3 text-right whitespace-nowrap">{row.baseFactura}</TableCell>
+                          <TableCell className="py-1.5 px-3 text-right whitespace-nowrap">{row.baseAlbaran}</TableCell>
+                          <TableCell className="py-1.5 px-3 text-center">
+                            <span className={`inline-flex items-center gap-1 ${statusColor(row.status)}`}>
+                              <StatusIcon status={row.status} />
+                              {row.status === 'ok' ? 'Coincide' : row.status === 'error' ? 'No coincide' : 'N/D'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex items-start gap-2.5 text-sm mt-2">
+                  <StatusIcon status={s.allImportesMatch && s.hasImporteData ? 'ok' : s.hasImporteData ? 'error' : 'skip'} />
+                  <p className={`font-medium ${statusColor(s.allImportesMatch && s.hasImporteData ? 'ok' : s.hasImporteData ? 'error' : 'skip')}`}>
+                    {s.allImportesMatch && s.hasImporteData
+                      ? 'Todos los importes individuales coinciden correctamente.'
+                      : s.hasImporteData
+                      ? 'Existen discrepancias en importes individuales.'
+                      : 'Datos insuficientes para verificar importes.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 3. Verificacion de total acumulado */}
+            {s.globalStatus !== 'skip' && (
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <span className="text-base">3.</span> Verificacion de total acumulado
+                </h4>
+                <div className="text-sm space-y-1 mb-2 text-muted-foreground">
+                  <p>Suma bases albaranes: <span className="font-medium text-foreground">{s.globalSumaAlbaranes}</span></p>
+                  <p>Base imponible total factura: <span className="font-medium text-foreground">{s.globalBaseFactura}</span></p>
+                </div>
+                <div className="flex items-start gap-2.5 text-sm">
+                  <StatusIcon status={s.globalStatus} />
+                  <p className={`font-medium ${statusColor(s.globalStatus)}`}>{s.globalMessage}</p>
+                </div>
+              </div>
+            )}
+
+          </div>
+        ))}
+
+        {/* 4. Comprobacion de albaranes pendientes */}
+        <div>
+          <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+            <span className="text-base">4.</span> Comprobacion de albaranes pendientes
+          </h4>
+          <div className="flex items-start gap-2.5 text-sm">
+            <StatusIcon status={pendientesStatus} />
+            <p className={`font-medium ${statusColor(pendientesStatus)}`}>{pendientesMessage}</p>
+          </div>
         </div>
+
+        {/* Resultado final */}
+        <div className={`rounded-lg p-4 flex items-center gap-3 ${
+          resultadoStatus === 'ok' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' :
+          resultadoStatus === 'error' ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' :
+          'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+        }`}>
+          <ShieldCheck className={`h-5 w-5 shrink-0 ${iconColor}`} />
+          <div>
+            <p className="text-xs text-muted-foreground">Estado global</p>
+            <p className={`font-bold text-sm ${statusColor(resultadoStatus)}`}>{resultadoText}</p>
+          </div>
+        </div>
+
       </CardContent>
     </Card>
   )
