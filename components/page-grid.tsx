@@ -57,23 +57,12 @@ export function PageGrid({
   useEffect(() => {
     const needsProcessing = pages.some((page) => !processedPageIds.current.has(page.id))
 
-    console.log("[v0] useEffect check:", {
-      isProcessing,
-      processingStarted: processingStarted.current,
-      pagesLength: pages.length,
-      needsProcessing,
-    })
-
     if (!isProcessing || processingStarted.current || pages.length === 0 || !needsProcessing) {
-      console.log("[v0] Skipping processing:", {
-        reason: !isProcessing ? "not processing" : processingStarted.current ? "already started" : pages.length === 0 ? "no pages" : "no pages need processing",
-      })
       return
     }
 
     const processInParallel = async () => {
       try {
-        console.log("[v0] ====== PIPELINE START ======")
         console.log("[v0] Starting parallel parse + blank detection for", pages.length, "pages")
         processingStarted.current = true
 
@@ -96,44 +85,14 @@ export function PageGrid({
           }
 
           try {
-            const imageSizeKB = Math.round((page.imageUrl?.length || 0) / 1024)
-            console.log("[v0] Processing page", index + 1, "- image size:", imageSizeKB, "KB")
-            
-            let response: Response
-            try {
-              response = await fetch("/api/parse-and-check-blank", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ imageUrl: page.imageUrl }),
-              })
-            } catch (fetchError) {
-              console.error("[v0] Page", index + 1, "FETCH FAILED (network error):", fetchError)
-              return null
-            }
-
-            console.log("[v0] Page", index + 1, "HTTP status:", response.status, response.statusText)
-            
-            if (!response.ok) {
-              const errorText = await response.text()
-              console.error("[v0] Page", index + 1, "HTTP ERROR:", response.status, errorText.substring(0, 500))
-              return null
-            }
-
-            let data: any
-            try {
-              data = await response.json()
-            } catch (jsonError) {
-              console.error("[v0] Page", index + 1, "JSON PARSE ERROR:", jsonError)
-              return null
-            }
-
-            console.log("[v0] Page", index + 1, "parse response:", {
-              status: response.status,
-              success: data.success,
-              markdownLength: data.markdown?.length || 0,
-              isBlank: data.isBlank,
-              error: data.error || "none",
+            console.log("[v0] Processing page", index + 1)
+            const response = await fetch("/api/parse-and-check-blank", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ imageUrl: page.imageUrl }),
             })
+
+            const data = await response.json()
 
             if (data.success) {
               processedPageIds.current.add(page.id)
@@ -176,18 +135,9 @@ export function PageGrid({
               }
             }
 
-            console.warn("[v0] Page", index + 1, "parse FAILED (success=false), skipping. Error:", data.error)
-            addActivityLog({
-              type: "error",
-              message: `Pagina ${index + 1} error en parsing: ${data.error || "desconocido"}`,
-            })
             return null
           } catch (error) {
             console.error("[v0] Error processing page", index + 1, error)
-            addActivityLog({
-              type: "error",
-              message: `Pagina ${index + 1} error critico: ${error instanceof Error ? error.message : "desconocido"}`,
-            })
             processedPageIds.current.add(page.id)
             markdownResults.current.set(index, {
               markdown: "",
@@ -219,10 +169,6 @@ export function PageGrid({
 
         if (nonBlankIndices.length === 0) {
           console.log("[v0] No non-blank pages to segment")
-          addActivityLog({
-            type: "error",
-            message: `No se encontraron paginas con contenido. Posible error en el servicio de OCR. Revisa la consola del navegador para mas detalles.`,
-          })
           updateCurrentStep("complete")
           updateProcessing(false)
           return
@@ -363,10 +309,7 @@ export function PageGrid({
           onProcessingComplete(newDocuments, pages.length)
         }
       } catch (error) {
-        console.error("[v0] ====== PIPELINE ERROR ======")
         console.error("[v0] Error in processing:", error)
-        console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
-        console.error("[v0] Error stack:", error instanceof Error ? error.stack : "N/A")
         setSegmentationProgress((prev) => (prev ? { ...prev, status: "error" } : null))
         setSegmentationStatus({
           isSegmenting: false,

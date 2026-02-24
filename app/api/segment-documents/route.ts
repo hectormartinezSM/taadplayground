@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] API: Batch segmentation for", markdowns.length, "pages")
-    console.log("[v0] API: VISION_AGENT_API_KEY present for segmentation:", !!LANDING_API_KEY)
 
     // Join all markdowns with page headers
     let combinedMarkdown = ""

@@ -2,8 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { generateText, Output } from "ai"
 import { z } from "zod"
 
-export const maxDuration = 120
-
 // --- Zod Schemas matching the spec exactly ---
 
 const conceptoFacturableSchema = z.object({
