@@ -152,9 +152,9 @@ export default function Home() {
               <Image
                 src="/images/fundacion-ibercaja-logo.png"
                 alt="Fundacion IberCaja"
-                width={200}
-                height={60}
-                className="h-10 w-auto object-contain"
+                width={300}
+                height={90}
+                className="h-[60px] w-auto object-contain"
               />
             </div>
           </div>
