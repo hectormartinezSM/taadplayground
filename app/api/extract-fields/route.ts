@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
 
       // --- Demo override: force anonymized fields for specific invoice ---
       const invoiceNumber = output.numero_factura?.replace(/\s/g, "")
-      if (invoiceNumber === "02503378") {
+      if (invoiceNumber === "02503378" || invoiceNumber === "2503378") {
         const forcedAnonymized = [
           "Proveedor",
           "CIF/NIF Proveedor",
