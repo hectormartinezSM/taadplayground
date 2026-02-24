@@ -175,14 +175,152 @@ function runFacturaChecks(data: Record<string, ExtractedField>): CheckResult[] {
   return checks
 }
 
+// ----- Albaran checks -----
+
+function runAlbaranChecks(data: Record<string, ExtractedField>): CheckResult[] {
+  const checks: CheckResult[] = []
+
+  // 1. Cuadra base imponible total: sum of importeLinea in conceptos == Base Imponible Total
+  const baseImponibleTotal = parseAmount(data['Base Imponible Total']?.value || '')
+  const conceptosRaw = data['Conceptos Entregados']?.value || ''
+
+  let sumImportes: number | null = null
+  try {
+    const parsed = JSON.parse(conceptosRaw)
+    if (Array.isArray(parsed)) {
+      let total = 0
+      let hasImportes = false
+      for (const c of parsed) {
+        const imp = parseAmount(c.importeLinea)
+        if (imp !== null) {
+          total += imp
+          hasImportes = true
+        }
+      }
+      if (hasImportes) sumImportes = total
+    }
+  } catch { /* ignore */ }
+
+  if (baseImponibleTotal !== null && sumImportes !== null) {
+    const ok = approxEqual(sumImportes, baseImponibleTotal)
+    checks.push({
+      label: 'Cuadra Base Imponible Total',
+      status: ok ? 'ok' : 'error',
+      detail: ok
+        ? `Suma de importes linea (${fmt(sumImportes)}) = Base Imponible Total (${fmt(baseImponibleTotal)})`
+        : `Suma de importes linea (${fmt(sumImportes)}) ≠ Base Imponible Total (${fmt(baseImponibleTotal)})`,
+    })
+  } else {
+    checks.push({
+      label: 'Cuadra Base Imponible Total',
+      status: 'skip',
+      detail: 'No se pudieron obtener los valores necesarios para la validacion',
+    })
+  }
+
+  // 2. Cuadra impuesto indirecto: % IVA sobre base == cuota IVA
+  const desgloseRaw = data['Desglose Impuesto Indirecto']?.value || ''
+  let impuestoOk = true
+  let impuestoDetail = ''
+  let hasDesglose = false
+
+  try {
+    const desglose = JSON.parse(desgloseRaw)
+    if (Array.isArray(desglose) && desglose.length > 0) {
+      hasDesglose = true
+      const details: string[] = []
+      for (const tramo of desglose) {
+        const base = parseAmount(tramo.base)
+        const cuota = parseAmount(tramo.cuota)
+        const pctMatch = tramo.tipo?.match(/(\d+(?:[.,]\d+)?)\s*%/)
+        const pct = pctMatch ? parseFloat(pctMatch[1].replace(',', '.')) : null
+
+        if (base !== null && cuota !== null && pct !== null) {
+          const expected = base * pct / 100
+          const ok = approxEqual(expected, cuota, 0.05)
+          if (!ok) impuestoOk = false
+          details.push(`${tramo.tipo}: ${fmt(base)} x ${pct}% = ${fmt(expected)} vs cuota ${fmt(cuota)} ${ok ? 'OK' : 'ERROR'}`)
+        } else {
+          details.push(`${tramo.tipo}: datos insuficientes para validar`)
+        }
+      }
+      impuestoDetail = details.join(' | ')
+    }
+  } catch { /* ignore */ }
+
+  if (hasDesglose) {
+    checks.push({
+      label: 'Cuadra Impuesto Indirecto',
+      status: impuestoOk ? 'ok' : 'error',
+      detail: impuestoDetail,
+    })
+  } else {
+    checks.push({
+      label: 'Cuadra Impuesto Indirecto',
+      status: 'skip',
+      detail: 'No se encontro desglose de impuesto indirecto',
+    })
+  }
+
+  // 3. Cuadra total albaran: Base Imponible Total + sum of cuotas impuesto = Total Albaran
+  const totalAlbaran = parseAmount(data['Total Albaran']?.value || '')
+  let sumCuotas: number | null = null
+
+  try {
+    const desglose = JSON.parse(desgloseRaw)
+    if (Array.isArray(desglose) && desglose.length > 0) {
+      let total = 0
+      let hasCuotas = false
+      for (const tramo of desglose) {
+        const cuota = parseAmount(tramo.cuota)
+        if (cuota !== null) {
+          total += cuota
+          hasCuotas = true
+        }
+      }
+      if (hasCuotas) sumCuotas = total
+    }
+  } catch { /* ignore */ }
+
+  if (baseImponibleTotal !== null && sumCuotas !== null && totalAlbaran !== null) {
+    const expectedTotal = baseImponibleTotal + sumCuotas
+    const ok = approxEqual(expectedTotal, totalAlbaran, 0.05)
+    checks.push({
+      label: 'Cuadra Total Albaran',
+      status: ok ? 'ok' : 'error',
+      detail: ok
+        ? `Base (${fmt(baseImponibleTotal)}) + Impuestos (${fmt(sumCuotas)}) = ${fmt(expectedTotal)} = Total (${fmt(totalAlbaran)})`
+        : `Base (${fmt(baseImponibleTotal)}) + Impuestos (${fmt(sumCuotas)}) = ${fmt(expectedTotal)} ≠ Total (${fmt(totalAlbaran)})`,
+    })
+  } else if (baseImponibleTotal !== null && totalAlbaran !== null && sumCuotas === null) {
+    const ok = approxEqual(baseImponibleTotal, totalAlbaran)
+    checks.push({
+      label: 'Cuadra Total Albaran',
+      status: ok ? 'ok' : 'error',
+      detail: ok
+        ? `Sin impuestos: Base (${fmt(baseImponibleTotal)}) = Total (${fmt(totalAlbaran)})`
+        : `Base (${fmt(baseImponibleTotal)}) ≠ Total (${fmt(totalAlbaran)}) y no hay desglose de impuestos`,
+    })
+  } else {
+    checks.push({
+      label: 'Cuadra Total Albaran',
+      status: 'skip',
+      detail: 'No se pudieron obtener los valores necesarios para la validacion',
+    })
+  }
+
+  return checks
+}
+
 // ----- Component -----
 
 export function ValidationChecks({ extractedData, documentType }: ValidationChecksProps) {
   const isFactura = documentType.toLowerCase().includes('factura')
+  const isAlbaran = documentType.toLowerCase().includes('albaran')
 
-  if (!isFactura) return null
+  if (!isFactura && !isAlbaran) return null
 
-  const checks = runFacturaChecks(extractedData)
+  const checks = isFactura ? runFacturaChecks(extractedData) : runAlbaranChecks(extractedData)
 
   return (
     <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
