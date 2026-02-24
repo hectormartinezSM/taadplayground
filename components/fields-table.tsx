@@ -196,6 +196,11 @@ function tryParseJson(value: string): unknown | null {
 }
 
 function RichFieldValue({ fieldName, value }: { fieldName: string; value: string }) {
+  // Style anonymized values in italic dark gray
+  if (value && value.toLowerCase().includes('anonimizado en origen')) {
+    return <span className="italic text-gray-500">{value}</span>;
+  }
+
   const parsed = tryParseJson(value);
   if (!parsed) return <span>{value}</span>;
 
