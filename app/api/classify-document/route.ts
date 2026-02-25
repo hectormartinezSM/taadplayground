@@ -47,11 +47,12 @@ const CLASSIFICATION_SCHEMA = JSON.stringify({
       description: `Clasifica el documento EXCLUSIVAMENTE en una de estas categorias:
 - "albaran" si el documento contiene la palabra ALBARAN o "Albaran" o "ALBARAN N" en el titulo/encabezado. Es un documento de entrega de mercancias con productos, cantidades, precios e importe. Puede tener desglose fiscal (base imponible + IVA + total albaran). La clave es que dice ALBARAN en el encabezado y tiene TOTAL ALBARAN (no TOTAL FACTURA).
 - "factura_proveedor" si el documento contiene la palabra FACTURA en el titulo/encabezado, con numero de factura, fecha factura, CIF/NIF emisor, base imponible, desglose de IVA y TOTAL FACTURA.
+- "convenio" si el documento contiene simultaneamente: palabras como "Convenio", "Convenio de colaboracion", "Acuerdo de colaboracion", "Las partes", "Manifiestan", "Clausulas", "Estipulaciones". Tiene identificacion formal de al menos dos partes, clausulas numeradas (PRIMERA, SEGUNDA, etc.), bloque final de firma, y estructura juridica formal (Exponen / Manifiestan / Clausulas / Firma). NO clasificar como convenio si es factura, albaran, contrato mercantil de prestacion de servicios, o resolucion administrativa unilateral.
 - "otros" si no encaja en ninguna de las categorias anteriores (condiciones de venta, anexos, documentos genericos, etc.).
 
-REGLA CLAVE: Busca las palabras ALBARAN o FACTURA en el encabezado del documento. Si dice "ALBARAN N" es albaran. Si dice "FACTURA" o "N Factura" es factura. Las condiciones de venta o paginas sin datos tabulares son "otros".`,
+REGLA CLAVE: Busca las palabras ALBARAN o FACTURA o CONVENIO en el encabezado del documento. Si dice "ALBARAN N" es albaran. Si dice "FACTURA" o "N Factura" es factura. Si dice "Convenio" con clausulas y partes firmantes es convenio. Las condiciones de venta o paginas sin datos tabulares son "otros".`,
       type: "string",
-      enum: ["albaran", "factura_proveedor", "otros"],
+      enum: ["albaran", "factura_proveedor", "convenio", "otros"],
     },
     confianza: {
       description: "Nivel de confianza en la clasificacion, de 0 a 1",
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
     const confianza = result.extraction?.confianza || 0.5
     const razon = result.extraction?.razon || ""
 
-    const displayType = tipo === "albaran" ? "Albaran" : tipo === "factura_proveedor" ? "Factura Proveedor" : "Otros"
+    const displayType = tipo === "albaran" ? "Albaran" : tipo === "factura_proveedor" ? "Factura Proveedor" : tipo === "convenio" ? "Convenio" : "Otros"
 
     console.log("[v0] API: Document classified as:", displayType, "confianza:", confianza)
 

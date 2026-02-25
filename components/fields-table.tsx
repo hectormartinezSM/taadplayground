@@ -176,6 +176,32 @@ function ConceptosEntregadosTable({ conceptos }: { conceptos: ConceptoEntregado[
   );
 }
 
+interface ParteFirmante {
+  nombreParte: string;
+  cif: string;
+  representante: string;
+  cargoRepresentante: string;
+  dniRepresentante: string;
+}
+
+function PartesFirmantesTable({ partes }: { partes: ParteFirmante[] }) {
+  return (
+    <div className="space-y-3">
+      {partes.map((parte, i) => (
+        <div key={i} className="rounded border border-border/50 p-3 space-y-1.5">
+          <div className="text-xs font-semibold text-foreground">{parte.nombreParte}</div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <div><span className="text-muted-foreground">CIF:</span> {parte.cif}</div>
+            <div><span className="text-muted-foreground">Representante:</span> {parte.representante}</div>
+            <div><span className="text-muted-foreground">Cargo:</span> {parte.cargoRepresentante}</div>
+            <div><span className="text-muted-foreground">DNI:</span> {parte.dniRepresentante}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // --- JSON detection & sub-table routing ---
 
 function tryParseJson(value: string): unknown | null {
@@ -225,6 +251,11 @@ function RichFieldValue({ fieldName, value }: { fieldName: string; value: string
     return <ConceptosEntregadosTable conceptos={parsed as ConceptoEntregado[]} />;
   }
 
+  // Partes Firmantes (convenio)
+  if (lower.includes('partes firmantes') && Array.isArray(parsed)) {
+    return <PartesFirmantesTable partes={parsed as ParteFirmante[]} />;
+  }
+
   // Generic fallback: render as formatted JSON
   return <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(parsed, null, 2)}</pre>;
 }
@@ -269,7 +300,8 @@ export function FieldsTable({
     return lower.includes('conceptos facturables') || 
            lower.includes('desglose impuesto') || 
            lower.includes('desglose retencion') ||
-           lower.includes('conceptos entregados');
+           lower.includes('conceptos entregados') ||
+           lower.includes('partes firmantes');
   };
 
   return (

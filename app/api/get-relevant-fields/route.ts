@@ -33,11 +33,34 @@ const ALBARAN_FIELDS = [
   "Total Albaran",
 ]
 
+const CONVENIO_FIELDS = [
+  "Titulo del Convenio",
+  "Fecha de Firma",
+  "Lugar de Firma",
+  "Resumen del Objetivo",
+  "Partes Firmantes",
+  "Importe Colaboracion",
+  "Fecha Inicio Vigencia",
+  "Fecha Fin Vigencia",
+  "Prorroga Automatica",
+  "Clausula Confidencialidad",
+  "Clausula Proteccion Datos",
+  "Clausula Propiedad Intelectual",
+  "Clausula Cumplimiento Normativo",
+  "Clausula Resolucion Anticipada",
+  "Firmado por Todas las Partes",
+  "Numero Firmantes Detectados",
+]
+
 function getFieldsForType(documentType: string): string[] {
   const lower = documentType.toLowerCase()
 
   if (lower.includes("albaran") && !lower.includes("factura")) {
     return [...ALBARAN_FIELDS]
+  }
+
+  if (lower.includes("convenio")) {
+    return [...CONVENIO_FIELDS]
   }
 
   // Default to factura proveedor

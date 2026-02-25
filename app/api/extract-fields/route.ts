@@ -214,6 +214,96 @@ const ALBARAN_SCHEMA = JSON.stringify({
   type: "object",
 })
 
+const CONVENIO_SCHEMA = JSON.stringify({
+  properties: {
+    titulo_convenio: {
+      description: "Titulo completo del convenio. Ej: 'Convenio de colaboracion entre X e Y'",
+      type: "string",
+    },
+    fecha_firma: {
+      description: "Fecha de firma en formato DD/MM/AAAA. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    lugar_firma: {
+      description: "Lugar donde se firma el convenio. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    resumen_objetivo: {
+      description: "Resumen del objetivo del convenio en 3-10 lineas. Explicar claramente para que se firma. No incluir importes detallados. No copiar clausulas extensas. Redaccion clara y sintetica.",
+      type: "string",
+    },
+    partes: {
+      description: "Array con todas las partes firmantes del convenio. Detectar todas las partes.",
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          nombreParte: { description: "Razon social completa de la parte", type: "string" },
+          cif: { description: "CIF en MAYUSCULAS sin espacios. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
+          representante: { description: "Nombre completo del representante. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
+          cargoRepresentante: { description: "Cargo del representante. Si no aparece: 'N/D'", type: "string" },
+          dniRepresentante: { description: "DNI del representante. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
+        },
+        required: ["nombreParte", "cif", "representante", "cargoRepresentante", "dniRepresentante"],
+      },
+    },
+    importe_colaboracion: {
+      description: "Importe maximo comprometido formato XX.XXX,XX EUR. Si el texto indica impuestos incluidos no modificar el importe. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    fecha_inicio_vigencia: {
+      description: "Fecha de inicio de vigencia DD/MM/AAAA. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    fecha_fin_vigencia: {
+      description: "Fecha de fin de vigencia DD/MM/AAAA. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    prorroga_automatica: {
+      description: "Si el convenio se prorroga automaticamente. Valores: 'Si', 'No', 'N/D'",
+      type: "string",
+    },
+    clausula_confidencialidad: {
+      description: "Existe clausula de confidencialidad? Solo 'Si' o 'No'. No transcribir contenido.",
+      type: "string",
+    },
+    clausula_proteccion_datos: {
+      description: "Existe clausula de proteccion de datos? Solo 'Si' o 'No'. No transcribir contenido.",
+      type: "string",
+    },
+    clausula_propiedad_intelectual: {
+      description: "Existe clausula de propiedad intelectual? Solo 'Si' o 'No'. No transcribir contenido.",
+      type: "string",
+    },
+    clausula_cumplimiento_normativo: {
+      description: "Existe clausula de cumplimiento normativo? Solo 'Si' o 'No'. No transcribir contenido.",
+      type: "string",
+    },
+    clausula_resolucion_anticipada: {
+      description: "Existe clausula de resolucion anticipada? Solo 'Si' o 'No'. No transcribir contenido.",
+      type: "string",
+    },
+    firmado_por_todas_las_partes: {
+      description: "Firmado por todas las partes? Comprobar existencia de bloque final de firma para cada parte. Solo 'Si' o 'No'",
+      type: "string",
+    },
+    numero_firmantes_detectados: {
+      description: "Numero de firmantes detectados (numero entero como string)",
+      type: "string",
+    },
+  },
+  required: [
+    "titulo_convenio", "fecha_firma", "lugar_firma", "resumen_objetivo",
+    "partes", "importe_colaboracion", "fecha_inicio_vigencia", "fecha_fin_vigencia",
+    "prorroga_automatica", "clausula_confidencialidad", "clausula_proteccion_datos",
+    "clausula_propiedad_intelectual", "clausula_cumplimiento_normativo",
+    "clausula_resolucion_anticipada", "firmado_por_todas_las_partes",
+    "numero_firmantes_detectados",
+  ],
+  title: "Convenio",
+  type: "object",
+})
+
 // --- Flattening functions ---
 
 function flattenFacturaData(
@@ -299,6 +389,46 @@ function flattenAlbaranData(
   return result
 }
 
+function flattenConvenioData(
+  data: any,
+  fields: string[],
+): Record<string, { value: string; confidence: number }> {
+  const result: Record<string, { value: string; confidence: number }> = {}
+
+  const formatPartes = () => {
+    if (!data.partes || !Array.isArray(data.partes) || data.partes.length === 0) return "N/D"
+    return JSON.stringify(data.partes)
+  }
+
+  const fieldMap: Record<string, () => string> = {
+    "Titulo del Convenio": () => data.titulo_convenio || "N/D",
+    "Fecha de Firma": () => data.fecha_firma || "N/D",
+    "Lugar de Firma": () => data.lugar_firma || "N/D",
+    "Resumen del Objetivo": () => data.resumen_objetivo || "N/D",
+    "Partes Firmantes": formatPartes,
+    "Importe Colaboracion": () => data.importe_colaboracion || "N/D",
+    "Fecha Inicio Vigencia": () => data.fecha_inicio_vigencia || "N/D",
+    "Fecha Fin Vigencia": () => data.fecha_fin_vigencia || "N/D",
+    "Prorroga Automatica": () => data.prorroga_automatica || "N/D",
+    "Clausula Confidencialidad": () => data.clausula_confidencialidad || "N/D",
+    "Clausula Proteccion Datos": () => data.clausula_proteccion_datos || "N/D",
+    "Clausula Propiedad Intelectual": () => data.clausula_propiedad_intelectual || "N/D",
+    "Clausula Cumplimiento Normativo": () => data.clausula_cumplimiento_normativo || "N/D",
+    "Clausula Resolucion Anticipada": () => data.clausula_resolucion_anticipada || "N/D",
+    "Firmado por Todas las Partes": () => data.firmado_por_todas_las_partes || "N/D",
+    "Numero Firmantes Detectados": () => data.numero_firmantes_detectados || "N/D",
+  }
+
+  for (const field of fields) {
+    const getter = fieldMap[field]
+    if (getter) {
+      result[field] = { value: getter(), confidence: 1 }
+    }
+  }
+
+  return result
+}
+
 // --- Main handler ---
 
 export async function POST(request: NextRequest) {
@@ -316,10 +446,16 @@ export async function POST(request: NextRequest) {
 
     const lower = documentType.toLowerCase()
     const isAlbaran = lower.includes("albaran") && !lower.includes("factura")
+    const isConvenio = lower.includes("convenio")
 
     let extractedData: Record<string, { value: string; confidence: number }>
 
-    if (isAlbaran) {
+    if (isConvenio) {
+      console.log("[v0] API: Using convenio schema via Landing AI")
+      const data = await apiExtract(markdown, CONVENIO_SCHEMA)
+      console.log("[v0] API: Convenio extraction result keys:", Object.keys(data))
+      extractedData = flattenConvenioData(data, fields)
+    } else if (isAlbaran) {
       console.log("[v0] API: Using albaran schema via Landing AI")
       const data = await apiExtract(markdown, ALBARAN_SCHEMA)
       console.log("[v0] API: Albaran extraction result keys:", Object.keys(data))
