@@ -275,9 +275,6 @@ function RichFieldValue({ fieldName, value, extractedData }: { fieldName: string
   }
 
   const parsed = tryParseJson(value);
-  if (fieldName.toLowerCase().includes('partes firmantes')) {
-    console.log("[v0] PartesFirmantes debug:", { valueType: typeof value, valueLen: value?.length, parsed: parsed !== null, isArray: Array.isArray(parsed), valuePreview: value?.substring(0, 200) });
-  }
   if (!parsed) {
     // Long text fields: render with proper wrapping and line breaks
     if (value && value.length > 80) {
@@ -313,9 +310,32 @@ function RichFieldValue({ fieldName, value, extractedData }: { fieldName: string
     return <ConceptosEntregadosTable conceptos={parsed as ConceptoEntregado[]} />;
   }
 
-  // Partes Firmantes (convenio)
-  if (lower.includes('partes firmantes') && Array.isArray(parsed)) {
-    return <PartesFirmantesTable partes={parsed as ParteFirmante[]} />;
+  // Partes Firmantes (convenio) - try multiple parsing strategies
+  if (lower.includes('partes firmantes')) {
+    let partes: ParteFirmante[] | null = null;
+    if (Array.isArray(parsed)) {
+      partes = parsed as ParteFirmante[];
+    } else if (!parsed && value) {
+      // Try parsing the raw value directly with multiple strategies
+      try {
+        let attempt = JSON.parse(value);
+        if (typeof attempt === 'string') attempt = JSON.parse(attempt); // double-encoded
+        if (Array.isArray(attempt)) partes = attempt;
+      } catch {
+        // Try cleaning common issues: escaped quotes, etc.
+        try {
+          const cleaned = value.replace(/\\"/g, '"').replace(/^"|"$/g, '');
+          let attempt = JSON.parse(cleaned);
+          if (typeof attempt === 'string') attempt = JSON.parse(attempt);
+          if (Array.isArray(attempt)) partes = attempt;
+        } catch { /* give up */ }
+      }
+    }
+    if (partes && partes.length > 0) {
+      return <PartesFirmantesTable partes={partes} />;
+    }
+    // Fallback: show as pre-formatted text
+    return <span className="block whitespace-pre-line break-words text-xs">{value}</span>;
   }
 
   // Generic fallback: render as formatted JSON
@@ -365,6 +385,13 @@ export function FieldsTable({
   const hasClausulaFields = fields.some(f => isClausulaField(f.name));
   const clausulaSectionRendered = { current: false };
 
+  // Fields that should ALWAYS render full-width as tables regardless of JSON parse success
+  const isAlwaysTableField = (fieldName: string) => {
+    const lower = fieldName.toLowerCase();
+    return lower.includes('partes firmantes') ||
+           lower.includes('detalle firmantes');
+  };
+
   // Detect if a field has table-like content (JSON)
   const isTableField = (fieldName: string) => {
     const lower = fieldName.toLowerCase();
@@ -372,7 +399,7 @@ export function FieldsTable({
            lower.includes('desglose impuesto') || 
            lower.includes('desglose retencion') ||
            lower.includes('conceptos entregados') ||
-           lower.includes('partes firmantes');
+           isAlwaysTableField(fieldName);
   };
 
   return (
@@ -387,7 +414,7 @@ export function FieldsTable({
         <TableBody>
           {fields.map((field) => {
             const extracted = extractedData?.[field.name];
-            const hasTableContent = extracted && isTableField(field.name) && tryParseJson(extracted.value);
+            const hasTableContent = extracted && (isAlwaysTableField(field.name) || (isTableField(field.name) && tryParseJson(extracted.value)));
             
             // Detalle Firmantes: skip, merged into Partes Firmantes table
             if (field.name === 'Detalle Firmantes') return null;
