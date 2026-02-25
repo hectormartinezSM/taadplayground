@@ -222,17 +222,6 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
   return (
     <>
       <div className="space-y-6">
-        {/* Expediente OK Banner */}
-        {allDocumentsComplete && (
-          <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
-            <div>
-              <h3 className="font-semibold text-green-800 dark:text-green-200">Expediente OK</h3>
-              <p className="text-sm text-green-600 dark:text-green-400">Todos los documentos han sido procesados correctamente con todos los campos requeridos.</p>
-            </div>
-          </div>
-        )}
-
         <h2 className="text-2xl font-bold text-foreground">Documentos Procesados</h2>
 
         {documents.map((doc, index) => {

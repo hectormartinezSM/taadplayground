@@ -48,7 +48,6 @@ const CONVENIO_FIELDS = [
   "Clausula Propiedad Intelectual",
   "Clausula Cumplimiento Normativo",
   "Clausula Resolucion Anticipada",
-  "Firmado por Todas las Partes",
   "Numero Firmantes Detectados",
   "Detalle Firmantes",
 ]

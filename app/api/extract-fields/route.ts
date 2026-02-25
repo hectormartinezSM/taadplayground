@@ -238,11 +238,11 @@ const CONVENIO_SCHEMA = JSON.stringify({
       items: {
         type: "object",
         properties: {
-          nombreParte: { description: "Razon social completa de la parte", type: "string" },
+          nombreParte: { description: "Razon social completa de la parte, en formato tipo oracion: solo mayuscula al inicio y en nombres propios. Ej: 'Fundacion Ibercaja' en vez de 'FUNDACION IBERCAJA'. Si es un acronimo conocido mantenerlo (ej: ONCE, UNICEF).", type: "string" },
           cif: { description: "CIF en MAYUSCULAS sin espacios. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
-          representante: { description: "Nombre completo del representante. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
-          cargoRepresentante: { description: "Cargo del representante. Si no aparece: 'N/D'", type: "string" },
-          dniRepresentante: { description: "DNI del representante. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
+          representante: { description: "Nombre completo del representante con formato estandar: primera letra de cada palabra en mayuscula, resto minusculas. Ej: 'Juan Garcia Lopez' en vez de 'JUAN GARCIA LOPEZ'. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
+          cargoRepresentante: { description: "Cargo del representante en minusculas salvo inicio de frase y nombres propios. Ej: 'Director general' en vez de 'DIRECTOR GENERAL'. Si no aparece: 'N/D'", type: "string" },
+          dniRepresentante: { description: "DNI del representante en formato XXXXXXXXL (mayusculas). Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
         },
         required: ["nombreParte", "cif", "representante", "cargoRepresentante", "dniRepresentante"],
       },
@@ -283,10 +283,6 @@ const CONVENIO_SCHEMA = JSON.stringify({
       description: "Existe clausula de resolucion anticipada? Solo 'Si' o 'No'. No transcribir contenido.",
       type: "string",
     },
-    firmado_por_todas_las_partes: {
-      description: "Firmado por todas las partes? Comprobar existencia de bloque final de firma para cada parte. Solo 'Si' o 'No'",
-      type: "string",
-    },
     numero_firmantes_detectados: {
       description: "Numero de firmantes detectados (numero entero como string)",
       type: "string",
@@ -310,7 +306,7 @@ const CONVENIO_SCHEMA = JSON.stringify({
     "partes", "importe_colaboracion", "fecha_inicio_vigencia", "fecha_fin_vigencia",
     "prorroga_automatica", "clausula_confidencialidad", "clausula_proteccion_datos",
     "clausula_propiedad_intelectual", "clausula_cumplimiento_normativo",
-    "clausula_resolucion_anticipada", "firmado_por_todas_las_partes",
+    "clausula_resolucion_anticipada",
     "numero_firmantes_detectados", "detalle_firmantes",
   ],
   title: "Convenio",
@@ -445,7 +441,6 @@ function flattenConvenioData(
     "Clausula Propiedad Intelectual": () => data.clausula_propiedad_intelectual || "N/D",
     "Clausula Cumplimiento Normativo": () => data.clausula_cumplimiento_normativo || "N/D",
     "Clausula Resolucion Anticipada": () => data.clausula_resolucion_anticipada || "N/D",
-    "Firmado por Todas las Partes": () => data.firmado_por_todas_las_partes || "N/D",
     "Numero Firmantes Detectados": () => data.numero_firmantes_detectados || "N/D",
     "Detalle Firmantes": () => {
       if (!data.detalle_firmantes) return "N/D"
