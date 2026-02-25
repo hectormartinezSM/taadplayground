@@ -402,8 +402,46 @@ export function FieldsTable({
             const extracted = extractedData?.[field.name];
             const hasTableContent = extracted && (isAlwaysTableField(field.name) || (isTableField(field.name) && tryParseJson(extracted.value)));
             
-            // Hide raw JSON fields that are rendered elsewhere as tables
-            if (field.name === 'Detalle Firmantes' || field.name === 'Partes Firmantes') return null;
+            // Hide Detalle Firmantes, it's merged elsewhere
+            if (field.name === 'Detalle Firmantes') return null;
+
+            // Partes Firmantes: render exactly like Conceptos Facturables (full-width table)
+            if (field.name === 'Partes Firmantes' && extracted) {
+              let partes: ParteFirmante[] = [];
+              // Try parse JSON
+              try {
+                let val = extracted.value;
+                let p = JSON.parse(val);
+                if (typeof p === 'string') p = JSON.parse(p);
+                if (Array.isArray(p)) partes = p;
+              } catch { /* ignore */ }
+              // Try pipe-delimited fallback
+              if (partes.length === 0 && extracted.value?.includes('|||')) {
+                partes = extracted.value.split('###').map((row: string) => {
+                  const [nombreParte, cif, representante, cargoRepresentante, dniRepresentante] = row.split('|||');
+                  return { nombreParte: nombreParte || 'N/D', cif: cif || 'N/D', representante: representante || 'N/D', cargoRepresentante: cargoRepresentante || 'N/D', dniRepresentante: dniRepresentante || 'N/D' };
+                });
+              }
+              if (partes.length > 0) {
+                return (
+                  <TableRow key={field.name} className="border-b">
+                    <TableCell colSpan={2} className="p-0">
+                      <div className="px-4 py-2 font-medium text-sm bg-muted/30 border-b border-border/50">
+                        Partes Firmantes
+                      </div>
+                      <div className="p-3">
+                        <div className="animate-in fade-in duration-300">
+                          <PartesFirmantesTable partes={partes} />
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+            }
+
+            // Hide Tabla Partes Firmantes (superseded by the inline render above)
+            if (field.name === 'Tabla Partes Firmantes') return null;
 
             // Clausula fields: render once as a grouped section
             if (isClausulaField(field.name)) {
