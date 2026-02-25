@@ -425,6 +425,18 @@ function flattenConvenioData(
     "Lugar de Firma": () => data.lugar_firma || "N/D",
     "Resumen del Objetivo": () => data.resumen_objetivo || "N/D",
     "Partes Firmantes": formatPartes,
+    "Tabla Partes Firmantes": () => {
+      if (!data.partes) return "N/D"
+      let partes = data.partes
+      if (typeof partes === 'string') {
+        try { partes = JSON.parse(partes) } catch { return "N/D" }
+      }
+      if (!Array.isArray(partes) || partes.length === 0) return "N/D"
+      // Encode as pipe-delimited rows: nombreParte|||cif|||representante|||cargo|||dni
+      return partes.map((p: any) =>
+        `${p.nombreParte || 'N/D'}|||${p.cif || 'N/D'}|||${p.representante || 'N/D'}|||${p.cargoRepresentante || 'N/D'}|||${p.dniRepresentante || 'N/D'}`
+      ).join('###')
+    },
     "Importe Colaboracion": () => data.importe_colaboracion || "N/D",
     "Fecha Inicio Vigencia": () => data.fecha_inicio_vigencia || "N/D",
     "Fecha Fin Vigencia": () => data.fecha_fin_vigencia || "N/D",

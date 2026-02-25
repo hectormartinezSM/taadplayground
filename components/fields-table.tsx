@@ -310,32 +310,19 @@ function RichFieldValue({ fieldName, value, extractedData }: { fieldName: string
     return <ConceptosEntregadosTable conceptos={parsed as ConceptoEntregado[]} />;
   }
 
-  // Partes Firmantes (convenio) - try multiple parsing strategies
-  if (lower.includes('partes firmantes')) {
-    let partes: ParteFirmante[] | null = null;
-    if (Array.isArray(parsed)) {
-      partes = parsed as ParteFirmante[];
-    } else if (!parsed && value) {
-      // Try parsing the raw value directly with multiple strategies
-      try {
-        let attempt = JSON.parse(value);
-        if (typeof attempt === 'string') attempt = JSON.parse(attempt); // double-encoded
-        if (Array.isArray(attempt)) partes = attempt;
-      } catch {
-        // Try cleaning common issues: escaped quotes, etc.
-        try {
-          const cleaned = value.replace(/\\"/g, '"').replace(/^"|"$/g, '');
-          let attempt = JSON.parse(cleaned);
-          if (typeof attempt === 'string') attempt = JSON.parse(attempt);
-          if (Array.isArray(attempt)) partes = attempt;
-        } catch { /* give up */ }
-      }
-    }
-    if (partes && partes.length > 0) {
-      return <PartesFirmantesTable partes={partes} />;
-    }
-    // Fallback: show as pre-formatted text
-    return <span className="block whitespace-pre-line break-words text-xs">{value}</span>;
+  // Tabla Partes Firmantes (convenio) - pipe-delimited format: name|||cif|||rep|||cargo|||dni###...
+  if (lower === 'tabla partes firmantes' && value && value.includes('|||')) {
+    const rows = value.split('###');
+    const partes: ParteFirmante[] = rows.map(row => {
+      const [nombreParte, cif, representante, cargoRepresentante, dniRepresentante] = row.split('|||');
+      return { nombreParte: nombreParte || 'N/D', cif: cif || 'N/D', representante: representante || 'N/D', cargoRepresentante: cargoRepresentante || 'N/D', dniRepresentante: dniRepresentante || 'N/D' };
+    });
+    return <PartesFirmantesTable partes={partes} />;
+  }
+
+  // Partes Firmantes (convenio) - JSON format fallback
+  if (lower.includes('partes firmantes') && Array.isArray(parsed)) {
+    return <PartesFirmantesTable partes={parsed as ParteFirmante[]} />;
   }
 
   // Generic fallback: render as formatted JSON
@@ -388,8 +375,7 @@ export function FieldsTable({
   // Fields that should ALWAYS render full-width as tables regardless of JSON parse success
   const isAlwaysTableField = (fieldName: string) => {
     const lower = fieldName.toLowerCase();
-    return lower.includes('partes firmantes') ||
-           lower.includes('detalle firmantes');
+    return lower === 'tabla partes firmantes';
   };
 
   // Detect if a field has table-like content (JSON)
@@ -416,8 +402,8 @@ export function FieldsTable({
             const extracted = extractedData?.[field.name];
             const hasTableContent = extracted && (isAlwaysTableField(field.name) || (isTableField(field.name) && tryParseJson(extracted.value)));
             
-            // Detalle Firmantes: skip, merged into Partes Firmantes table
-            if (field.name === 'Detalle Firmantes') return null;
+            // Hide raw JSON fields that are rendered elsewhere as tables
+            if (field.name === 'Detalle Firmantes' || field.name === 'Partes Firmantes') return null;
 
             // Clausula fields: render once as a grouped section
             if (isClausulaField(field.name)) {
