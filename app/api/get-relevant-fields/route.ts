@@ -50,6 +50,7 @@ const CONVENIO_FIELDS = [
   "Clausula Resolucion Anticipada",
   "Firmado por Todas las Partes",
   "Numero Firmantes Detectados",
+  "Detalle Firmantes",
 ]
 
 function getFieldsForType(documentType: string): string[] {

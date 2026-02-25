@@ -13,7 +13,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 interface FieldsTableProps {
   fields: Field[];
@@ -186,18 +186,94 @@ interface ParteFirmante {
 
 function PartesFirmantesTable({ partes }: { partes: ParteFirmante[] }) {
   return (
-    <div className="space-y-3">
-      {partes.map((parte, i) => (
-        <div key={i} className="rounded border border-border/50 p-3 space-y-1.5">
-          <div className="text-xs font-semibold text-foreground">{parte.nombreParte}</div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-            <div><span className="text-muted-foreground">CIF:</span> {parte.cif}</div>
-            <div><span className="text-muted-foreground">Representante:</span> {parte.representante}</div>
-            <div><span className="text-muted-foreground">Cargo:</span> {parte.cargoRepresentante}</div>
-            <div><span className="text-muted-foreground">DNI:</span> {parte.dniRepresentante}</div>
+    <div className="overflow-x-auto rounded border border-border/50">
+      <Table>
+        <TableHeader>
+          <TableRow className="text-xs">
+            <TableHead className="py-1.5 px-2 text-xs">Parte</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">CIF</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">Representante</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">Cargo</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">DNI</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {partes.map((parte, i) => (
+            <TableRow key={i} className="text-xs">
+              <TableCell className="py-1.5 px-2 font-medium">{parte.nombreParte}</TableCell>
+              <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.cif}</TableCell>
+              <TableCell className="py-1.5 px-2">{parte.representante}</TableCell>
+              <TableCell className="py-1.5 px-2">{parte.cargoRepresentante}</TableCell>
+              <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.dniRepresentante}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// --- Clausulas check/cross renderer ---
+
+const CLAUSULA_FIELDS = [
+  "Clausula Confidencialidad",
+  "Clausula Proteccion Datos",
+  "Clausula Propiedad Intelectual",
+  "Clausula Cumplimiento Normativo",
+  "Clausula Resolucion Anticipada",
+];
+
+function ClausulasSection({ extractedData }: { extractedData: Record<string, ExtractedField> }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 py-1">
+      {CLAUSULA_FIELDS.map((field) => {
+        const value = extractedData[field]?.value?.toLowerCase() || '';
+        const present = value === 'si' || value === 'yes';
+        const label = field.replace('Clausula ', '');
+        return (
+          <div key={field} className="flex items-center gap-2 text-sm">
+            {present ? (
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+            ) : (
+              <XCircle className="h-4 w-4 text-red-500 dark:text-red-400 shrink-0" />
+            )}
+            <span className={present ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
           </div>
-        </div>
-      ))}
+        );
+      })}
+    </div>
+  );
+}
+
+// --- Detalle Firmantes renderer ---
+
+interface DetalleFirmante {
+  nombre: string;
+  enRepresentacionDe: string;
+  cargo: string;
+}
+
+function DetalleFirmantesSection({ firmantes }: { firmantes: DetalleFirmante[] }) {
+  return (
+    <div className="overflow-x-auto rounded border border-border/50">
+      <Table>
+        <TableHeader>
+          <TableRow className="text-xs">
+            <TableHead className="py-1.5 px-2 text-xs">Firmante</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">En representacion de</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">Cargo</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {firmantes.map((f, i) => (
+            <TableRow key={i} className="text-xs">
+              <TableCell className="py-1.5 px-2 font-medium">{f.nombre}</TableCell>
+              <TableCell className="py-1.5 px-2">{f.enRepresentacionDe}</TableCell>
+              <TableCell className="py-1.5 px-2">{f.cargo}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -256,6 +332,11 @@ function RichFieldValue({ fieldName, value }: { fieldName: string; value: string
     return <PartesFirmantesTable partes={parsed as ParteFirmante[]} />;
   }
 
+  // Detalle Firmantes (convenio)
+  if (lower.includes('detalle firmantes') && Array.isArray(parsed)) {
+    return <DetalleFirmantesSection firmantes={parsed as DetalleFirmante[]} />;
+  }
+
   // Generic fallback: render as formatted JSON
   return <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(parsed, null, 2)}</pre>;
 }
@@ -294,6 +375,15 @@ export function FieldsTable({
     }
   };
 
+  // Detect if a field is a clausula boolean (rendered in grouped section)
+  const isClausulaField = (fieldName: string) => {
+    return CLAUSULA_FIELDS.includes(fieldName);
+  };
+
+  // Check if we have any clausula fields to render as a group
+  const hasClausulaFields = fields.some(f => isClausulaField(f.name));
+  const clausulaSectionRendered = { current: false };
+
   // Detect if a field has table-like content (JSON)
   const isTableField = (fieldName: string) => {
     const lower = fieldName.toLowerCase();
@@ -301,7 +391,8 @@ export function FieldsTable({
            lower.includes('desglose impuesto') || 
            lower.includes('desglose retencion') ||
            lower.includes('conceptos entregados') ||
-           lower.includes('partes firmantes');
+           lower.includes('partes firmantes') ||
+           lower.includes('detalle firmantes');
   };
 
   return (
@@ -318,6 +409,24 @@ export function FieldsTable({
             const extracted = extractedData?.[field.name];
             const hasTableContent = extracted && isTableField(field.name) && tryParseJson(extracted.value);
             
+            // Clausula fields: render once as a grouped section
+            if (isClausulaField(field.name)) {
+              if (clausulaSectionRendered.current) return null;
+              clausulaSectionRendered.current = true;
+              return extractedData ? (
+                <TableRow key="clausulas-section" className="border-b">
+                  <TableCell colSpan={2} className="p-0">
+                    <div className="px-4 py-2 font-medium text-sm bg-muted/30 border-b border-border/50">
+                      Deteccion de clausulas
+                    </div>
+                    <div className="px-4 py-3">
+                      <ClausulasSection extractedData={extractedData} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : null;
+            }
+
             return hasTableContent ? (
               // Full-width row for table fields
               <TableRow key={field.name} className="border-b">

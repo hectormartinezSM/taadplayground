@@ -217,7 +217,7 @@ const ALBARAN_SCHEMA = JSON.stringify({
 const CONVENIO_SCHEMA = JSON.stringify({
   properties: {
     titulo_convenio: {
-      description: "Titulo completo del convenio. Ej: 'Convenio de colaboracion entre X e Y'",
+      description: "Titulo completo del convenio en formato tipo oracion: solo mayuscula al inicio de frase y en nombres propios de organizaciones. Ej: 'Convenio de colaboracion entre Fundacion Ibercaja y Cruz Roja Espanola' en vez de 'CONVENIO DE COLABORACION ENTRE FUNDACION IBERCAJA Y CRUZ ROJA ESPANOLA'",
       type: "string",
     },
     fecha_firma: {
@@ -291,6 +291,19 @@ const CONVENIO_SCHEMA = JSON.stringify({
       description: "Numero de firmantes detectados (numero entero como string)",
       type: "string",
     },
+    detalle_firmantes: {
+      description: "Array con el detalle de cada firmante detectado en el bloque de firma del documento.",
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          nombre: { description: "Nombre completo del firmante. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'", type: "string" },
+          enRepresentacionDe: { description: "Organizacion a la que representa. Si no aparece: 'N/D'", type: "string" },
+          cargo: { description: "Cargo del firmante. Si no aparece: 'N/D'", type: "string" },
+        },
+        required: ["nombre", "enRepresentacionDe", "cargo"],
+      },
+    },
   },
   required: [
     "titulo_convenio", "fecha_firma", "lugar_firma", "resumen_objetivo",
@@ -298,7 +311,7 @@ const CONVENIO_SCHEMA = JSON.stringify({
     "prorroga_automatica", "clausula_confidencialidad", "clausula_proteccion_datos",
     "clausula_propiedad_intelectual", "clausula_cumplimiento_normativo",
     "clausula_resolucion_anticipada", "firmado_por_todas_las_partes",
-    "numero_firmantes_detectados",
+    "numero_firmantes_detectados", "detalle_firmantes",
   ],
   title: "Convenio",
   type: "object",
@@ -417,6 +430,10 @@ function flattenConvenioData(
     "Clausula Resolucion Anticipada": () => data.clausula_resolucion_anticipada || "N/D",
     "Firmado por Todas las Partes": () => data.firmado_por_todas_las_partes || "N/D",
     "Numero Firmantes Detectados": () => data.numero_firmantes_detectados || "N/D",
+    "Detalle Firmantes": () => {
+      if (!data.detalle_firmantes || !Array.isArray(data.detalle_firmantes) || data.detalle_firmantes.length === 0) return "N/D"
+      return JSON.stringify(data.detalle_firmantes)
+    },
   }
 
   for (const field of fields) {
