@@ -256,7 +256,11 @@ function ClausulasSection({ extractedData }: { extractedData: Record<string, Ext
 function tryParseJson(value: string): unknown | null {
   if (!value || value === 'N/D') return null;
   try {
-    const parsed = JSON.parse(value);
+    let parsed = JSON.parse(value);
+    // Handle double-encoded JSON strings (Landing AI sometimes returns stringified JSON)
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch { /* not double-encoded */ }
+    }
     if (typeof parsed === 'object' && parsed !== null) return parsed;
     return null;
   } catch {
@@ -271,6 +275,9 @@ function RichFieldValue({ fieldName, value, extractedData }: { fieldName: string
   }
 
   const parsed = tryParseJson(value);
+  if (fieldName.toLowerCase().includes('partes firmantes')) {
+    console.log("[v0] PartesFirmantes debug:", { valueType: typeof value, valueLen: value?.length, parsed: parsed !== null, isArray: Array.isArray(parsed), valuePreview: value?.substring(0, 200) });
+  }
   if (!parsed) {
     // Long text fields: render with proper wrapping and line breaks
     if (value && value.length > 80) {

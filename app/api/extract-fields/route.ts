@@ -409,8 +409,14 @@ function flattenConvenioData(
   const result: Record<string, { value: string; confidence: number }> = {}
 
   const formatPartes = () => {
-    if (!data.partes || !Array.isArray(data.partes) || data.partes.length === 0) return "N/D"
-    return JSON.stringify(data.partes)
+    if (!data.partes) return "N/D"
+    // Landing AI may return partes as already-serialized JSON string
+    let partes = data.partes
+    if (typeof partes === 'string') {
+      try { partes = JSON.parse(partes) } catch { return partes }
+    }
+    if (!Array.isArray(partes) || partes.length === 0) return "N/D"
+    return JSON.stringify(partes)
   }
 
   const fieldMap: Record<string, () => string> = {
@@ -431,8 +437,13 @@ function flattenConvenioData(
     "Firmado por Todas las Partes": () => data.firmado_por_todas_las_partes || "N/D",
     "Numero Firmantes Detectados": () => data.numero_firmantes_detectados || "N/D",
     "Detalle Firmantes": () => {
-      if (!data.detalle_firmantes || !Array.isArray(data.detalle_firmantes) || data.detalle_firmantes.length === 0) return "N/D"
-      return JSON.stringify(data.detalle_firmantes)
+      if (!data.detalle_firmantes) return "N/D"
+      let firmantes = data.detalle_firmantes
+      if (typeof firmantes === 'string') {
+        try { firmantes = JSON.parse(firmantes) } catch { return firmantes }
+      }
+      if (!Array.isArray(firmantes) || firmantes.length === 0) return "N/D"
+      return JSON.stringify(firmantes)
     },
   }
 
