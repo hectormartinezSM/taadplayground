@@ -184,7 +184,23 @@ interface ParteFirmante {
   dniRepresentante: string;
 }
 
-function PartesFirmantesTable({ partes }: { partes: ParteFirmante[] }) {
+interface DetalleFirmante {
+  nombre: string;
+  enRepresentacionDe: string;
+  cargo: string;
+}
+
+function PartesFirmantesTable({ partes, firmantes }: { partes: ParteFirmante[]; firmantes?: DetalleFirmante[] }) {
+  // Build a lookup: org name -> firmante detail
+  const firmantePorOrg: Record<string, DetalleFirmante> = {};
+  if (firmantes) {
+    for (const f of firmantes) {
+      if (f.enRepresentacionDe && f.enRepresentacionDe !== 'N/D') {
+        firmantePorOrg[f.enRepresentacionDe.toLowerCase()] = f;
+      }
+    }
+  }
+
   return (
     <div className="overflow-x-auto rounded border border-border/50">
       <Table>
@@ -195,18 +211,38 @@ function PartesFirmantesTable({ partes }: { partes: ParteFirmante[] }) {
             <TableHead className="py-1.5 px-2 text-xs">Representante</TableHead>
             <TableHead className="py-1.5 px-2 text-xs">Cargo</TableHead>
             <TableHead className="py-1.5 px-2 text-xs">DNI</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">Firma</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {partes.map((parte, i) => (
-            <TableRow key={i} className="text-xs">
-              <TableCell className="py-1.5 px-2 font-medium">{parte.nombreParte}</TableCell>
-              <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.cif}</TableCell>
-              <TableCell className="py-1.5 px-2">{parte.representante}</TableCell>
-              <TableCell className="py-1.5 px-2">{parte.cargoRepresentante}</TableCell>
-              <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.dniRepresentante}</TableCell>
-            </TableRow>
-          ))}
+          {partes.map((parte, i) => {
+            // Try to match firmante by org name
+            const match = firmantePorOrg[parte.nombreParte.toLowerCase()];
+            // Fallback: match by index if same count
+            const byIndex = !match && firmantes && firmantes.length === partes.length ? firmantes[i] : null;
+            const firmante = match || byIndex;
+            const signed = !!firmante;
+
+            return (
+              <TableRow key={i} className="text-xs">
+                <TableCell className="py-1.5 px-2 font-medium">{parte.nombreParte}</TableCell>
+                <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.cif}</TableCell>
+                <TableCell className="py-1.5 px-2">{parte.representante}</TableCell>
+                <TableCell className="py-1.5 px-2">{parte.cargoRepresentante}</TableCell>
+                <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.dniRepresentante}</TableCell>
+                <TableCell className="py-1.5 px-2">
+                  {signed ? (
+                    <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {firmante?.nombre && firmante.nombre !== 'N/D' ? firmante.nombre : 'Si'}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
@@ -245,39 +281,6 @@ function ClausulasSection({ extractedData }: { extractedData: Record<string, Ext
   );
 }
 
-// --- Detalle Firmantes renderer ---
-
-interface DetalleFirmante {
-  nombre: string;
-  enRepresentacionDe: string;
-  cargo: string;
-}
-
-function DetalleFirmantesSection({ firmantes }: { firmantes: DetalleFirmante[] }) {
-  return (
-    <div className="overflow-x-auto rounded border border-border/50">
-      <Table>
-        <TableHeader>
-          <TableRow className="text-xs">
-            <TableHead className="py-1.5 px-2 text-xs">Firmante</TableHead>
-            <TableHead className="py-1.5 px-2 text-xs">En representacion de</TableHead>
-            <TableHead className="py-1.5 px-2 text-xs">Cargo</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {firmantes.map((f, i) => (
-            <TableRow key={i} className="text-xs">
-              <TableCell className="py-1.5 px-2 font-medium">{f.nombre}</TableCell>
-              <TableCell className="py-1.5 px-2">{f.enRepresentacionDe}</TableCell>
-              <TableCell className="py-1.5 px-2">{f.cargo}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
 // --- JSON detection & sub-table routing ---
 
 function tryParseJson(value: string): unknown | null {
@@ -291,7 +294,7 @@ function tryParseJson(value: string): unknown | null {
   }
 }
 
-function RichFieldValue({ fieldName, value }: { fieldName: string; value: string }) {
+function RichFieldValue({ fieldName, value, extractedData }: { fieldName: string; value: string; extractedData?: Record<string, ExtractedField> }) {
   // Style anonymized values in italic dark gray
   if (value && value.toLowerCase().includes('anonimizado en origen')) {
     return <span className="italic text-gray-500">{value}</span>;
@@ -333,14 +336,16 @@ function RichFieldValue({ fieldName, value }: { fieldName: string; value: string
     return <ConceptosEntregadosTable conceptos={parsed as ConceptoEntregado[]} />;
   }
 
-  // Partes Firmantes (convenio)
+  // Partes Firmantes (convenio) - merged with Detalle Firmantes
   if (lower.includes('partes firmantes') && Array.isArray(parsed)) {
-    return <PartesFirmantesTable partes={parsed as ParteFirmante[]} />;
-  }
-
-  // Detalle Firmantes (convenio)
-  if (lower.includes('detalle firmantes') && Array.isArray(parsed)) {
-    return <DetalleFirmantesSection firmantes={parsed as DetalleFirmante[]} />;
+    let firmantes: DetalleFirmante[] | undefined;
+    if (extractedData?.['Detalle Firmantes']?.value) {
+      try {
+        const f = JSON.parse(extractedData['Detalle Firmantes'].value);
+        if (Array.isArray(f)) firmantes = f;
+      } catch { /* ignore */ }
+    }
+    return <PartesFirmantesTable partes={parsed as ParteFirmante[]} firmantes={firmantes} />;
   }
 
   // Generic fallback: render as formatted JSON
@@ -397,8 +402,7 @@ export function FieldsTable({
            lower.includes('desglose impuesto') || 
            lower.includes('desglose retencion') ||
            lower.includes('conceptos entregados') ||
-           lower.includes('partes firmantes') ||
-           lower.includes('detalle firmantes');
+           lower.includes('partes firmantes');
   };
 
   return (
@@ -415,6 +419,9 @@ export function FieldsTable({
             const extracted = extractedData?.[field.name];
             const hasTableContent = extracted && isTableField(field.name) && tryParseJson(extracted.value);
             
+            // Detalle Firmantes: skip, merged into Partes Firmantes table
+            if (field.name === 'Detalle Firmantes') return null;
+
             // Clausula fields: render once as a grouped section
             if (isClausulaField(field.name)) {
               if (clausulaSectionRendered.current) return null;
@@ -445,10 +452,10 @@ export function FieldsTable({
                       <Skeleton className="h-16 w-full" />
                     ) : (
                       <div className="animate-in fade-in duration-300">
-                        <RichFieldValue fieldName={field.name} value={extracted.value} />
-                      </div>
-                    )}
-                  </div>
+<RichFieldValue fieldName={field.name} value={extracted.value} extractedData={extractedData} />
+  </div>
+  )}
+  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -459,10 +466,10 @@ export function FieldsTable({
                     <Skeleton className="h-5 w-full" />
                   ) : extracted ? (
                     <span className="animate-in fade-in duration-300">
-                      <RichFieldValue fieldName={field.name} value={extracted.value} />
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
+<RichFieldValue fieldName={field.name} value={extracted.value} extractedData={extractedData} />
+  </span>
+  ) : (
+  <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
               </TableRow>
