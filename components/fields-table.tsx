@@ -298,7 +298,13 @@ function RichFieldValue({ fieldName, value }: { fieldName: string; value: string
   }
 
   const parsed = tryParseJson(value);
-  if (!parsed) return <span>{value}</span>;
+  if (!parsed) {
+    // Long text fields: render with proper wrapping and line breaks
+    if (value && value.length > 80) {
+      return <span className="block whitespace-pre-line break-words leading-relaxed">{value}</span>;
+    }
+    return <span>{value}</span>;
+  }
 
   const lower = fieldName.toLowerCase();
 
