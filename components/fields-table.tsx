@@ -176,6 +176,34 @@ function ConceptosEntregadosTable({ conceptos }: { conceptos: ConceptoEntregado[
   );
 }
 
+interface ConceptoRecibi {
+  concepto: string;
+  importeBruto: string;
+}
+
+function ConceptosRecibiTable({ conceptos }: { conceptos: ConceptoRecibi[] }) {
+  return (
+    <div className="overflow-x-auto rounded border border-border/50">
+      <Table>
+        <TableHeader>
+          <TableRow className="text-xs">
+            <TableHead className="py-1.5 px-2 text-xs">Concepto</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs text-right">Importe Bruto</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {conceptos.map((c, i) => (
+            <TableRow key={i} className="text-xs">
+              <TableCell className="py-1.5 px-2">{c.concepto}</TableCell>
+              <TableCell className="py-1.5 px-2 text-right whitespace-nowrap">{c.importeBruto}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 interface ParteFirmante {
   nombreParte: string;
   cif: string;
@@ -315,6 +343,11 @@ function RichFieldValue({ fieldName, value, extractedData }: { fieldName: string
     return <ConceptosEntregadosTable conceptos={parsed as ConceptoEntregado[]} />;
   }
 
+  // Conceptos (recibi) - field name is exactly "conceptos"
+  if (lower === 'conceptos' && Array.isArray(parsed)) {
+    return <ConceptosRecibiTable conceptos={parsed as ConceptoRecibi[]} />;
+  }
+
   // Tabla Partes Firmantes (convenio) - pipe-delimited format: name|||cif|||rep|||cargo|||dni###...
   if (lower === 'tabla partes firmantes' && value && value.includes('|||')) {
     const rows = value.split('###');
@@ -390,6 +423,7 @@ export function FieldsTable({
            lower.includes('desglose impuesto') || 
            lower.includes('desglose retencion') ||
            lower.includes('conceptos entregados') ||
+           lower === 'conceptos' ||
            isAlwaysTableField(fieldName);
   };
 

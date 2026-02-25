@@ -463,6 +463,137 @@ function flattenConvenioData(
   return result
 }
 
+const RECIBI_SCHEMA = JSON.stringify({
+  properties: {
+    numero_recibi: {
+      description: "Numero del recibi. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    fecha_recibi: {
+      description: "Fecha del recibi en formato DD/MM/AAAA",
+      type: "string",
+    },
+    pagador: {
+      description: "Nombre del pagador en formato Title Case. Ej: 'Fundacion Ibercaja' en vez de 'FUNDACION IBERCAJA'",
+      type: "string",
+    },
+    cif_pagador: {
+      description: "CIF del pagador en MAYUSCULAS sin espacios. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+    perceptor: {
+      description: "Nombre del perceptor en formato Title Case. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+    nif_perceptor: {
+      description: "NIF del perceptor en MAYUSCULAS sin espacios. Si no aparece: 'N/D'. Si esta tapado: 'Dato anonimizado en origen'",
+      type: "string",
+    },
+    resumen_concepto: {
+      description: "Resumen del concepto en 3-7 palabras. Indicar claramente el servicio o actividad. No incluir importes ni fechas largas.",
+      type: "string",
+    },
+    conceptos: {
+      description: "Array de conceptos del recibi. Extraer el concepto principal. Formato importe: XX.XXX,XX EUR. Si solo hay un concepto devolver array con un elemento. No inventar cantidades.",
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          concepto: { description: "Descripcion del concepto o servicio", type: "string" },
+          importeBruto: { description: "Importe bruto formato XX.XXX,XX EUR", type: "string" },
+        },
+        required: ["concepto", "importeBruto"],
+      },
+    },
+    subtotal_bruto: {
+      description: "Subtotal bruto formato XX.XXX,XX EUR",
+      type: "string",
+    },
+    tipo_retencion: {
+      description: "Tipo de retencion aplicada. Normalmente 'IRPF'. Si no hay retencion: 'N/D'",
+      type: "string",
+    },
+    porcentaje_retencion: {
+      description: "Porcentaje de retencion formato XX%. Ej: '15%'. Si no hay: 'N/D'",
+      type: "string",
+    },
+    importe_retencion: {
+      description: "Importe de la retencion formato XX.XXX,XX EUR. Si no hay: 'N/D'",
+      type: "string",
+    },
+    total_a_percibir: {
+      description: "Total a percibir (subtotal - retencion) formato XX.XXX,XX EUR",
+      type: "string",
+    },
+    iban_destino: {
+      description: "IBAN destino del pago. Si esta oculto deliberadamente: 'Dato anonimizado en origen'. Si no aparece: 'N/D'",
+      type: "string",
+    },
+    firmado: {
+      description: "Si el documento esta firmado. Solo 'Si' o 'No'",
+      type: "string",
+    },
+    fecha_firma: {
+      description: "Fecha de la firma formato DD/MM/AAAA. Si solo aparece firma manuscrita sin fecha diferenciada, usar la fecha del recibi. Si no aparece: 'N/D'",
+      type: "string",
+    },
+  },
+  required: [
+    "numero_recibi", "fecha_recibi", "pagador", "cif_pagador",
+    "perceptor", "nif_perceptor", "resumen_concepto", "conceptos",
+    "subtotal_bruto", "tipo_retencion", "porcentaje_retencion",
+    "importe_retencion", "total_a_percibir", "iban_destino",
+    "firmado", "fecha_firma",
+  ],
+  title: "Recibi",
+  type: "object",
+})
+
+function flattenRecibiData(
+  data: any,
+  fields: string[],
+): Record<string, { value: string; confidence: number }> {
+  const result: Record<string, { value: string; confidence: number }> = {}
+
+  const formatConceptos = () => {
+    if (!data.conceptos) return "N/D"
+    let conceptos = data.conceptos
+    if (typeof conceptos === 'string') {
+      try { conceptos = JSON.parse(conceptos) } catch { return conceptos }
+    }
+    if (!Array.isArray(conceptos) || conceptos.length === 0) return "N/D"
+    return JSON.stringify(conceptos)
+  }
+
+  const fieldMap: Record<string, () => string> = {
+    "Numero Recibi": () => data.numero_recibi || "N/D",
+    "Fecha Recibi": () => data.fecha_recibi || "N/D",
+    "Pagador": () => data.pagador || "N/D",
+    "CIF Pagador": () => data.cif_pagador || "N/D",
+    "Perceptor": () => data.perceptor || "N/D",
+    "NIF Perceptor": () => data.nif_perceptor || "N/D",
+    "Resumen Concepto": () => data.resumen_concepto || "N/D",
+    "Conceptos": formatConceptos,
+    "Subtotal Bruto": () => data.subtotal_bruto || "N/D",
+    "Tipo Retencion": () => data.tipo_retencion || "N/D",
+    "Porcentaje Retencion": () => data.porcentaje_retencion || "N/D",
+    "Importe Retencion": () => data.importe_retencion || "N/D",
+    "Total a Percibir": () => data.total_a_percibir || "N/D",
+    "IBAN Destino": () => data.iban_destino || "N/D",
+    "Firmado": () => data.firmado || "N/D",
+    "Fecha Firma": () => data.fecha_firma || "N/D",
+  }
+
+  for (const field of fields) {
+    const getter = fieldMap[field]
+    if (getter) {
+      result[field] = { value: getter(), confidence: 1 }
+    }
+  }
+
+  return result
+}
+
 // --- Main handler ---
 
 export async function POST(request: NextRequest) {
@@ -481,10 +612,16 @@ export async function POST(request: NextRequest) {
     const lower = documentType.toLowerCase()
     const isAlbaran = lower.includes("albaran") && !lower.includes("factura")
     const isConvenio = lower.includes("convenio")
+    const isRecibi = lower.includes("recibi") || lower.includes("recibí")
 
     let extractedData: Record<string, { value: string; confidence: number }>
 
-    if (isConvenio) {
+    if (isRecibi) {
+      console.log("[v0] API: Using recibi schema via Landing AI")
+      const data = await apiExtract(markdown, RECIBI_SCHEMA)
+      console.log("[v0] API: Recibi extraction result keys:", Object.keys(data))
+      extractedData = flattenRecibiData(data, fields)
+    } else if (isConvenio) {
       console.log("[v0] API: Using convenio schema via Landing AI")
       const data = await apiExtract(markdown, CONVENIO_SCHEMA)
       console.log("[v0] API: Convenio extraction result keys:", Object.keys(data))

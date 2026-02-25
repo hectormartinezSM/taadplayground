@@ -52,6 +52,25 @@ const CONVENIO_FIELDS = [
   "Detalle Firmantes",
 ]
 
+const RECIBI_FIELDS = [
+  "Numero Recibi",
+  "Fecha Recibi",
+  "Pagador",
+  "CIF Pagador",
+  "Perceptor",
+  "NIF Perceptor",
+  "Resumen Concepto",
+  "Conceptos",
+  "Subtotal Bruto",
+  "Tipo Retencion",
+  "Porcentaje Retencion",
+  "Importe Retencion",
+  "Total a Percibir",
+  "IBAN Destino",
+  "Firmado",
+  "Fecha Firma",
+]
+
 function getFieldsForType(documentType: string): string[] {
   const lower = documentType.toLowerCase()
 
@@ -61,6 +80,10 @@ function getFieldsForType(documentType: string): string[] {
 
   if (lower.includes("convenio")) {
     return [...CONVENIO_FIELDS]
+  }
+
+  if (lower.includes("recibi") || lower.includes("recibí")) {
+    return [...RECIBI_FIELDS]
   }
 
   // Default to factura proveedor
