@@ -190,59 +190,27 @@ interface DetalleFirmante {
   cargo: string;
 }
 
-function PartesFirmantesTable({ partes, firmantes }: { partes: ParteFirmante[]; firmantes?: DetalleFirmante[] }) {
-  // Build a lookup: org name -> firmante detail
-  const firmantePorOrg: Record<string, DetalleFirmante> = {};
-  if (firmantes) {
-    for (const f of firmantes) {
-      if (f.enRepresentacionDe && f.enRepresentacionDe !== 'N/D') {
-        firmantePorOrg[f.enRepresentacionDe.toLowerCase()] = f;
-      }
-    }
-  }
-
-  // Build rows: field name in col 1, then one col per party
-  const rows: { label: string; values: (string | React.ReactNode)[] }[] = [
-    { label: 'CIF', values: partes.map(p => p.cif) },
-    { label: 'Representante', values: partes.map(p => p.representante) },
-    { label: 'Cargo', values: partes.map(p => p.cargoRepresentante) },
-    { label: 'DNI', values: partes.map(p => p.dniRepresentante) },
-    {
-      label: 'Firma',
-      values: partes.map((parte, i) => {
-        const match = firmantePorOrg[parte.nombreParte.toLowerCase()];
-        const byIndex = !match && firmantes && firmantes.length === partes.length ? firmantes[i] : null;
-        const firmante = match || byIndex;
-        return firmante ? (
-          <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            {firmante.nombre && firmante.nombre !== 'N/D' ? firmante.nombre : 'Si'}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">-</span>
-        );
-      }),
-    },
-  ];
-
+function PartesFirmantesTable({ partes }: { partes: ParteFirmante[] }) {
   return (
     <div className="overflow-x-auto rounded border border-border/50">
       <Table>
         <TableHeader>
           <TableRow className="text-xs">
-            <TableHead className="py-1.5 px-2 text-xs w-[120px]">Campo</TableHead>
-            {partes.map((p, i) => (
-              <TableHead key={i} className="py-1.5 px-2 text-xs font-semibold">{p.nombreParte}</TableHead>
-            ))}
+            <TableHead className="py-1.5 px-2 text-xs">Parte</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">CIF</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">Representante</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">Cargo</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs">DNI</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.label} className="text-xs">
-              <TableCell className="py-1.5 px-2 font-medium text-muted-foreground">{row.label}</TableCell>
-              {row.values.map((val, i) => (
-                <TableCell key={i} className="py-1.5 px-2">{val}</TableCell>
-              ))}
+          {partes.map((parte, i) => (
+            <TableRow key={i} className="text-xs">
+              <TableCell className="py-1.5 px-2 font-medium">{parte.nombreParte}</TableCell>
+              <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.cif}</TableCell>
+              <TableCell className="py-1.5 px-2">{parte.representante}</TableCell>
+              <TableCell className="py-1.5 px-2">{parte.cargoRepresentante}</TableCell>
+              <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.dniRepresentante}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -338,16 +306,9 @@ function RichFieldValue({ fieldName, value, extractedData }: { fieldName: string
     return <ConceptosEntregadosTable conceptos={parsed as ConceptoEntregado[]} />;
   }
 
-  // Partes Firmantes (convenio) - merged with Detalle Firmantes
+  // Partes Firmantes (convenio)
   if (lower.includes('partes firmantes') && Array.isArray(parsed)) {
-    let firmantes: DetalleFirmante[] | undefined;
-    if (extractedData?.['Detalle Firmantes']?.value) {
-      try {
-        const f = JSON.parse(extractedData['Detalle Firmantes'].value);
-        if (Array.isArray(f)) firmantes = f;
-      } catch { /* ignore */ }
-    }
-    return <PartesFirmantesTable partes={parsed as ParteFirmante[]} firmantes={firmantes} />;
+    return <PartesFirmantesTable partes={parsed as ParteFirmante[]} />;
   }
 
   // Generic fallback: render as formatted JSON
