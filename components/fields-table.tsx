@@ -191,26 +191,31 @@ interface DetalleFirmante {
 }
 
 function PartesFirmantesTable({ partes }: { partes: ParteFirmante[] }) {
+  const rows: { label: string; values: string[] }[] = [
+    { label: 'CIF', values: partes.map(p => p.cif) },
+    { label: 'Representante', values: partes.map(p => p.representante) },
+    { label: 'Cargo', values: partes.map(p => p.cargoRepresentante) },
+    { label: 'DNI', values: partes.map(p => p.dniRepresentante) },
+  ];
+
   return (
     <div className="overflow-x-auto rounded border border-border/50">
       <Table>
         <TableHeader>
           <TableRow className="text-xs">
-            <TableHead className="py-1.5 px-2 text-xs">Parte</TableHead>
-            <TableHead className="py-1.5 px-2 text-xs">CIF</TableHead>
-            <TableHead className="py-1.5 px-2 text-xs">Representante</TableHead>
-            <TableHead className="py-1.5 px-2 text-xs">Cargo</TableHead>
-            <TableHead className="py-1.5 px-2 text-xs">DNI</TableHead>
+            <TableHead className="py-1.5 px-2 text-xs w-[120px]"></TableHead>
+            {partes.map((p, i) => (
+              <TableHead key={i} className="py-1.5 px-2 text-xs font-semibold">{p.nombreParte}</TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {partes.map((parte, i) => (
-            <TableRow key={i} className="text-xs">
-              <TableCell className="py-1.5 px-2 font-medium">{parte.nombreParte}</TableCell>
-              <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.cif}</TableCell>
-              <TableCell className="py-1.5 px-2">{parte.representante}</TableCell>
-              <TableCell className="py-1.5 px-2">{parte.cargoRepresentante}</TableCell>
-              <TableCell className="py-1.5 px-2 whitespace-nowrap">{parte.dniRepresentante}</TableCell>
+          {rows.map((row) => (
+            <TableRow key={row.label} className="text-xs">
+              <TableCell className="py-1.5 px-2 font-medium text-muted-foreground">{row.label}</TableCell>
+              {row.values.map((val, i) => (
+                <TableCell key={i} className="py-1.5 px-2">{val}</TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>
