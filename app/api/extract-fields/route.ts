@@ -424,8 +424,7 @@ function flattenConvenioData(
     "Fecha de Firma": () => data.fecha_firma || "N/D",
     "Lugar de Firma": () => data.lugar_firma || "N/D",
     "Resumen del Objetivo": () => data.resumen_objetivo || "N/D",
-    "Partes Firmantes": formatPartes,
-    "Tabla Partes Firmantes": () => {
+    "Partes Firmantes": () => {
       if (!data.partes) return "N/D"
       let partes = data.partes
       if (typeof partes === 'string') {

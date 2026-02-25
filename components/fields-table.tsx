@@ -375,7 +375,7 @@ export function FieldsTable({
   // Fields that should ALWAYS render full-width as tables regardless of JSON parse success
   const isAlwaysTableField = (fieldName: string) => {
     const lower = fieldName.toLowerCase();
-    return lower === 'tabla partes firmantes';
+    return lower === 'partes firmantes';
   };
 
   // Detect if a field has table-like content (JSON)
@@ -405,22 +405,22 @@ export function FieldsTable({
             // Hide Detalle Firmantes, it's merged elsewhere
             if (field.name === 'Detalle Firmantes') return null;
 
-            // Partes Firmantes: render exactly like Conceptos Facturables (full-width table)
-            if (field.name === 'Partes Firmantes' && extracted) {
+            // Partes Firmantes: render as full-width table (same as Conceptos Facturables)
+            if (field.name === 'Partes Firmantes' && extracted && extracted.value && extracted.value !== 'N/D') {
               let partes: ParteFirmante[] = [];
-              // Try parse JSON
-              try {
-                let val = extracted.value;
-                let p = JSON.parse(val);
-                if (typeof p === 'string') p = JSON.parse(p);
-                if (Array.isArray(p)) partes = p;
-              } catch { /* ignore */ }
-              // Try pipe-delimited fallback
-              if (partes.length === 0 && extracted.value?.includes('|||')) {
+              // Primary: pipe-delimited format (nombreParte|||cif|||rep|||cargo|||dni separated by ###)
+              if (extracted.value.includes('|||')) {
                 partes = extracted.value.split('###').map((row: string) => {
                   const [nombreParte, cif, representante, cargoRepresentante, dniRepresentante] = row.split('|||');
                   return { nombreParte: nombreParte || 'N/D', cif: cif || 'N/D', representante: representante || 'N/D', cargoRepresentante: cargoRepresentante || 'N/D', dniRepresentante: dniRepresentante || 'N/D' };
                 });
+              } else {
+                // Fallback: try JSON
+                try {
+                  let p = JSON.parse(extracted.value);
+                  if (typeof p === 'string') p = JSON.parse(p);
+                  if (Array.isArray(p)) partes = p;
+                } catch { /* ignore */ }
               }
               if (partes.length > 0) {
                 return (
@@ -439,9 +439,6 @@ export function FieldsTable({
                 );
               }
             }
-
-            // Hide Tabla Partes Firmantes (superseded by the inline render above)
-            if (field.name === 'Tabla Partes Firmantes') return null;
 
             // Clausula fields: render once as a grouped section
             if (isClausulaField(field.name)) {

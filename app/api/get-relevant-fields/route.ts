@@ -38,7 +38,7 @@ const CONVENIO_FIELDS = [
   "Fecha de Firma",
   "Lugar de Firma",
   "Resumen del Objetivo",
-  "Tabla Partes Firmantes",
+  "Partes Firmantes",
   "Importe Colaboracion",
   "Fecha Inicio Vigencia",
   "Fecha Fin Vigencia",
