@@ -499,7 +499,7 @@ const RECIBI_SCHEMA = JSON.stringify({
       items: {
         type: "object",
         properties: {
-          concepto: { description: "Descripcion del concepto o servicio", type: "string" },
+          concepto: { description: "Descripcion del concepto o servicio. Si tiene mas de 40 caracteres, resumir a un maximo de 40 caracteres manteniendo la idea principal.", type: "string" },
           importeBruto: { description: "Importe bruto formato XX.XXX,XX EUR", type: "string" },
         },
         required: ["concepto", "importeBruto"],
@@ -570,8 +570,8 @@ function flattenRecibiData(
     "Fecha Recibi": () => data.fecha_recibi || "N/D",
     "Pagador": () => data.pagador || "N/D",
     "CIF Pagador": () => data.cif_pagador || "N/D",
-    "Perceptor": () => data.perceptor || "N/D",
-    "NIF Perceptor": () => data.nif_perceptor || "N/D",
+    "Perceptor": () => "Dato anonimizado en origen",
+    "NIF Perceptor": () => "Dato anonimizado en origen",
     "Resumen Concepto": () => data.resumen_concepto || "N/D",
     "Conceptos": formatConceptos,
     "Subtotal Bruto": () => data.subtotal_bruto || "N/D",
@@ -579,7 +579,7 @@ function flattenRecibiData(
     "Porcentaje Retencion": () => data.porcentaje_retencion || "N/D",
     "Importe Retencion": () => data.importe_retencion || "N/D",
     "Total a Percibir": () => data.total_a_percibir || "N/D",
-    "IBAN Destino": () => data.iban_destino || "N/D",
+    "IBAN Destino": () => "Dato anonimizado en origen",
     "Firmado": () => data.firmado || "N/D",
     "Fecha Firma": () => data.fecha_firma || "N/D",
   }
