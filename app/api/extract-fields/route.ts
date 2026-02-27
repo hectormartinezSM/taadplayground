@@ -438,10 +438,15 @@ async function apiExtract(markdown: string, schema: string): Promise<ExtractResp
 }
 
 export async function POST(request: NextRequest) {
+  console.log("[v0] API extract-fields: Request received")
   try {
-    const { markdown, fields, documentType } = await request.json()
+    const body = await request.json()
+    console.log("[v0] API extract-fields: Body parsed, documentType:", body.documentType, "fields count:", body.fields?.length)
+    
+    const { markdown, fields, documentType } = body
 
     if (!markdown || !fields || !Array.isArray(fields) || !documentType) {
+      console.log("[v0] API extract-fields: Missing required params")
       return NextResponse.json({ error: "Markdown, fields array, and document type are required" }, { status: 400 })
     }
 
