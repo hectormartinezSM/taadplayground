@@ -20,6 +20,56 @@ function parseSpanishDate(dateStr: string): Date | null {
   return null
 }
 
+// DNI/NIF control letter table
+const NIF_LETTERS = "TRWAGMYFPDXBNJZSQVHLCKE"
+
+// M0: Validate NIF control digit
+export function validateNIF(nif: string): Modelo100Revision {
+  if (!nif || nif === "N/D" || nif === "N/A" || nif.trim() === "") {
+    return {
+      id: "M0",
+      titulo: "NIF válido",
+      severidad: "ERROR",
+      mensaje: "NIF no encontrado en el documento"
+    }
+  }
+  
+  // Normalize: remove spaces, hyphens, convert to uppercase
+  const normalizedNIF = nif.replace(/[\s\-]/g, "").toUpperCase()
+  
+  // Check format: 8 digits + 1 letter
+  const nifPattern = /^(\d{8})([A-Z])$/
+  const match = normalizedNIF.match(nifPattern)
+  
+  if (!match) {
+    return {
+      id: "M0",
+      titulo: "NIF válido",
+      severidad: "ERROR",
+      mensaje: `Formato de NIF incorrecto: ${nif}`
+    }
+  }
+  
+  const [, numbers, letter] = match
+  const expectedLetter = NIF_LETTERS[parseInt(numbers) % 23]
+  
+  if (letter !== expectedLetter) {
+    return {
+      id: "M0",
+      titulo: "NIF válido",
+      severidad: "ERROR",
+      mensaje: `Letra de control incorrecta: ${nif} (esperada: ${expectedLetter})`
+    }
+  }
+  
+  return {
+    id: "M0",
+    titulo: "NIF válido",
+    severidad: "OK",
+    mensaje: `NIF válido con letra de control correcta: ${nif}`
+  }
+}
+
 // M1: Coherencia ejercicio vs fecha presentacion (OK/ERROR only)
 export function validateCoherenciaEjercicio(periodo: string, fechaPresentacion: string): Modelo100Revision {
   if (!periodo || periodo === "N/D" || periodo === "N/A") {
@@ -27,7 +77,7 @@ export function validateCoherenciaEjercicio(periodo: string, fechaPresentacion: 
       id: "M1",
       titulo: "Coherencia ejercicio vs fecha presentación",
       severidad: "ERROR",
-      mensaje: "Incoherencia entre ejercicio y fecha de presentación"
+      mensaje: `Incoherencia: ejercicio ${periodo || "no encontrado"}, fecha presentación ${fechaPresentacion || "no encontrada"}`
     }
   }
   
@@ -36,7 +86,7 @@ export function validateCoherenciaEjercicio(periodo: string, fechaPresentacion: 
       id: "M1",
       titulo: "Coherencia ejercicio vs fecha presentación",
       severidad: "ERROR",
-      mensaje: "Incoherencia entre ejercicio y fecha de presentación"
+      mensaje: `Incoherencia: ejercicio ${periodo}, fecha presentación no encontrada`
     }
   }
   
@@ -46,7 +96,7 @@ export function validateCoherenciaEjercicio(periodo: string, fechaPresentacion: 
       id: "M1",
       titulo: "Coherencia ejercicio vs fecha presentación",
       severidad: "ERROR",
-      mensaje: "Incoherencia entre ejercicio y fecha de presentación"
+      mensaje: `Incoherencia: ejercicio inválido (${periodo}), fecha presentación ${fechaPresentacion}`
     }
   }
   
@@ -56,7 +106,7 @@ export function validateCoherenciaEjercicio(periodo: string, fechaPresentacion: 
       id: "M1",
       titulo: "Coherencia ejercicio vs fecha presentación",
       severidad: "ERROR",
-      mensaje: "Incoherencia entre ejercicio y fecha de presentación"
+      mensaje: `Incoherencia: ejercicio ${periodo}, fecha presentación inválida (${fechaPresentacion})`
     }
   }
   
@@ -70,7 +120,7 @@ export function validateCoherenciaEjercicio(periodo: string, fechaPresentacion: 
       id: "M1",
       titulo: "Coherencia ejercicio vs fecha presentación",
       severidad: "ERROR",
-      mensaje: "Incoherencia entre ejercicio y fecha de presentación"
+      mensaje: `Incoherencia: ejercicio ${periodo}, año de presentación ${anoPresentacion}`
     }
   }
   
@@ -78,7 +128,7 @@ export function validateCoherenciaEjercicio(periodo: string, fechaPresentacion: 
     id: "M1",
     titulo: "Coherencia ejercicio vs fecha presentación",
     severidad: "OK",
-    mensaje: "Ejercicio y fecha de presentación coherentes"
+    mensaje: `Coherente: ejercicio ${periodo}, presentado en ${anoPresentacion}`
   }
 }
 
@@ -200,9 +250,13 @@ export function runModelo100Validations(
 ): Modelo100Revision[] {
   const revisiones: Modelo100Revision[] = []
   
+  const nif = extractedData["NIF"]?.value || ""
   const periodo = extractedData["Periodo"]?.value || ""
   const fechaPresentacion = extractedData["Fecha de presentación"]?.value || ""
   const csv = extractedData["CSV"]?.value || ""
+  
+  // M0: NIF valido
+  revisiones.push(validateNIF(nif))
   
   // M1: Coherencia ejercicio vs fecha presentacion
   revisiones.push(validateCoherenciaEjercicio(periodo, fechaPresentacion))

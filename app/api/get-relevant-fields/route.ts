@@ -49,6 +49,7 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
   ],
   MODELO_100_IRPF: [
     "Nombre completo",
+    "NIF",
     "Periodo",
     "Fecha de presentación",
     "Estado civil",
