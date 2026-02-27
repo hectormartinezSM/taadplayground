@@ -343,6 +343,7 @@ Ejemplo de salida exacta:
 const MODELO_100_IRPF_FIELD_PROMPTS: Record<string, string> = {
   "Nombre completo":
     "Extrae el nombre y apellidos del declarante (o declarante principal si hay varios); normaliza a formato legible (Title Case), conserva acentos y elimina dobles espacios. Formato: 'Nombre Apellido1 Apellido2'.",
+  NIF: "Extrae el NIF/DNI del primer declarante (declarante principal). Los NIF están formados por 8 dígitos seguidos de una letra (12345678A). El último carácter SIEMPRE debe ser una LETRA, nunca un número. Elimina espacios, guiones u otros separadores.",
   Periodo:
     "Extrae el ejercicio/periodo fiscal de la declaración (p. ej., 'Ejercicio 2024'); normaliza a YYYY (solo el año, 4 dígitos). Si el documento muestra 'Ejercicio 2024' o '2024', devuelve solo '2024'.",
   "Fecha de presentación":
