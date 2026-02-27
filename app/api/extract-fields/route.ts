@@ -709,8 +709,6 @@ REGLAS DE FORMATO (OBLIGATORIAS):
     }
 
     // For Nomina documents, run validations
-    const isNomina = documentType.toLowerCase().includes("nómina") || documentType.toLowerCase().includes("nomina")
-    
     if (isNomina && !revisiones) {
       console.log("[v0] API: Running Nomina validations...")
       
