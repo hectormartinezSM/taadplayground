@@ -79,6 +79,14 @@ export interface ActivityLogEntry {
   message: string
 }
 
+// Cotejos Interdocumentales
+export interface Cotejo {
+  id: string
+  titulo: string
+  severidad: RevisionSeverity
+  mensaje: string
+}
+
 export type WorkflowStep =
   | "upload"
   | "splitting"

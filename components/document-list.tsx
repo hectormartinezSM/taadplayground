@@ -10,6 +10,10 @@ import { ImageViewer } from "./image-viewer"
 import { Button } from "@/components/ui/button"
 import { jsPDF } from "jspdf"
 import { downloadDocumentJSON, downloadDocumentCSV } from "@/lib/export-utils"
+import { CotejosInterdocumentales } from "./cotejos-interdocumentales"
+import { runCotejosInterdocumentales } from "@/lib/cotejos-validation"
+import type { Cotejo } from "@/lib/types"
+import { useMemo } from "react"
 
 interface DocumentListProps {
   documents: Document[]
@@ -23,6 +27,11 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
   const [viewerImages, setViewerImages] = useState<string[]>([])
   const [viewerLabels, setViewerLabels] = useState<string[]>([])
   const [viewerIndex, setViewerIndex] = useState(0)
+
+  // Calculate cotejos interdocumentales when all documents are complete
+  const cotejos: Cotejo[] = useMemo(() => {
+    return runCotejosInterdocumentales(documents)
+  }, [documents])
 
   const handlePageClick = (docPages: Page[], clickedIndex: number) => {
     setViewerImages(docPages.map((p) => p.imageUrl))
@@ -203,6 +212,13 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
 
   return (
     <>
+      {/* Cotejos Interdocumentales - shown at the top when all documents are complete */}
+      {cotejos.length > 0 && (
+        <div className="mb-6">
+          <CotejosInterdocumentales cotejos={cotejos} />
+        </div>
+      )}
+
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-foreground">Documentos Procesados</h2>
 
