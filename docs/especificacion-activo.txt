@@ -1,0 +1,1265 @@
+################################################################################
+################################################################################
+##                                                                            ##
+##        ESPECIFICACION DE CLASIFICACION Y EXTRACCION DOCUMENTAL             ##
+##                                                                            ##
+##                        DEMO EXPEDIENTE ACTIVO                              ##
+##                                                                            ##
+##                             SERIMAG                                        ##
+##                                                                            ##
+################################################################################
+################################################################################
+
+Documento generado automaticamente desde la configuracion del sistema.
+Este documento describe las especificaciones de clasificacion y extraccion
+para los tipos documentales soportados en la demo de Expediente Activo.
+
+Fecha de generacion: Febrero 2026
+Version: 1.0
+
+
+================================================================================
+                              INDICE DE CONTENIDOS
+================================================================================
+
+  1. DNI (Documento Nacional de Identidad) .......................... Linea 50
+  2. NOMINA ......................................................... Linea 200
+  3. MODELO 100 - DECLARACION DE IRPF ............................... Linea 450
+  4. VIDA LABORAL ................................................... Linea 620
+  5. NOTA SIMPLE (Certificacion Registral) .......................... Linea 820
+
+
+################################################################################
+##                                                                            ##
+##                    1. DNI (DOCUMENTO NACIONAL DE IDENTIDAD)                ##
+##                                                                            ##
+################################################################################
+
+
+================================================================================
+1.1. CLASIFICACION
+================================================================================
+
+El sistema clasifica el Documento Nacional de Identidad espanol.
+
+Tipologia exacta: "DNI"
+
+Criterios de clasificacion:
+  - Documento oficial de identificacion personal espanol
+  - Contiene fotografia del titular, datos personales y numero de identificacion
+  - Emitido por la Direccion General de la Policia
+  - Senales: "DOCUMENTO NACIONAL DE IDENTIDAD", "DNI", "ESPANA", escudo de Espana,
+    "IDESP", codigo MRZ (Machine Readable Zone), chip electronico (DNIe)
+
+
+================================================================================
+1.2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Es exactamente "dni"
+  - Contiene "documento nacional de identidad"
+  - Contiene "documento de identidad"
+
+
+================================================================================
+1.3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (7 en total, en este orden):
+
+  1. Nombre completo
+  2. DNI
+  3. Fecha de nacimiento
+  4. Fecha de validez
+  5. Sexo
+  6. Nacionalidad
+  7. Domicilio
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre completo
+  Extrae el nombre completo de la persona propietaria del identificativo
+  incluyendo nombre y apellidos.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: 'Nombre Apellido1 Apellido2'
+  - Si viene en formato 'APELLIDOS, NOMBRE', invertirlo a 'Nombre Apellidos'
+  - Capitalizacion normal (primera letra mayuscula, resto minusculas)
+  - Conservar acentos
+  - Eliminar dobles espacios
+
+  Ejemplos:
+  - "GARCIA LOPEZ, JUAN" -> "Juan Garcia Lopez"
+  - "MARIA FERNANDEZ MARTINEZ" -> "Maria Fernandez Martinez"
+
+--------------------------------------------------------------------------------
+
+CAMPO: DNI
+  Extrae el numero de DNI que aparece en el documento.
+
+  FORMATO ESPERADO:
+  - 8 digitos seguidos de una letra (ej: 12345678A)
+  - El ultimo caracter SIEMPRE debe ser una LETRA, nunca un numero
+
+  NORMALIZACION (OBLIGATORIA):
+  - Elimina espacios, guiones u otros separadores
+  - Devuelve en MAYUSCULAS
+  - Corrige errores de OCR si la letra final aparece como numero
+
+  Ejemplos:
+  - "12345678-A" -> "12345678A"
+  - "12 345 678 Z" -> "12345678Z"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha de nacimiento
+  Extrae la fecha que indica cuando nacio el propietario del identificativo
+  segun el documento.
+
+  DONDE BUSCAR:
+  - Campo "NACIMIENTO" o "FECHA NACIMIENTO"
+  - Zona central del anverso del DNI
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+  - Si aparece en otro formato, convertir
+
+  Ejemplos:
+  - "15 MAR 1985" -> "15/03/1985"
+  - "1985-03-15" -> "15/03/1985"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha de validez
+  Extrae la fecha de caducidad del documento identificativo.
+
+  DONDE BUSCAR:
+  - Se encuentra debajo del texto "Validez", "Validesa" o similar
+  - Zona inferior del anverso del DNI
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+  Nota: Los DNI permanentes (para mayores de 70 anos) pueden mostrar
+  "PERMANENTE" en lugar de una fecha.
+
+--------------------------------------------------------------------------------
+
+CAMPO: Sexo
+  Extrae el genero del propietario del identificativo.
+
+  VALORES PERMITIDOS:
+  - "M" para masculino
+  - "F" para femenino
+
+  DONDE BUSCAR:
+  - Campo "SEXO" en el anverso
+  - Codigo MRZ en el reverso (posicion especifica)
+
+--------------------------------------------------------------------------------
+
+CAMPO: Nacionalidad
+  Extrae la nacionalidad del propietario del identificativo.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Usar codigos ISO 3166-1 alfa-3
+  - Para Espana: "ESP"
+
+  Ejemplos de codigos:
+  - Espana -> "ESP"
+  - Francia -> "FRA"
+  - Alemania -> "DEU"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Domicilio
+  Extrae el domicilio de residencia acorde al documento identificativo.
+
+  REGLAS DE ESTANDARIZACION (OBLIGATORIAS):
+  - Estandariza en una sola linea en formato postal espanol, legible
+  - Expande abreviaturas:
+    - 'C/' -> 'Calle'
+    - 'Av/' o 'Avda.' -> 'Avenida'
+    - 'Pza.' -> 'Plaza'
+    - 'P' -> 'Paseo'
+    - 'Ctra.' -> 'Carretera'
+  - Normaliza mayusculas/minusculas (Title Case): primera letra mayuscula,
+    resto minusculas
+  - Manten exactamente los mismos datos del documento (no inventes CP ni
+    provincia si no aparecen)
+  - Formato final: Via Nombre, numero, piso puerta letra, barrio, municipio
+
+  Ejemplos:
+  - "C/ MAYOR 15 3 A MADRID" -> "Calle Mayor, 15, 3 A, Madrid"
+  - "AVDA DIAGONAL 250 2-1 BARCELONA" -> "Avenida Diagonal, 250, 2 1, Barcelona"
+  - "PZA ESPANA 1 SEVILLA" -> "Plaza Espana, 1, Sevilla"
+
+
+================================================================================
+1.4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Los campos se muestran en una tabla con dos columnas:
+  - Columna izquierda: Nombre del campo
+  - Columna derecha: Valor extraido
+
+No hay campos con formato JSON array para este tipo documental.
+Todos los campos son de texto simple.
+
+
+################################################################################
+##                                                                            ##
+##                              2. NOMINA                                     ##
+##                                                                            ##
+################################################################################
+
+
+================================================================================
+2.1. CLASIFICACION
+================================================================================
+
+El sistema clasifica los recibos de salario/nominas.
+
+Tipologia exacta: "Nomina"
+
+Criterios de clasificacion:
+  - Recibo oficial de salario emitido por una empresa
+  - Contiene datos del trabajador y de la empresa
+  - Muestra devengos (conceptos que suman) y deducciones/retenciones
+  - Indica liquido a percibir (sueldo neto)
+  - Senales: "RECIBO DE SALARIOS", "NOMINA", "LIQUIDO A PERCIBIR",
+    "DEVENGOS", "DEDUCCIONES", periodo de liquidacion, datos de cotizacion
+
+
+================================================================================
+2.2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Contiene "nomina" o "nomina"
+  - Contiene "recibo de salario"
+  - Contiene "recibo salarial"
+
+
+================================================================================
+2.3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (10 en total, en este orden):
+
+  1.  Nombre completo
+  2.  DNI
+  3.  N Seguridad Social trabajador
+  4.  Fecha antiguedad
+  5.  Nombre empresa
+  6.  CIF empresa
+  7.  Periodo
+  8.  Liquido a percibir
+  9.  Devengos                        (JSON array)
+  10. Retenciones                     (JSON array)
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre completo
+  Extrae el nombre completo del trabajador incluyendo nombre y apellidos.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: 'Nombre Apellido1 Apellido2'
+  - Si viene en formato 'APELLIDOS, NOMBRE', invertirlo a 'Nombre Apellidos'
+  - Capitalizacion normal (primera letra mayuscula, resto minusculas)
+  - Conservar acentos y eliminar dobles espacios
+
+--------------------------------------------------------------------------------
+
+CAMPO: DNI
+  Extrae el identificativo del trabajador (DNI, NIF o NIE).
+
+  DONDE BUSCAR (en orden de prioridad):
+  1. En la seccion de datos del trabajador, junto al nombre
+  2. Cerca de etiquetas como "NIF", "DNI", "D.N.I.", "N.I.F.", "Identificador",
+     "Doc. Identidad"
+  3. En la cabecera del recibo de nomina, zona superior izquierda o derecha
+  4. Cerca del numero de afiliacion a la Seguridad Social
+
+  FORMATO ESPERADO:
+  - 8 digitos seguidos de 1 letra (ej: 12345678Z)
+  - El ultimo caracter SIEMPRE es una LETRA, nunca un numero
+  - Puede aparecer con o sin guiones/espacios (12345678-Z, 12345678 Z)
+
+  NORMALIZACION (OBLIGATORIA):
+  - Elimina espacios, guiones u otros separadores
+  - Devuelve en MAYUSCULAS
+  - Si encuentras varios identificativos, devuelve el del TRABAJADOR, no el
+    de la empresa
+
+  IMPORTANTE: No confundir con:
+  - CIF de la empresa (empieza por letra como B, A, etc.)
+  - Numero de Seguridad Social (tiene mas de 9 caracteres, formato XX/XXXXXXXX-XX)
+
+--------------------------------------------------------------------------------
+
+CAMPO: N Seguridad Social trabajador
+  Extrae el codigo o numero de la Seguridad Social del trabajador.
+
+  NORMALIZACION:
+  - Manten el formato original del documento
+  - Puede aparecer como NAF (Numero de Afiliacion)
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha antiguedad
+  Extrae la fecha de incorporacion a la empresa.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre empresa
+  Extrae el nombre de la empresa contratante.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Primera letra en MAYUSCULA y el resto en minusculas
+  - Manten siglas societarias en mayusculas (S.A., S.L., S.L.U.)
+
+  Ejemplos:
+  - "TELEFONICA DE ESPANA S.A." -> "Telefonica De Espana S.A."
+  - "BANCO BBVA S.A." -> "Banco BBVA S.A."
+
+--------------------------------------------------------------------------------
+
+CAMPO: CIF empresa
+  Extrae el codigo identificador del contratador (CIF de la empresa).
+
+  FORMATO ESPERADO:
+  - Letra + 8 digitos (ej: B12345678)
+  - La letra inicial indica el tipo de entidad
+
+  NORMALIZACION:
+  - Sin espacios, en MAYUSCULAS
+
+--------------------------------------------------------------------------------
+
+CAMPO: Periodo
+  Extrae el periodo de liquidacion al cual hace referencia la nomina.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA - DD/MM/AAAA
+  - Si solo aparece mes y ano, indica el primer y ultimo dia de ese mes
+
+  Ejemplos:
+  - "Enero 2024" -> "01/01/2024 - 31/01/2024"
+  - "Marzo 2024" -> "01/03/2024 - 31/03/2024"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Liquido a percibir
+  Extrae el sueldo neto (liquido total) a percibir por parte del trabajador.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: XX.XXX,XX EUR
+  - Separador de miles: punto
+  - Separador decimal: coma
+  - Simbolo EUR al final
+
+  Ejemplos:
+  - "1.850,00 EUR"
+  - "2.345,67 EUR"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Devengos (JSON array)
+  Extrae todos los devengos que aparezcan en la nomina (conceptos que suman
+  al salario bruto del trabajador).
+
+  FORMATO DE SALIDA OBLIGATORIO (JSON):
+  Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+    - concepto: descripcion del devengo
+    - tipo: categoria del devengo (ver lista abajo)
+    - importe: cantidad en formato XX.XXX,XX sin simbolo EUR
+
+  REGLAS DE NORMALIZACION PARA "concepto" (OBLIGATORIAS):
+  - Expande abreviaturas comunes sin cambiar el sentido:
+    - "Sal." -> "Salario"
+    - "Comp." -> "Complemento"
+    - "Pror." -> "Prorrata"
+    - "Extraord." -> "Extraordinaria"
+    - "Antig." -> "Antiguedad"
+    - "H.E." o "HH.EE." -> "Horas Extraordinarias"
+    - "Plus Conv." -> "Plus Convenio"
+    - "Paga Ext." -> "Paga Extraordinaria"
+  - Quita puntos y guiones separadores
+  - Elimina dobles espacios
+  - Pasa a Title Case (primera letra de cada palabra en mayuscula)
+  - EXCEPCION: Manten siglas en MAYUSCULAS (IRPF, SS, etc.)
+  - Si no conoces una abreviatura, conservala tal cual
+  - Manten el orden de aparicion en el documento
+
+  VALORES PERMITIDOS PARA "tipo" (OBLIGATORIOS):
+  - "Salario base": salario/sueldo base
+  - "Paga extra prorrateada": contiene "prorrata/prorrateada/prorrateo" y hace
+    referencia a paga extra
+  - "Paga extra completa": contiene "paga extra" / "paga navidad" / "paga verano"
+    y NO contiene prorrata
+  - "Vacaciones": vacaciones/pago vacaciones/bolsa vacaciones
+  - "Bonus": bonus/bono/objetivos/premios/participacion en beneficios
+  - "Indemnizacion/finiquito": indemnizacion, finiquito, despido, traslado,
+    accidente
+  - "ERE/ERTE": ERE o ERTE
+  - "No considerar": atrasos, regularizacion salarial, anticipos o conceptos
+    explicitamente nulos/no considerables
+  - "Fijo": complementos fijos (antiguedad/trienios, convenio/pacto empresa,
+    complementos fijos de puesto o personales, mejoras voluntarias,
+    seguros/planes pensiones/sanidad privada, complementos por IT si figuran
+    como complemento)
+  - "Variable": dietas/transporte/kilometraje/locomocion, distancia/destino,
+    nocturnidad/turnicidad, festivos/guardias/horas extra, comisiones/primas/
+    productividad/asistencia-puntualidad, retribucion en especie/ayudas, y
+    cualquier "otros" sin asociacion clara
+
+  DESEMPATE OBLIGATORIO (aplica el primero que coincida):
+  "No considerar" > "Indemnizacion/finiquito" > "Vacaciones" > "Bonus" >
+  "Paga extra prorrateada" > "Paga extra completa" > "Variable" > "Fijo" >
+  "Salario base"
+
+  REGLAS PARA "importe":
+  - Numero con coma decimal y sin separadores de miles (ej: "1234,56", "250,00")
+  - Sin simbolo EUR ni texto adicional
+
+  Ejemplo de salida exacta:
+  [
+    {"concepto":"Salario Base","tipo":"Salario base","importe":"1500,00"},
+    {"concepto":"Complemento Antiguedad","tipo":"Fijo","importe":"150,00"},
+    {"concepto":"Prorrata Paga Extraordinaria","tipo":"Paga extra prorrateada","importe":"250,00"},
+    {"concepto":"Horas Extraordinarias","tipo":"Variable","importe":"120,00"}
+  ]
+
+  Visualizacion en tabla:
+    - Columnas: Concepto | Tipo | Importe
+
+--------------------------------------------------------------------------------
+
+CAMPO: Retenciones (JSON array)
+  Extrae todas las retenciones/deducciones a cargo del trabajador que aparezcan
+  en la nomina (excluye conceptos a cargo de la empresa).
+
+  FORMATO DE SALIDA OBLIGATORIO (JSON):
+  Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+    - nombre: descripcion de la retencion
+    - porcentaje: porcentaje aplicado (sin simbolo %)
+    - importe: cantidad en formato XX.XXX,XX sin simbolo EUR
+
+  REGLAS DE NORMALIZACION PARA "nombre" (OBLIGATORIAS):
+  - Expande abreviaturas comunes:
+    - "DTO." -> "Descuento"
+    - "Cta." -> "Cuenta"
+    - "Esp." -> "Especie"
+    - "Cgo." -> "Cargo"
+    - "Tra." -> "Trabajador"
+    - "Conting." -> "Contingencias"
+    - "Com." -> "Comunes"
+    - "Prof." -> "Profesional"
+    - "Form." -> "Formacion"
+    - "Desempl." -> "Desempleo"
+  - Sustituye puntos por espacios y elimina dobles espacios
+  - Pasa a Title Case
+  - EXCEPCION: Manten siglas en MAYUSCULAS (IRPF, MEI, FOGASA, etc.)
+
+  REGLAS PARA OTROS CAMPOS:
+  - porcentaje: Numero sin simbolo % (ej: "4.7", "6.35"). Si no aparece, pon "---"
+  - importe: Numero con coma decimal y sin separadores de miles
+
+  Reglas adicionales:
+  - Incluye solo retenciones a cargo del trabajador (IRPF, Seguridad Social
+    contingencias comunes, desempleo, formacion, etc.)
+  - Excluye conceptos a cargo de la empresa
+  - NO anadas texto adicional, SOLO el JSON
+
+  Ejemplo de salida exacta:
+  [
+    {"nombre":"IRPF","porcentaje":"15","importe":"450,00"},
+    {"nombre":"Contingencias Comunes","porcentaje":"4.7","importe":"141,00"},
+    {"nombre":"Desempleo","porcentaje":"1.55","importe":"46,50"},
+    {"nombre":"Formacion Profesional","porcentaje":"0.1","importe":"3,00"}
+  ]
+
+  Visualizacion en tabla:
+    - Columnas: Nombre | Porcentaje | Importe
+
+
+================================================================================
+2.4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Campos simples: Se muestran en tabla de dos columnas (Campo | Valor)
+
+Campos JSON (Devengos y Retenciones): Se renderizan como tablas independientes
+con sus respectivas columnas.
+
+
+################################################################################
+##                                                                            ##
+##                   3. MODELO 100 - DECLARACION DE IRPF                      ##
+##                                                                            ##
+################################################################################
+
+
+================================================================================
+3.1. CLASIFICACION
+================================================================================
+
+El sistema clasifica la Declaracion del Impuesto sobre la Renta de las
+Personas Fisicas (IRPF).
+
+Tipologia exacta: "Modelo 100 - Declaracion de IRPF"
+
+Criterios de clasificacion:
+  - Declaracion anual del IRPF presentada ante la Agencia Tributaria
+  - Documento oficial con formato de la AEAT
+  - Senales: "MODELO 100", "IRPF", "IMPUESTO SOBRE LA RENTA DE LAS PERSONAS
+    FISICAS", "DECLARACION", "EJERCICIO", "AGENCIA TRIBUTARIA", logo de la AEAT,
+    "RENTA", numero de justificante, CSV (Codigo Seguro de Verificacion)
+
+
+================================================================================
+3.2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Contiene "modelo 100"
+  - Contiene "declaracion de irpf" o "declaracion de irpf"
+  - Contiene "irpf"
+  - Contiene "renta"
+
+
+================================================================================
+3.3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (7 en total, en este orden):
+
+  1. Nombre completo
+  2. Periodo
+  3. Fecha de presentacion
+  4. Estado civil
+  5. Rendimiento del trabajo
+  6. Resultado de la declaracion
+  7. CSV
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre completo
+  Extrae el nombre y apellidos del declarante (o declarante principal si hay
+  declaracion conjunta).
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato legible (Title Case)
+  - Conserva acentos
+  - Elimina dobles espacios
+  - Formato: 'Nombre Apellido1 Apellido2'
+
+  DONDE BUSCAR:
+  - Seccion "Datos identificativos" o "Primer declarante"
+  - Casillas iniciales del modelo
+
+--------------------------------------------------------------------------------
+
+CAMPO: Periodo
+  Extrae el ejercicio/periodo fiscal de la declaracion.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: YYYY (solo el ano, 4 digitos)
+  - Si el documento muestra "Ejercicio 2024" o "2024", devuelve solo "2024"
+
+  DONDE BUSCAR:
+  - Cabecera del documento
+  - Campo "Ejercicio"
+  - Titulo del modelo
+
+  Ejemplos:
+  - "Ejercicio 2024" -> "2024"
+  - "IRPF 2023" -> "2023"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha de presentacion
+  Extrae la fecha de presentacion/registro de la declaracion.
+
+  DONDE BUSCAR:
+  - Terminos como "fecha de presentacion", "presentado el", "registrado el"
+  - Pie del documento o zona de validacion
+  - Justificante de presentacion
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+--------------------------------------------------------------------------------
+
+CAMPO: Estado civil
+  Extrae el estado civil indicado en la declaracion.
+
+  VALORES PERMITIDOS (normalizar a uno de estos):
+  - "Soltero/a"
+  - "Casado/a"
+  - "Divorciado/a"
+  - "Viudo/a"
+  - "Pareja de hecho"
+
+  Si el documento usa otra categoria explicita, devuelve el literal tal cual.
+
+  DONDE BUSCAR:
+  - Seccion de datos personales
+  - Casillas relativas a situacion familiar
+  - Opcion de tributacion (individual/conjunta puede indicar estado)
+
+--------------------------------------------------------------------------------
+
+CAMPO: Rendimiento del trabajo
+  Extrae el importe de la seccion "Rendimiento neto reducido" dentro de
+  Rendimientos del trabajo.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Numero decimal con punto (.) como separador decimal
+  - Sin separadores de miles
+  - Manten el signo si aparece (positivo o negativo)
+
+  Ejemplos:
+  - "25.432,15 EUR" -> "25432.15"
+  - "-1.234,50 EUR" -> "-1234.50"
+
+  DONDE BUSCAR:
+  - Seccion "Rendimientos del trabajo"
+  - Casilla de rendimiento neto reducido del trabajo
+  - Resumen de rendimientos
+
+--------------------------------------------------------------------------------
+
+CAMPO: Resultado de la declaracion
+  Extrae el resultado final de la declaracion y su importe.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Normaliza el tipo a uno de: 'A ingresar', 'A devolver', 'Cero'
+  - Formato de salida: 'Tipo: Importe EUR'
+
+  DONDE BUSCAR:
+  - Seccion "Resultado de la declaracion" o "Liquidacion"
+  - Casilla final del modelo
+  - Resumen/documento de ingreso o devolucion
+
+  Ejemplos:
+  - "A devolver: 523,45 EUR"
+  - "A ingresar: 1.234,00 EUR"
+  - "Cero: 0,00 EUR"
+
+  INDICADORES DE CADA TIPO:
+  - A ingresar: casilla con importe positivo a pagar, "cuota a ingresar"
+  - A devolver: casilla con importe a devolver, "cuota diferencial negativa"
+  - Cero: cuando el resultado es 0,00 o "sin cuota"
+
+--------------------------------------------------------------------------------
+
+CAMPO: CSV
+  Extrae el Codigo Seguro de Verificacion (CSV) del documento.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Elimina espacios
+  - Devuelve el codigo en MAYUSCULAS exactamente como aparece
+
+  DONDE BUSCAR:
+  - Pie del documento
+  - Cabecera, cerca del numero de justificante
+  - Zona de validacion electronica
+  - Suele tener formato alfanumerico largo
+
+  El CSV permite verificar la autenticidad del documento en la sede
+  electronica de la AEAT.
+
+
+================================================================================
+3.4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Todos los campos son de texto simple y se muestran en una tabla con dos columnas:
+  - Columna izquierda: Nombre del campo
+  - Columna derecha: Valor extraido
+
+No hay campos con formato JSON array para este tipo documental.
+
+
+================================================================================
+3.5. NOTAS ADICIONALES
+================================================================================
+
+TIPOS DE MODELO 100:
+  - Declaracion individual: un solo declarante
+  - Declaracion conjunta: dos declarantes (matrimonio/pareja)
+
+CASILLAS RELEVANTES COMUNES:
+  - Casilla 001-099: Datos identificativos
+  - Casilla 100-299: Rendimientos del trabajo
+  - Casilla 500-599: Base imponible
+  - Casilla 600-699: Liquidacion
+  - Casilla 700+: Resultado
+
+DOCUMENTOS RELACIONADOS:
+  - Borrador de la declaracion
+  - Datos fiscales
+  - Certificado de la declaracion presentada
+
+
+################################################################################
+##                                                                            ##
+##                           4. VIDA LABORAL                                  ##
+##                                                                            ##
+################################################################################
+
+
+================================================================================
+4.1. CLASIFICACION
+================================================================================
+
+El sistema clasifica el Informe de Vida Laboral emitido por la Tesoreria
+General de la Seguridad Social.
+
+Tipologia exacta: "Vida laboral"
+
+Criterios de clasificacion:
+  - Informe oficial emitido por la Tesoreria General de la Seguridad Social
+  - Contiene historial de cotizaciones del trabajador
+  - Lista de empresas, periodos de alta/baja y dias cotizados
+  - Senales: "INFORME DE VIDA LABORAL", "TESORERIA GENERAL DE LA SEGURIDAD
+    SOCIAL", "MINISTERIO", escudo de Espana, NAF (Numero de Afiliacion),
+    "SITUACIONES EN EL REGIMEN", "TOTAL DIAS", "ALTA", "BAJA"
+
+
+================================================================================
+4.2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Contiene "vida laboral"
+  - Contiene "informe de vida laboral"
+  - Contiene "certificado de vida laboral"
+  - Contiene "historial laboral"
+
+
+================================================================================
+4.3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (7 en total, en este orden):
+
+  1. Nombre completo
+  2. DNI
+  3. N Seguridad Social trabajador
+  4. Total dias cotizados
+  5. Fecha documento
+  6. Codigo CEA
+  7. Situaciones                     (JSON array)
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre completo
+  Extrae el nombre y apellidos del trabajador.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato legible (Title Case)
+  - Conserva acentos
+  - Elimina dobles espacios
+  - Formato: 'Nombre Apellido1 Apellido2'
+
+  DONDE BUSCAR:
+  - Cabecera del informe
+  - Seccion de datos del trabajador
+
+--------------------------------------------------------------------------------
+
+CAMPO: DNI
+  Extrae el identificativo del trabajador (DNI/NIF/NIE).
+
+  NORMALIZACION (OBLIGATORIA):
+  - Quita espacios/guiones
+  - Devuelve en MAYUSCULAS
+  - Formato: 8 digitos + 1 letra (ej: 12345678A)
+
+--------------------------------------------------------------------------------
+
+CAMPO: N Seguridad Social trabajador
+  Extrae el NAF/Numero de Seguridad Social del trabajador.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Dejar solo digitos
+  - Si hay 12 digitos, formatear como: PP/NNNNNNNN-CC
+    (2 digitos / 8 digitos - 2 digitos)
+
+  Ejemplos:
+  - "331254743532" -> "33/12547435-32"
+  - "28/12345678-90" -> "28/12345678-90"
+
+  DONDE BUSCAR:
+  - Campo "N.A.F." o "Numero de Afiliacion"
+  - Cabecera del documento junto al DNI
+
+--------------------------------------------------------------------------------
+
+CAMPO: Total dias cotizados
+  Extrae el total de dias cotizados del informe.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Entero eliminando separadores de miles y texto accesorio
+  - Devuelve solo el numero
+
+  Ejemplos:
+  - "4.532 dias" -> "4532"
+  - "12,345" -> "12345"
+
+  DONDE BUSCAR:
+  - Seccion "TOTAL DIAS" o "DIAS COTIZADOS"
+  - Resumen al final del documento
+  - Suele aparecer destacado
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha documento
+  Extrae la fecha de emision/generacion del informe.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+  IMPORTANTE: No confundir con fechas de altas/bajas de las situaciones.
+
+  DONDE BUSCAR:
+  - Pie del documento
+  - Cabecera, cerca de "Fecha de expedicion"
+  - Zona de firma/validacion
+
+--------------------------------------------------------------------------------
+
+CAMPO: Codigo CEA
+  Extrae el 'Codigo CEA' SOLO si aparece explicitamente como 'CEA' o
+  'Codigo CEA' en el documento.
+
+  NORMALIZACION:
+  - Elimina espacios sobrantes
+  - Devuelve el valor tal cual (o en MAYUSCULAS si es alfanumerico)
+  - Si no aparece, devuelve 'N/D'
+
+  NOTA: No todos los informes de vida laboral contienen este codigo.
+
+--------------------------------------------------------------------------------
+
+CAMPO: Situaciones (JSON array)
+  Extrae las 5 situaciones laborales mas recientes del informe de vida laboral.
+
+  FORMATO DE SALIDA OBLIGATORIO (JSON):
+  Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+    - empresa: nombre de la empresa
+    - fechaAlta: fecha de alta en formato DD/MM/AAAA
+    - fechaBaja: fecha de baja en formato DD/MM/AAAA (o "---" si vigente)
+    - diasCotizados: numero entero de dias cotizados en esa situacion
+
+  REGLAS DE NORMALIZACION DE NOMBRES DE EMPRESA (OBLIGATORIAS):
+  - Primera letra de cada palabra en MAYUSCULA, resto en minusculas
+  - EXCEPCION: Las siglas van SIEMPRE en MAYUSCULAS
+    (S.A., S.L., S.L.U., ETT, RRHH, IT, etc.)
+  - Detecta siglas: palabras de 2-4 letras todas mayusculas, o letras
+    seguidas de puntos
+
+  Ejemplos de normalizacion de empresa:
+  - "TELEFONICA DE ESPANA SAU" -> "Telefonica De Espana SAU"
+  - "SERIMAG SOLUCIONES DIGITALES S.L." -> "Serimag Soluciones Digitales S.L."
+  - "BANCO BBVA S.A." -> "Banco BBVA S.A."
+  - "IBM GLOBAL SERVICES" -> "IBM Global Services"
+
+  REGLAS ADICIONALES:
+  - Fechas en formato DD/MM/AAAA
+  - Si no hay fecha de baja (situacion vigente/actual/en curso o campo vacio),
+    pon "---"
+  - diasCotizados: numero entero de dias cotizados en esa empresa/situacion
+  - Ordena de mas reciente a menos reciente (la situacion actual primero)
+  - Maximo 5 situaciones
+  - NO anadas texto adicional, SOLO el JSON
+
+  Ejemplo de salida exacta:
+  [
+    {
+      "empresa": "Serimag Soluciones Digitales S.L.",
+      "fechaAlta": "01/03/2023",
+      "fechaBaja": "---",
+      "diasCotizados": 650
+    },
+    {
+      "empresa": "Banco BBVA S.A.",
+      "fechaAlta": "15/06/2020",
+      "fechaBaja": "28/02/2023",
+      "diasCotizados": 990
+    },
+    {
+      "empresa": "IBM Global Services",
+      "fechaAlta": "01/01/2018",
+      "fechaBaja": "14/06/2020",
+      "diasCotizados": 896
+    }
+  ]
+
+  Visualizacion en tabla:
+    - Columnas: Empresa | Fecha Alta | Fecha Baja | Dias Cotizados
+
+
+================================================================================
+4.4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Campos simples: Se muestran en tabla de dos columnas (Campo | Valor)
+
+Campo JSON (Situaciones): Se renderiza como tabla independiente con columnas:
+  - Empresa
+  - Fecha Alta
+  - Fecha Baja
+  - Dias Cotizados
+
+
+================================================================================
+4.5. NOTAS ADICIONALES
+================================================================================
+
+TIPOS DE INFORME DE VIDA LABORAL:
+  - Informe completo: todas las situaciones desde la primera alta
+  - Informe parcial: situaciones de un periodo concreto
+
+REGIMENES DE COTIZACION COMUNES:
+  - Regimen General
+  - Regimen Especial de Trabajadores Autonomos (RETA)
+  - Regimen Especial del Mar
+  - Regimen Especial de la Mineria del Carbon
+  - Sistema Especial Agrario
+  - Sistema Especial de Empleados de Hogar
+
+SITUACIONES ESPECIALES:
+  - Situacion vigente: sin fecha de baja, trabajador actualmente en alta
+  - Pluriempleo: varias situaciones simultaneas
+  - Periodos solapados: cuando hay alta en varias empresas al mismo tiempo
+
+
+################################################################################
+##                                                                            ##
+##                5. NOTA SIMPLE (CERTIFICACION REGISTRAL)                    ##
+##                                                                            ##
+################################################################################
+
+
+================================================================================
+5.1. CLASIFICACION
+================================================================================
+
+El sistema clasifica la Nota Simple informativa emitida por el Registro de
+la Propiedad.
+
+Tipologia exacta: "Nota Simple"
+
+Criterios de clasificacion:
+  - Documento oficial emitido por un Registro de la Propiedad
+  - Contiene informacion registral de una finca (inmueble)
+  - Incluye datos de titularidad, descripcion del inmueble y cargas
+  - Senales: "NOTA SIMPLE INFORMATIVA", "REGISTRO DE LA PROPIEDAD",
+    "FINCA", "INSCRIPCION", "LIBRO", "TOMO", "FOLIO", "TITULAR",
+    "CARGAS", "CRU" o "IDUFIR", nombre del Registrador
+
+
+================================================================================
+5.2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Contiene "nota simple"
+  - Contiene "certificacion registral"
+  - Contiene "registro de la propiedad"
+  - Contiene "certificado registral"
+
+
+================================================================================
+5.3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (9 en total, en este orden):
+
+  1. Registro de la propiedad
+  2. Registrador
+  3. Fecha de la nota
+  4. Numero de finca
+  5. CRU
+  6. Superficie total
+  7. Es VPO?
+  8. Tiene cargas?
+  9. Titularidades                    (JSON array)
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Registro de la propiedad
+  Extrae la localidad y el numero del Registro de la Propiedad.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: 'Registro de la Propiedad de <Localidad> n <Numero>'
+  - Title Case (primera letra mayuscula)
+  - Sin dobles espacios
+
+  Ejemplos:
+  - "Registro de la Propiedad de Madrid n 28"
+  - "Registro de la Propiedad de Barcelona n 15"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Registrador
+  Extrae el nombre del registrador/a que firma o emite la nota.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato legible (Title Case)
+  - Conserva acentos
+  - Elimina dobles espacios
+
+  DONDE BUSCAR:
+  - Pie del documento
+  - Zona de firma
+  - Puede aparecer como "El/La Registrador/a"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha de la nota
+  Extrae la fecha de expedicion/emision de la nota simple.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+  DONDE BUSCAR:
+  - Pie del documento
+  - Cabecera, junto al numero de entrada
+  - Zona de firma del registrador
+
+--------------------------------------------------------------------------------
+
+CAMPO: Numero de finca
+  Extrae el numero de finca registral tal y como figura en la nota simple.
+
+  DONDE BUSCAR:
+  - Busca expresiones como "Finca n", "Finca registral", "N de finca",
+    "Finca numero", "FINCA"
+  - Suele aparecer en la cabecera o en la descripcion de la finca
+  - NO confundir con el CRU/IDUFIR (codigo alfanumerico largo)
+
+  NORMALIZACION (OBLIGATORIA):
+  - Devuelve SOLO el identificador numerico de la finca
+  - Elimina los literales "finca", "finca registral", "n", "numero", etc.
+  - Elimina separadores de miles (puntos) y espacios: "12.345" -> "12345"
+  - Conserva posibles sufijos/indicadores si aparecen: BIS, letras, subfinca
+    (ej: "12345 BIS", "12345-A")
+
+  Ejemplos:
+  - "Finca n 12.345" -> "12345"
+  - "Finca registral 98765 BIS" -> "98765 BIS"
+  - "FINCA NUMERO 5.678-A" -> "5678-A"
+  - "N de finca: 1234" -> "1234"
+
+--------------------------------------------------------------------------------
+
+CAMPO: CRU
+  Extrae el Codigo Registral Unico (CRU) o IDUFIR si aparece.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Elimina espacios
+  - Devuelve el codigo en MAYUSCULAS exactamente como aparece
+
+  DONDE BUSCAR:
+  - Cerca del pie del documento
+  - En la cabecera
+  - Puede aparecer como "CRU", "IDUFIR" o "Codigo Registral Unico"
+
+  FORMATO TIPICO:
+  - Codigo alfanumerico de 14 caracteres
+  - Ejemplo: "28012345678901"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Superficie total
+  Extrae la superficie total de la finca.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Preferentemente la 'superficie construida total'
+  - Si no existe, la 'superficie total' indicada
+  - Devuelve numero en m2 (usa coma decimal si hay decimales)
+  - Formato: 'XX,XX m2'
+
+  Ejemplos:
+  - "120,50 m2"
+  - "85 m2"
+  - "250,00 m2"
+
+  DONDE BUSCAR:
+  - Descripcion de la finca
+  - Seccion de caracteristicas del inmueble
+
+--------------------------------------------------------------------------------
+
+CAMPO: Es VPO?
+  Determina si el inmueble esta calificado como VPO/Vivienda de Proteccion
+  Oficial (o equivalentes).
+
+  VALORES PERMITIDOS:
+  - "Si": si aparece cualquier mencion de calificacion/proteccion
+  - "No": si se indica explicitamente que no lo es o no existe ninguna mencion
+
+  EQUIVALENTES A VPO:
+  - VPPL (Vivienda de Proteccion Publica Limitada)
+  - VPP (Vivienda de Proteccion Publica)
+  - Proteccion publica
+  - Regimen de proteccion oficial
+
+  IMPORTANTE: No inventar. Solo marcar "Si" si hay mencion explicita.
+
+--------------------------------------------------------------------------------
+
+CAMPO: Tiene cargas?
+  Determina si existen cargas/gravamenes sobre la finca.
+
+  VALORES PERMITIDOS:
+  - "Si": si aparece cualquier seccion o mencion de cargas/gravamenes/
+    limitaciones con contenido
+  - "No": si consta explicitamente "libre de cargas" o "sin cargas"
+
+  TIPOS DE CARGAS:
+  - Hipoteca
+  - Embargo
+  - Servidumbre
+  - Afecciones
+  - Condiciones resolutorias
+  - Anotaciones preventivas
+  - Limitaciones de dominio
+
+  DONDE BUSCAR:
+  - Seccion "CARGAS" o "GRAVAMENES"
+  - Apartado de limitaciones
+  - Notas marginales
+
+--------------------------------------------------------------------------------
+
+CAMPO: Titularidades (JSON array)
+  Extrae los titulares que figuran en la nota simple.
+
+  FORMATO DE SALIDA OBLIGATORIO (JSON):
+  Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+    - titular: nombre completo del titular
+    - dni: identificativo del titular (o "N/D" si no aparece)
+    - tipoDerecho: tipo de derecho sobre la finca
+    - participacion: porcentaje o fraccion de participacion
+
+  REGLAS DE NORMALIZACION PARA "titular" (OBLIGATORIAS):
+  - Nombre completo en formato legible (Title Case)
+  - Sin dobles espacios
+  - Si viene en formato "APELLIDOS, NOMBRE" o todo mayusculas, normaliza
+    a "Nombre Apellidos"
+  - Conserva acentos
+  - Las conjunciones y preposiciones (y, de, del, la, las, los, el) van
+    SIEMPRE en MINUSCULAS
+
+  Ejemplos de normalizacion de titular:
+  - "JUAN GARCIA Y LOPEZ" -> "Juan Garcia y Lopez"
+  - "MARIA DE LA FUENTE" -> "Maria de la Fuente"
+  - "PEDRO DEL CASTILLO" -> "Pedro del Castillo"
+
+  REGLAS PARA OTROS CAMPOS:
+  - dni: Sin espacios ni guiones, en MAYUSCULAS. Si no aparece, pon "N/D"
+  - tipoDerecho: Tipo de derecho tal cual aparezca (pleno dominio, nuda
+    propiedad, usufructo, etc.), solo limpiando espacios sobrantes
+  - participacion: Exactamente como aparezca en el documento (1/2, 50%, 100%,
+    etc.), sin recalcular ni modificar
+
+  REGLAS ADICIONALES:
+  - Manten el orden en que aparecen en el documento
+  - Si hay varios titulares, incluye todos
+  - NO anadas texto adicional, SOLO el JSON
+
+  Ejemplo de salida exacta:
+  [
+    {
+      "titular": "Juan Garcia y Lopez",
+      "dni": "12345678A",
+      "tipoDerecho": "Pleno dominio",
+      "participacion": "1/2"
+    },
+    {
+      "titular": "Maria de la Fuente",
+      "dni": "87654321B",
+      "tipoDerecho": "Pleno dominio",
+      "participacion": "1/2"
+    }
+  ]
+
+  TIPOS DE DERECHO COMUNES:
+  - Pleno dominio: propiedad completa
+  - Nuda propiedad: propiedad sin usufructo
+  - Usufructo: derecho de uso y disfrute
+  - Usufructo vitalicio: usufructo de por vida
+  - Derecho de superficie: uso del suelo ajeno
+
+  Visualizacion en tabla:
+    - Columnas: Titular | DNI | Tipo Derecho | Participacion
+
+
+================================================================================
+5.4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Campos simples: Se muestran en tabla de dos columnas (Campo | Valor)
+
+Campo JSON (Titularidades): Se renderiza como tabla independiente con columnas:
+  - Titular
+  - DNI
+  - Tipo Derecho
+  - Participacion
+
+
+================================================================================
+5.5. NOTAS ADICIONALES
+================================================================================
+
+TIPOS DE NOTA SIMPLE:
+  - Nota simple informativa: informacion basica de la finca
+  - Nota simple con historial: incluye inscripciones anteriores
+  - Certificacion registral: documento con mayor valor probatorio
+
+SECCIONES TIPICAS DE UNA NOTA SIMPLE:
+  - Datos del Registro
+  - Descripcion de la finca
+  - Titularidad
+  - Cargas y gravamenes
+  - Notas marginales
+
+DATOS REGISTRALES RELACIONADOS:
+  - Tomo: volumen del libro de inscripciones
+  - Libro: libro especifico dentro del tomo
+  - Folio: pagina dentro del libro
+  - Inscripcion: numero de inscripcion de cada acto
+
+VALIDEZ DEL DOCUMENTO:
+  - La nota simple tiene caracter meramente informativo
+  - No tiene valor de documento publico
+  - Para operaciones legales se requiere certificacion registral
+
+
+################################################################################
+################################################################################
+##                                                                            ##
+##                         FIN DEL DOCUMENTO                                  ##
+##                                                                            ##
+################################################################################
+################################################################################
