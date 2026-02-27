@@ -8,7 +8,7 @@ import type { Page } from "@/lib/types"
 import { extractPagesFromPDF } from "@/lib/pdf-utils"
 
 const DEMO_DOCUMENT_URL =
-  "https://blobs.vusercontent.net/blob/DNI_merged%20%281%29%20%281%29-dL7aMnLiSYQLv2H8mzaMLniorBb8J2.pdf"
+  "https://blobs.vusercontent.net/blob/Documento_DemoDOCMA-ZEJO21rqMt0b5K7ZHZT1PrMyct0wfM.pdf"
 const DEMO_DOCUMENT_NAME = "Documentación de ejemplo"
 
 export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }: UploadAreaProps) {
