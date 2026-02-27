@@ -25,6 +25,32 @@ export interface ExtractedField {
   confidence: number
 }
 
+// DNI Validation Types
+export type RevisionSeverity = "OK" | "WARNING" | "ERROR"
+
+export interface DNIRevision {
+  id: string
+  titulo: string
+  severidad: RevisionSeverity
+  mensaje: string
+}
+
+export interface DNITechnicalData {
+  // Datos del reverso
+  dni_reverso: string
+  fecha_nacimiento_reverso: string
+  fecha_validez_reverso: string
+  // MRZ
+  mrz_linea_1: string
+  mrz_linea_2: string
+  mrz_numero_documento: string
+  mrz_fecha_nacimiento: string
+  mrz_fecha_expiracion: string
+  mrz_checksum_numero: string
+  mrz_checksum_nacimiento: string
+  mrz_checksum_expiracion: string
+}
+
 export interface Document {
   id: string
   pageIds: string[]
@@ -32,6 +58,9 @@ export interface Document {
   documentType?: DocumentType
   fields?: Field[]
   extractedData?: Record<string, ExtractedField>
+  // DNI specific
+  dniTechnicalData?: DNITechnicalData
+  revisiones?: DNIRevision[]
 }
 
 export interface ActivityLogEntry {

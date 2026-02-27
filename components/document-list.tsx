@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Document, Page } from "@/lib/types"
 import { FieldsTable } from "./fields-table"
+import { DNIRevisions } from "./dni-revisions"
 import { FileText, Loader2, Download } from "lucide-react"
 import { ImageViewer } from "./image-viewer"
 import { Button } from "@/components/ui/button"
@@ -317,6 +318,16 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                         : undefined
                     }
                   />
+                )}
+
+                {/* DNI Validations - Only show for DNI documents when complete */}
+                {doc.status === "complete" && 
+                 doc.revisiones && 
+                 doc.revisiones.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-base font-semibold text-foreground">Revisiones Intradocumentales</h3>
+                    <DNIRevisions revisiones={doc.revisiones} />
+                  </div>
                 )}
               </CardContent>
             </Card>

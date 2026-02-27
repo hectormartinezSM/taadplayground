@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import type { Page, Document, ExtractedField, SegmentationProgress, SegmentationStatus } from "@/lib/types"
+import type { Page, Document, ExtractedField, SegmentationProgress, SegmentationStatus, DNITechnicalData, DNIRevision } from "@/lib/types"
 import { mockGetRelevantFields } from "@/lib/mock-api"
 import { FileX, CheckCircle2 } from "lucide-react"
 import { ImageViewer } from "./image-viewer"
@@ -440,10 +440,16 @@ export function PageGrid({
       if (response.ok) {
         const data = await response.json()
         const extractedData = data.extractedData || {}
+        
+        // Check if this is a DNI document with technical data and revisions
+        const dniTechnicalData: DNITechnicalData | undefined = data.dniTechnicalData
+        const revisiones: DNIRevision[] | undefined = data.revisiones
 
         allDocs[docIndex] = {
           ...allDocs[docIndex],
           extractedData,
+          ...(dniTechnicalData && { dniTechnicalData }),
+          ...(revisiones && { revisiones }),
         }
         updateDocs([...allDocs])
 
@@ -452,9 +458,21 @@ export function PageGrid({
           if (fieldData) {
             log({
               type: "field_extracted",
-              message: `Campo '${fieldName}' extraído: ${fieldData.value}`,
+              message: `Campo '${fieldName}' extraido: ${fieldData.value}`,
             })
           }
+        }
+        
+        // Log DNI validation results if present
+        if (revisiones && revisiones.length > 0) {
+          const okCount = revisiones.filter(r => r.severidad === "OK").length
+          const warningCount = revisiones.filter(r => r.severidad === "WARNING").length
+          const errorCount = revisiones.filter(r => r.severidad === "ERROR").length
+          
+          log({
+            type: "field_extracted",
+            message: `Validaciones DNI completadas: ${okCount} OK, ${warningCount} avisos, ${errorCount} errores`,
+          })
         }
       } else {
         console.error("[v0] Error extracting fields for document", docIndex + 1)

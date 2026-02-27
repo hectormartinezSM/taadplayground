@@ -14,7 +14,7 @@ const DNI_FIELD_PROMPTS: Record<string, string> = {
   "Fecha de nacimiento":
     "Fecha que indica cuando nació el propietario del identificativo según el documento. Retornalo en el formato DD/MM/AAAA",
   "Fecha de validez":
-    "Fecha de caducidad del documento identificativo. Se encuentra debajo el texto de Validez, Validesa o similar. Retornalo en formato DD/MM/AAAA",
+    "Fecha de caducidad del documento identificativo. Se encuentra debajo el texto de Validez, Validesa o similar. Retornalo en formato DD/MM/AAAA. Si el documento indica 'PERMANENTE', devuelve exactamente 'PERMANENTE'.",
   Sexo: "Género del propietario del identificativo, representado con M para masculino y F para Femenino.",
   Nacionalidad:
     "Nacionalidad del propietario del identificativo. Siguiendo los códigos ISO 3166-1 alfa-3 (ejemplo: ESP para España)",
@@ -31,6 +31,69 @@ Ejemplos:
 - "C/ MAYOR 15 3º A MADRID" → "Calle Mayor, 15, 3º A, Madrid"
 - "AVDA DIAGONAL 250 2-1 BARCELONA" → "Avenida Diagonal, 250, 2º 1ª, Barcelona"
 - "PZA ESPAÑA 1 SEVILLA" → "Plaza España, 1, Sevilla"`,
+}
+
+// DNI Technical fields for internal validation (not shown in UI)
+const DNI_TECHNICAL_FIELD_PROMPTS: Record<string, string> = {
+  dni_reverso: `Extrae el numero de DNI que aparece en el REVERSO del documento (parte trasera).
+Busca en la zona donde aparece el codigo de barras o la informacion repetida del titular.
+Formato: 8 digitos + 1 letra (12345678A). Elimina espacios y guiones.
+Si no detectas reverso o el documento es de una sola cara, devuelve exactamente: N/D`,
+
+  fecha_nacimiento_reverso: `Extrae la fecha de nacimiento que aparece en el REVERSO del documento.
+Suele aparecer en formato abreviado cerca del MRZ o en la zona de datos repetidos.
+Normaliza a formato DD/MM/AAAA.
+Si no detectas reverso o no encuentras la fecha, devuelve exactamente: N/D`,
+
+  fecha_validez_reverso: `Extrae la fecha de validez/caducidad que aparece en el REVERSO del documento.
+Puede aparecer en formato abreviado o en el MRZ.
+Normaliza a formato DD/MM/AAAA. Si indica PERMANENTE, devuelve: PERMANENTE
+Si no detectas reverso o no encuentras la fecha, devuelve exactamente: N/D`,
+
+  mrz_linea_1: `Extrae la PRIMERA linea completa de la zona MRZ (Machine Readable Zone).
+La MRZ esta en el reverso del DNI, son 2 o 3 lineas de caracteres con formato especial usando < como relleno.
+La primera linea suele empezar con "ID" seguido del codigo de pais (ESP).
+Ejemplo: IDESP12345678<0<<<<<<<<<<<<
+Devuelve la linea EXACTAMENTE como aparece, sin espacios adicionales.
+Si no detectas MRZ, devuelve exactamente: N/D`,
+
+  mrz_linea_2: `Extrae la SEGUNDA linea completa de la zona MRZ (Machine Readable Zone).
+Esta linea contiene fechas y checksums en formato YYMMDD.
+Ejemplo: 8501011M3012315ESP<<<<<<<<<<<4
+Devuelve la linea EXACTAMENTE como aparece, sin espacios adicionales.
+Si no detectas MRZ, devuelve exactamente: N/D`,
+
+  mrz_numero_documento: `Del MRZ, extrae SOLO el numero de documento (sin la letra de control que le sigue).
+Esta en la primera linea del MRZ, despues de "IDESP".
+Son los primeros 8 digitos del numero de DNI.
+Si no detectas MRZ, devuelve exactamente: N/D`,
+
+  mrz_fecha_nacimiento: `Del MRZ, extrae la fecha de nacimiento en formato YYMMDD (6 digitos).
+Esta en la segunda linea del MRZ, al principio.
+Ejemplo: si la persona nacio el 15/03/1985, sera: 850315
+Devuelve SOLO los 6 digitos, sin el checksum que sigue.
+Si no detectas MRZ, devuelve exactamente: N/D`,
+
+  mrz_fecha_expiracion: `Del MRZ, extrae la fecha de expiracion/validez en formato YYMMDD (6 digitos).
+Esta en la segunda linea del MRZ, despues de la fecha de nacimiento y el sexo.
+Ejemplo: si caduca el 15/03/2030, sera: 300315
+Devuelve SOLO los 6 digitos, sin el checksum que sigue.
+Si no detectas MRZ, devuelve exactamente: N/D`,
+
+  mrz_checksum_numero: `Del MRZ, extrae el digito de control (checksum) del numero de documento.
+Es el digito que aparece INMEDIATAMENTE despues del numero de documento en la primera linea.
+Devuelve SOLO ese digito (0-9).
+Si no detectas MRZ, devuelve exactamente: N/D`,
+
+  mrz_checksum_nacimiento: `Del MRZ, extrae el digito de control (checksum) de la fecha de nacimiento.
+Es el digito que aparece INMEDIATAMENTE despues de la fecha de nacimiento (YYMMDD) en la segunda linea.
+Devuelve SOLO ese digito (0-9).
+Si no detectas MRZ, devuelve exactamente: N/D`,
+
+  mrz_checksum_expiracion: `Del MRZ, extrae el digito de control (checksum) de la fecha de expiracion.
+Es el digito que aparece INMEDIATAMENTE despues de la fecha de expiracion (YYMMDD) en la segunda linea.
+Devuelve SOLO ese digito (0-9).
+Si no detectas MRZ, devuelve exactamente: N/D`,
 }
 
 const NOMINA_FIELD_PROMPTS: Record<string, string> = {
@@ -560,7 +623,66 @@ REGLAS DE FORMATO (OBLIGATORIAS):
 
     console.log("[v0] API: All fields extracted successfully")
 
-    return NextResponse.json({ extractedData: result })
+    // For DNI documents, also extract technical fields and run validations
+    let dniTechnicalData = null
+    let revisiones = null
+
+    if (isDNI) {
+      console.log("[v0] API: Extracting DNI technical fields for validation...")
+      
+      const technicalProperties: Record<string, any> = {}
+      const technicalRequired: string[] = []
+      
+      for (const [fieldName, prompt] of Object.entries(DNI_TECHNICAL_FIELD_PROMPTS)) {
+        technicalProperties[fieldName] = {
+          type: "string",
+          description: prompt,
+        }
+        technicalRequired.push(fieldName)
+      }
+      
+      const technicalSchema = JSON.stringify({
+        type: "object",
+        properties: technicalProperties,
+        required: technicalRequired,
+      })
+      
+      try {
+        const technicalResult = await apiExtract(markdown, technicalSchema)
+        
+        if (technicalResult && technicalResult.extraction) {
+          dniTechnicalData = {
+            dni_reverso: technicalResult.extraction.dni_reverso || "N/D",
+            fecha_nacimiento_reverso: technicalResult.extraction.fecha_nacimiento_reverso || "N/D",
+            fecha_validez_reverso: technicalResult.extraction.fecha_validez_reverso || "N/D",
+            mrz_linea_1: technicalResult.extraction.mrz_linea_1 || "N/D",
+            mrz_linea_2: technicalResult.extraction.mrz_linea_2 || "N/D",
+            mrz_numero_documento: technicalResult.extraction.mrz_numero_documento || "N/D",
+            mrz_fecha_nacimiento: technicalResult.extraction.mrz_fecha_nacimiento || "N/D",
+            mrz_fecha_expiracion: technicalResult.extraction.mrz_fecha_expiracion || "N/D",
+            mrz_checksum_numero: technicalResult.extraction.mrz_checksum_numero || "N/D",
+            mrz_checksum_nacimiento: technicalResult.extraction.mrz_checksum_nacimiento || "N/D",
+            mrz_checksum_expiracion: technicalResult.extraction.mrz_checksum_expiracion || "N/D",
+          }
+          
+          console.log("[v0] API: DNI technical data extracted:", dniTechnicalData)
+          
+          // Import and run validations dynamically
+          const { runDNIValidations } = await import("@/lib/dni-validation")
+          revisiones = runDNIValidations(result, dniTechnicalData)
+          
+          console.log("[v0] API: DNI validations completed:", revisiones.length, "checks")
+        }
+      } catch (error) {
+        console.log("[v0] API: Error extracting DNI technical fields:", error)
+      }
+    }
+
+    return NextResponse.json({ 
+      extractedData: result,
+      ...(dniTechnicalData && { dniTechnicalData }),
+      ...(revisiones && { revisiones }),
+    })
   } catch (error) {
     console.error("[v0] API: Error extracting fields:", error)
 

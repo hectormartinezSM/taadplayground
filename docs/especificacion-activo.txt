@@ -23,10 +23,17 @@ Version: 1.0
 ================================================================================
 
   1. DNI (Documento Nacional de Identidad) .......................... Linea 50
-  2. NOMINA ......................................................... Linea 200
-  3. MODELO 100 - DECLARACION DE IRPF ............................... Linea 450
-  4. VIDA LABORAL ................................................... Linea 620
-  5. NOTA SIMPLE (Certificacion Registral) .......................... Linea 820
+     1.1 Clasificacion .............................................. Linea 50
+     1.2 Deteccion en el sistema .................................... Linea 65
+     1.3 Campos y prompts de extraccion ............................. Linea 78
+     1.4 Campos tecnicos internos (reverso y MRZ) ................... Linea 210
+     1.5 Revisiones intradocumentales (validaciones) ................ Linea 275
+     1.6 Visualizacion en la interfaz ............................... Linea 395
+     1.7 Notas adicionales .......................................... Linea 415
+  2. NOMINA ......................................................... Linea 435
+  3. MODELO 100 - DECLARACION DE IRPF ............................... Linea 685
+  4. VIDA LABORAL ................................................... Linea 855
+  5. NOTA SIMPLE (Certificacion Registral) .......................... Linea 1055
 
 
 ################################################################################
@@ -199,15 +206,234 @@ CAMPO: Domicilio
 
 
 ================================================================================
-1.4. VISUALIZACION EN LA INTERFAZ
+1.4. CAMPOS TECNICOS INTERNOS (NO VISIBLES EN UI)
 ================================================================================
 
-Los campos se muestran en una tabla con dos columnas:
+Ademas de los campos visibles, el sistema extrae datos adicionales del REVERSO
+y la zona MRZ (Machine Readable Zone) para realizar validaciones automaticas.
+
+Estos campos NO se muestran en la interfaz de usuario.
+
+--------------------------------------------------------------------------------
+Datos del reverso:
+--------------------------------------------------------------------------------
+
+CAMPO: dni_reverso
+  Numero de DNI extraido del reverso del documento.
+  Si no se detecta reverso o es documento de una cara: "N/D"
+
+CAMPO: fecha_nacimiento_reverso
+  Fecha de nacimiento extraida del reverso.
+  Formato: DD/MM/AAAA. Si no se detecta: "N/D"
+
+CAMPO: fecha_validez_reverso
+  Fecha de validez extraida del reverso.
+  Formato: DD/MM/AAAA o "PERMANENTE". Si no se detecta: "N/D"
+
+--------------------------------------------------------------------------------
+Datos del MRZ (Machine Readable Zone):
+--------------------------------------------------------------------------------
+
+CAMPO: mrz_linea_1
+  Primera linea completa del MRZ (empieza con "IDESP").
+  Si no se detecta MRZ: "N/D"
+
+CAMPO: mrz_linea_2
+  Segunda linea completa del MRZ (contiene fechas y checksums).
+  Si no se detecta MRZ: "N/D"
+
+CAMPO: mrz_numero_documento
+  Numero de documento extraido del MRZ (8 digitos).
+  Si no se detecta MRZ: "N/D"
+
+CAMPO: mrz_fecha_nacimiento
+  Fecha de nacimiento en formato MRZ (YYMMDD).
+  Si no se detecta MRZ: "N/D"
+
+CAMPO: mrz_fecha_expiracion
+  Fecha de expiracion en formato MRZ (YYMMDD).
+  Si no se detecta MRZ: "N/D"
+
+CAMPO: mrz_checksum_numero
+  Digito de control del numero de documento (0-9).
+  Si no se detecta MRZ: "N/D"
+
+CAMPO: mrz_checksum_nacimiento
+  Digito de control de la fecha de nacimiento (0-9).
+  Si no se detecta MRZ: "N/D"
+
+CAMPO: mrz_checksum_expiracion
+  Digito de control de la fecha de expiracion (0-9).
+  Si no se detecta MRZ: "N/D"
+
+
+================================================================================
+1.5. REVISIONES INTRADOCUMENTALES
+================================================================================
+
+El sistema ejecuta automaticamente 8 reglas de validacion sobre el DNI.
+Los resultados se muestran como un semaforo de validaciones.
+
+FORMATO DE SALIDA:
+Array JSON llamado "revisiones" con objetos que contienen:
+  - id: Identificador de la regla (R1, R2, etc.)
+  - titulo: Nombre descriptivo de la validacion
+  - severidad: "OK" | "WARNING" | "ERROR"
+  - mensaje: Descripcion del resultado
+
+--------------------------------------------------------------------------------
+R1 - Digito de control DNI (ANVERSO)
+--------------------------------------------------------------------------------
+  Input: DNI del anverso
+  
+  Validacion:
+  - Debe cumplir patron: 8 digitos + 1 letra
+  - Calcular letra esperada: numero % 23
+  - Tabla de letras: TRWAGMYFPDXBNJZSQVHLCKE
+  
+  Resultados:
+  - OK: La letra coincide con el calculo
+  - ERROR: La letra no coincide o formato incorrecto
+
+--------------------------------------------------------------------------------
+R2 - Vigencia del documento (ANVERSO)
+--------------------------------------------------------------------------------
+  Input: fecha_validez_anverso, fecha_nacimiento_anverso (para calcular edad)
+  
+  Validacion para fechas:
+  - fecha < hoy -> ERROR (documento caducado)
+  - fecha entre hoy y 6 meses -> WARNING (caduca pronto)
+  - fecha > hoy + 6 meses -> OK (vigente)
+  
+  Validacion para "PERMANENTE":
+  - edad >= 70 -> OK (permanente valido)
+  - edad < 70 -> WARNING (permanente pero menor de 70)
+
+--------------------------------------------------------------------------------
+R3 - Mayor de edad (ANVERSO)
+--------------------------------------------------------------------------------
+  Input: fecha_nacimiento_anverso
+  
+  Validacion:
+  - Calcular edad a partir de la fecha de nacimiento
+  - edad < 18 -> ERROR (menor de edad)
+  - edad >= 18 -> OK (mayor de edad)
+
+--------------------------------------------------------------------------------
+R4 - Cotejo DNI anverso vs reverso
+--------------------------------------------------------------------------------
+  Input: dni_anverso, dni_reverso
+  
+  Validacion:
+  - Normalizar ambos (sin espacios, sin guiones, mayusculas)
+  - Comparar caracter a caracter
+  
+  Resultados:
+  - OK: Coinciden
+  - ERROR: No coinciden
+  - WARNING: No se detecto reverso (dni_reverso = "N/D")
+
+--------------------------------------------------------------------------------
+R5 - Cotejo fecha nacimiento anverso vs reverso
+--------------------------------------------------------------------------------
+  Input: fecha_nacimiento_anverso, fecha_nacimiento_reverso
+  
+  Validacion:
+  - Normalizar ambas fechas a DD/MM/AAAA
+  - Comparar
+  
+  Resultados:
+  - OK: Coinciden
+  - ERROR: No coinciden
+  - WARNING: No se detecto fecha en reverso
+
+--------------------------------------------------------------------------------
+R6 - Cotejo fecha validez anverso vs reverso
+--------------------------------------------------------------------------------
+  Input: fecha_validez_anverso, fecha_validez_reverso
+  
+  Validacion:
+  - Normalizar ambas fechas (o ambas "PERMANENTE")
+  - Comparar
+  
+  Resultados:
+  - OK: Coinciden
+  - ERROR: No coinciden
+  - WARNING: No se detecto fecha en reverso
+
+--------------------------------------------------------------------------------
+R7 - Validacion checksum MRZ (ICAO 9303)
+--------------------------------------------------------------------------------
+  Input: datos MRZ extraidos
+  
+  Algoritmo ICAO 9303:
+  - Pesos repetidos: 7, 3, 1
+  - Mapeo caracteres:
+    - 0-9 -> valor numerico
+    - A-Z -> 10-35
+    - < -> 0
+  
+  Se validan los checksums de:
+  - Numero de documento
+  - Fecha de nacimiento
+  - Fecha de expiracion
+  
+  Resultados:
+  - OK: Todos los checksums correctos
+  - ERROR: Algun checksum incorrecto
+  - WARNING: No se detecto MRZ
+
+--------------------------------------------------------------------------------
+R8 - Cotejo MRZ vs anverso
+--------------------------------------------------------------------------------
+  Input: datos MRZ vs datos del anverso
+  
+  Validacion:
+  - Comparar fecha nacimiento MRZ (convertida de YYMMDD) vs fecha_nacimiento_anverso
+  - Comparar fecha expiracion MRZ (convertida de YYMMDD) vs fecha_validez_anverso
+  
+  Resultados:
+  - OK: Todos los datos coinciden
+  - ERROR: Alguna discrepancia
+  - WARNING: No se puede comparar (MRZ no detectado)
+
+
+================================================================================
+1.6. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Los campos visibles se muestran en una tabla con dos columnas:
   - Columna izquierda: Nombre del campo
   - Columna derecha: Valor extraido
 
-No hay campos con formato JSON array para este tipo documental.
-Todos los campos son de texto simple.
+IMPORTANTE: Los valores mostrados son SIEMPRE los extraidos del ANVERSO.
+Los datos del reverso y MRZ se usan SOLO para validacion interna.
+
+Las revisiones intradocumentales se muestran como una lista con semaforo:
+  - Verde (OK): Validacion correcta
+  - Amarillo (WARNING): Aviso o dato no disponible
+  - Rojo (ERROR): Error de validacion
+
+Resumen de validaciones:
+Se muestra un contador con el total de validaciones OK, WARNING y ERROR.
+
+
+================================================================================
+1.7. NOTAS ADICIONALES
+================================================================================
+
+REGLA FUNDAMENTAL:
+Los valores mostrados en la interfaz deben ser SIEMPRE los extraidos del ANVERSO.
+Los datos del reverso y MRZ se usan UNICAMENTE para validacion interna.
+Nunca deben sustituir el valor mostrado.
+
+El objetivo es convertir el DNI en un documento autovalidable mediante:
+  - Validacion matematica (digito de control, checksums MRZ)
+  - Validacion temporal (vigencia, mayoria de edad)
+  - Cotejo anverso/reverso (coherencia de datos)
+  - Validacion MRZ (integridad de la zona legible por maquina)
+
+Todo esto sin alterar la visualizacion actual de los campos extraidos.
 
 
 ################################################################################
