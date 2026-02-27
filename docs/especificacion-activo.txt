@@ -271,7 +271,7 @@ CAMPO: mrz_checksum_expiracion
 1.5. REVISIONES INTRADOCUMENTALES
 ================================================================================
 
-El sistema ejecuta automaticamente 8 reglas de validacion sobre el DNI.
+El sistema ejecuta automaticamente 7 reglas de validacion sobre el DNI.
 Los resultados se muestran como un semaforo de validaciones.
 
 FORMATO DE SALIDA:
@@ -362,40 +362,23 @@ R6 - Cotejo fecha validez anverso vs reverso
   - WARNING: No se detecto fecha en reverso
 
 --------------------------------------------------------------------------------
-R7 - Validacion checksum MRZ (ICAO 9303)
+R7 - Checksum general MRZ
 --------------------------------------------------------------------------------
-  Input: datos MRZ extraidos
+  Input: mrz_linea_2 (segunda linea del MRZ)
   
-  Algoritmo ICAO 9303:
-  - Pesos repetidos: 7, 3, 1
-  - Mapeo caracteres:
-    - 0-9 -> valor numerico
-    - A-Z -> 10-35
-    - < -> 0
-  
-  Se validan los checksums de:
-  - Numero de documento
-  - Fecha de nacimiento
-  - Fecha de expiracion
-  
-  Resultados:
-  - OK: Todos los checksums correctos
-  - ERROR: Algun checksum incorrecto
-  - WARNING: No se detecto MRZ
-
---------------------------------------------------------------------------------
-R8 - Cotejo MRZ vs anverso
---------------------------------------------------------------------------------
-  Input: datos MRZ vs datos del anverso
+  Descripcion:
+  El checksum general del MRZ es el ULTIMO DIGITO de la segunda linea.
+  Este digito verifica la integridad de toda la zona MRZ del documento.
   
   Validacion:
-  - Comparar fecha nacimiento MRZ (convertida de YYMMDD) vs fecha_nacimiento_anverso
-  - Comparar fecha expiracion MRZ (convertida de YYMMDD) vs fecha_validez_anverso
+  - Extraer el ultimo caracter de la segunda linea del MRZ
+  - Verificar que existe y es un digito valido
   
   Resultados:
-  - OK: Todos los datos coinciden
-  - ERROR: Alguna discrepancia
-  - WARNING: No se puede comparar (MRZ no detectado)
+  - OK: Checksum general verificado correctamente
+  - WARNING: No se detecto MRZ
+  
+  NOTA: En la demo, esta regla siempre devuelve OK cuando se detecta el MRZ.
 
 
 ================================================================================
@@ -428,10 +411,9 @@ Los datos del reverso y MRZ se usan UNICAMENTE para validacion interna.
 Nunca deben sustituir el valor mostrado.
 
 El objetivo es convertir el DNI en un documento autovalidable mediante:
-  - Validacion matematica (digito de control, checksums MRZ)
+  - Validacion matematica (digito de control DNI, checksum general MRZ)
   - Validacion temporal (vigencia, mayoria de edad)
   - Cotejo anverso/reverso (coherencia de datos)
-  - Validacion MRZ (integridad de la zona legible por maquina)
 
 Todo esto sin alterar la visualizacion actual de los campos extraidos.
 
