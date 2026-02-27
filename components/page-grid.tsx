@@ -475,8 +475,7 @@ export function PageGrid({
           })
         }
       } else {
-        const errorText = await response.text()
-        console.error("[v0] Error extracting fields for document", docIndex + 1, "Status:", response.status, "Error:", errorText)
+        console.error("[v0] Error extracting fields for document", docIndex + 1)
         const extractedData: Record<string, ExtractedField> = {}
         for (const fieldName of fieldNames) {
           extractedData[fieldName] = { value: "N/A", confidence: 1 }

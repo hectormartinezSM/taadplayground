@@ -438,15 +438,10 @@ async function apiExtract(markdown: string, schema: string): Promise<ExtractResp
 }
 
 export async function POST(request: NextRequest) {
-  console.log("[v0] API extract-fields: Request received")
   try {
-    const body = await request.json()
-    console.log("[v0] API extract-fields: Body parsed, documentType:", body.documentType, "fields count:", body.fields?.length)
-    
-    const { markdown, fields, documentType } = body
+    const { markdown, fields, documentType } = await request.json()
 
     if (!markdown || !fields || !Array.isArray(fields) || !documentType) {
-      console.log("[v0] API extract-fields: Missing required params")
       return NextResponse.json({ error: "Markdown, fields array, and document type are required" }, { status: 400 })
     }
 
@@ -727,11 +722,7 @@ REGLAS DE FORMATO (OBLIGATORIAS):
     }
 
     // For Modelo 100 IRPF documents, run validations
-    const isModelo100 = documentType.toLowerCase().includes("modelo 100") || 
-                        documentType.toLowerCase().includes("irpf") ||
-                        documentType.toLowerCase().includes("declaración de irpf")
-    
-    if (isModelo100 && !revisiones) {
+    if (isModelo100IRPF && !revisiones) {
       console.log("[v0] API: Running Modelo 100 validations...")
       
       try {
@@ -745,8 +736,6 @@ REGLAS DE FORMATO (OBLIGATORIAS):
     }
 
     // For Vida Laboral documents, run validations
-    const isVidaLaboral = documentType.toLowerCase().includes("vida laboral")
-    
     if (isVidaLaboral && !revisiones) {
       console.log("[v0] API: Running Vida Laboral validations...")
       
