@@ -59,7 +59,7 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
 
   return (
     <Card className="border-2 border-primary/20 bg-card">
-      <CardHeader className="pb-3">
+      <CardHeader className="pt-6 pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FileStack className="h-6 w-6 text-primary" />

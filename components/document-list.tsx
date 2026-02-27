@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Document, Page } from "@/lib/types"
 import { FieldsTable } from "./fields-table"
 import { DNIRevisions } from "./dni-revisions"
-import { FileText, Loader2, Download } from "lucide-react"
+import { FileText, Loader2, Download, CheckCircle2 } from "lucide-react"
 import { ImageViewer } from "./image-viewer"
 import { Button } from "@/components/ui/button"
 import { jsPDF } from "jspdf"
@@ -227,10 +227,18 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                       <FileText className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-semibold">
-                        Documento {index + 1}
-                        {doc.documentType && ` - ${doc.documentType.type}`}
-                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg font-semibold">
+                          Documento {index + 1}
+                          {doc.documentType && ` - ${doc.documentType.type}`}
+                        </CardTitle>
+                        {doc.documentType && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-green-300">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Tipología válida
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {docPages.length} {docPages.length === 1 ? "página" : "páginas"}
                       </p>
