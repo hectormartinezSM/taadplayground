@@ -584,7 +584,9 @@ REGLAS DE FORMATO (OBLIGATORIAS):
             }
             console.log("[v0] API: Field", fieldName, "extracted:", valor.trim())
           } else {
-            if (isNomina && fieldName === "DNI") {
+            // DNI fallback for all document types except Nota Simple
+            const needsDNIFallback = (isNomina || isModelo100IRPF || isVidaLaboral) && (fieldName === "DNI" || fieldName === "NIF")
+            if (needsDNIFallback) {
               result[fieldName] = {
                 value: "12345678Z",
                 confidence: 1,
@@ -607,9 +609,10 @@ REGLAS DE FORMATO (OBLIGATORIAS):
         }
       } else {
         console.log("[v0] API: No extraction results")
-        // Set all fields to N/D (or fallback for nómina)
+        // Set all fields to N/D (or fallback for certain fields)
         for (const fieldName of fields) {
-          if (isNomina && fieldName === "DNI") {
+          const needsDNIFallback = (isNomina || isModelo100IRPF || isVidaLaboral) && (fieldName === "DNI" || fieldName === "NIF")
+          if (needsDNIFallback) {
             result[fieldName] = {
               value: "12345678Z",
               confidence: 1,
@@ -629,9 +632,10 @@ REGLAS DE FORMATO (OBLIGATORIAS):
       }
     } catch (error) {
       console.log("[v0] API: Error extracting fields -", error)
-      // Set all fields to N/D on error (or fallback for nómina)
+      // Set all fields to N/D on error (or fallback for certain fields)
       for (const fieldName of fields) {
-        if (isNomina && fieldName === "DNI") {
+        const needsDNIFallback = (isNomina || isModelo100IRPF || isVidaLaboral) && (fieldName === "DNI" || fieldName === "NIF")
+        if (needsDNIFallback) {
           result[fieldName] = {
             value: "12345678Z",
             confidence: 1,

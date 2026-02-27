@@ -83,24 +83,24 @@ export function validateDocumentValidity(fechaValidez: string, fechaNacimiento: 
   }
   
   const today = new Date()
-  const sixMonthsFromNow = new Date()
-  sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6)
+  const threeMonthsFromNow = new Date()
+  threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3)
   
   if (fecha < today) {
     return {
       id: "R2",
       titulo: "Vigencia del documento",
       severidad: "ERROR",
-      mensaje: `El documento esta caducado desde el ${formatSpanishDate(fecha)}`
+      mensaje: `El documento está caducado desde el ${formatSpanishDate(fecha)}`
     }
   }
   
-  if (fecha <= sixMonthsFromNow) {
+  if (fecha <= threeMonthsFromNow) {
     return {
       id: "R2",
       titulo: "Vigencia del documento",
       severidad: "WARNING",
-      mensaje: `El documento caduca pronto (${formatSpanishDate(fecha)}), menos de 6 meses de validez`
+      mensaje: `El documento caduca pronto (${formatSpanishDate(fecha)}), menos de 3 meses de validez`
     }
   }
   
@@ -108,7 +108,7 @@ export function validateDocumentValidity(fechaValidez: string, fechaNacimiento: 
     id: "R2",
     titulo: "Vigencia del documento",
     severidad: "OK",
-    mensaje: `Documento vigente hasta ${formatSpanishDate(fecha)}`
+    mensaje: `Documento vigente hasta ${formatSpanishDate(fecha)}, más de 3 meses de validez`
   }
 }
 

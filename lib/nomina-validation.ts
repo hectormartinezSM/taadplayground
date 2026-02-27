@@ -327,26 +327,26 @@ export function validateNominaReciente(periodo: string): NominaRevision {
   const today = new Date()
   const monthsOld = monthsDifference(endDate, today)
   
-  if (monthsOld <= 3) {
+  if (monthsOld <= 6) {
     return {
       id: "N5",
-      titulo: "Nomina reciente",
+      titulo: "Nómina reciente",
       severidad: "OK",
-      mensaje: `Nomina de los ultimos 3 meses (${monthsOld} meses)`
+      mensaje: `Nómina de los últimos 6 meses (${monthsOld} meses)`
     }
   } else if (monthsOld <= 12) {
     return {
       id: "N5",
-      titulo: "Nomina reciente",
+      titulo: "Nómina reciente",
       severidad: "WARNING",
-      mensaje: `Nomina con ${monthsOld} meses de antiguedad`
+      mensaje: `Nómina con ${monthsOld} meses de antigüedad`
     }
   } else {
     return {
       id: "N5",
-      titulo: "Nomina reciente",
+      titulo: "Nómina reciente",
       severidad: "ERROR",
-      mensaje: `Nomina antigua (mas de 12 meses: ${monthsOld} meses)`
+      mensaje: `Nómina antigua (más de 12 meses: ${monthsOld} meses)`
     }
   }
 }
