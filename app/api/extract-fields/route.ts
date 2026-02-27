@@ -738,6 +738,22 @@ REGLAS DE FORMATO (OBLIGATORIAS):
       }
     }
 
+    // For Vida Laboral documents, run validations
+    const isVidaLaboral = documentType.toLowerCase().includes("vida laboral")
+    
+    if (isVidaLaboral && !revisiones) {
+      console.log("[v0] API: Running Vida Laboral validations...")
+      
+      try {
+        const { runVidaLaboralValidations } = await import("@/lib/vidalaboral-validation")
+        revisiones = runVidaLaboralValidations(result)
+        
+        console.log("[v0] API: Vida Laboral validations completed:", revisiones.length, "checks")
+      } catch (error) {
+        console.log("[v0] API: Error running Vida Laboral validations:", error)
+      }
+    }
+
     return NextResponse.json({ 
       extractedData: result,
       ...(dniTechnicalData && { dniTechnicalData }),
