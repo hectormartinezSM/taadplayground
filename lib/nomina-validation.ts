@@ -597,7 +597,7 @@ export function validateCuadreLiquido(
       id: "N9",
       titulo: "Cuadre del líquido",
       severidad: "ERROR",
-      mensaje: `Descuadre: líquido ${formatAmountSpanish(liquido)} vs esperado ${formatAmountSpanish(expectedLiquido)} (devengado ${formatAmountSpanish(devengadoFinal)} - retenciones ${formatAmountSpanish(retencionesFinal)})`
+      mensaje: `Descuadre: Líquido a percibir = Total devengado - Total retenciones: ${formatAmountSpanish(liquido)} != ${formatAmountSpanish(devengadoFinal)} - ${formatAmountSpanish(retencionesFinal)}`
     }
   }
   
@@ -605,7 +605,7 @@ export function validateCuadreLiquido(
     id: "N9",
     titulo: "Cuadre del líquido",
     severidad: "OK",
-    mensaje: `Líquido cuadra: ${formatAmountSpanish(liquido)} = ${formatAmountSpanish(devengadoFinal)} - ${formatAmountSpanish(retencionesFinal)}`
+    mensaje: `Líquido a percibir = Total devengado - Total retenciones: ${formatAmountSpanish(liquido)} = ${formatAmountSpanish(devengadoFinal)} - ${formatAmountSpanish(retencionesFinal)}`
   }
 }
 
@@ -623,8 +623,8 @@ export function runNominaValidations(
   const liquido = extractedData["Líquido a percibir"]?.value || ""
   const devengos = extractedData["Devengos"]?.value || "[]"
   const retenciones = extractedData["Retenciones"]?.value || "[]"
-  const totalDevengadoDoc = extractedData["Total devengado (documento)"]?.value || ""
-  const totalRetencionesDoc = extractedData["Total retenciones (documento)"]?.value || ""
+  const totalDevengadoDoc = extractedData["Total devengado"]?.value || ""
+  const totalRetencionesDoc = extractedData["Total retenciones"]?.value || ""
   
   // N1: DNI validation
   revisiones.push(validateDNI(dni))

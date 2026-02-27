@@ -129,7 +129,7 @@ IMPORTANTE: No confundir con el CIF de la empresa (empieza por letra como B, A, 
     "Periodo de liquidación al cual hace referencia la nómina. En formato DD/MM/AAAA - DD/MM/AAAA. Si solo aparece mes y año, indica el primer y último día de ese mes.",
   "Líquido a percibir":
     "Sueldo neto, a veces representado como líquido total, a percibir por parte del trabajador. Formato: XX.XXX,XX € (separador de miles: punto, separador decimal: coma).",
-  "Total devengado (documento)": `Extrae el TOTAL DEVENGADO que aparece explicitamente en el documento.
+  "Total devengado": `Extrae el TOTAL DEVENGADO que aparece explicitamente en el documento.
 
 DONDE BUSCAR:
 - En la seccion de devengos, al final como "TOTAL DEVENGADO", "TOTAL DEVENGO", "TOTAL A DEVENGAR"
@@ -137,26 +137,24 @@ DONDE BUSCAR:
 - Puede aparecer como "TOTAL BRUTO" o "SALARIO BRUTO"
 
 NORMALIZACION OBLIGATORIA:
-- Devuelve SOLO el numero sin simbolo de moneda
-- Formato: "XXXX,XX" (coma decimal, sin separadores de miles)
+- Formato: "XX.XXX,XX€" (punto separador de miles, coma decimal, simbolo euro al final sin espacio)
 - Ejemplos:
-  - "1.850,00 €" -> "1850,00"
-  - "2.345,67 EUR" -> "2345,67"
-  - "3456.78" -> "3456,78"
+  - "1850,00" -> "1.850,00€"
+  - "2345.67" -> "2.345,67€"
+  - "15000" -> "15.000,00€"
 
 Si NO aparece el total en el documento, devuelve exactamente: N/D`,
-  "Total retenciones (documento)": `Extrae el TOTAL RETENCIONES o TOTAL DEDUCCIONES que aparece explicitamente en el documento.
+  "Total retenciones": `Extrae el TOTAL RETENCIONES o TOTAL DEDUCCIONES que aparece explicitamente en el documento.
 
 DONDE BUSCAR:
 - En la seccion de deducciones/retenciones, al final como "TOTAL DEDUCCIONES", "TOTAL RETENCIONES", "TOTAL A DEDUCIR"
 - En un resumen o pie del documento
 
 NORMALIZACION OBLIGATORIA:
-- Devuelve SOLO el numero sin simbolo de moneda
-- Formato: "XXXX,XX" (coma decimal, sin separadores de miles)
+- Formato: "XX.XXX,XX€" (punto separador de miles, coma decimal, simbolo euro al final sin espacio)
 - Ejemplos:
-  - "450,00 €" -> "450,00"
-  - "1.234,56 EUR" -> "1234,56"
+  - "450,00" -> "450,00€"
+  - "1234.56" -> "1.234,56€"
 
 Si NO aparece el total en el documento, devuelve exactamente: N/D`,
   Devengos: `Extrae todos los devengos que aparezcan en la nómina (conceptos que suman al salario bruto del trabajador).
