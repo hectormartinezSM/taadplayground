@@ -1,0 +1,182 @@
+================================================================================
+  ESPECIFICACION DE CLASIFICACION Y EXTRACCION DE DNI
+  Documento generado automaticamente desde la configuracion del sistema
+================================================================================
+
+
+1. CLASIFICACION
+================================================================================
+
+El sistema clasifica el Documento Nacional de Identidad espanol.
+
+Tipologia exacta: "DNI"
+
+Criterios de clasificacion:
+  - Documento oficial de identificacion personal espanol
+  - Contiene fotografia del titular, datos personales y numero de identificacion
+  - Emitido por la Direccion General de la Policia
+  - Senales: "DOCUMENTO NACIONAL DE IDENTIDAD", "DNI", "ESPANA", escudo de Espana,
+    "IDESP", codigo MRZ (Machine Readable Zone), chip electronico (DNIe)
+
+
+================================================================================
+2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Es exactamente "dni"
+  - Contiene "documento nacional de identidad"
+  - Contiene "documento de identidad"
+
+
+================================================================================
+3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (7 en total, en este orden):
+
+  1. Nombre completo
+  2. DNI
+  3. Fecha de nacimiento
+  4. Fecha de validez
+  5. Sexo
+  6. Nacionalidad
+  7. Domicilio
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre completo
+  Extrae el nombre completo de la persona propietaria del identificativo
+  incluyendo nombre y apellidos.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: 'Nombre Apellido1 Apellido2'
+  - Si viene en formato 'APELLIDOS, NOMBRE', invertirlo a 'Nombre Apellidos'
+  - Capitalizacion normal (primera letra mayuscula, resto minusculas)
+  - Conservar acentos
+  - Eliminar dobles espacios
+
+  Ejemplos:
+  - "GARCIA LOPEZ, JUAN" -> "Juan Garcia Lopez"
+  - "MARIA FERNANDEZ MARTINEZ" -> "Maria Fernandez Martinez"
+
+--------------------------------------------------------------------------------
+
+CAMPO: DNI
+  Extrae el numero de DNI que aparece en el documento.
+
+  FORMATO ESPERADO:
+  - 8 digitos seguidos de una letra (ej: 12345678A)
+  - El ultimo caracter SIEMPRE debe ser una LETRA, nunca un numero
+
+  NORMALIZACION (OBLIGATORIA):
+  - Elimina espacios, guiones u otros separadores
+  - Devuelve en MAYUSCULAS
+  - Corrige errores de OCR si la letra final aparece como numero
+
+  Ejemplos:
+  - "12345678-A" -> "12345678A"
+  - "12 345 678 Z" -> "12345678Z"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha de nacimiento
+  Extrae la fecha que indica cuando nacio el propietario del identificativo
+  segun el documento.
+
+  DONDE BUSCAR:
+  - Campo "NACIMIENTO" o "FECHA NACIMIENTO"
+  - Zona central del anverso del DNI
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+  - Si aparece en otro formato, convertir
+
+  Ejemplos:
+  - "15 MAR 1985" -> "15/03/1985"
+  - "1985-03-15" -> "15/03/1985"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha de validez
+  Extrae la fecha de caducidad del documento identificativo.
+
+  DONDE BUSCAR:
+  - Se encuentra debajo del texto "Validez", "Validesa" o similar
+  - Zona inferior del anverso del DNI
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+  Nota: Los DNI permanentes (para mayores de 70 anos) pueden mostrar
+  "PERMANENTE" en lugar de una fecha.
+
+--------------------------------------------------------------------------------
+
+CAMPO: Sexo
+  Extrae el genero del propietario del identificativo.
+
+  VALORES PERMITIDOS:
+  - "M" para masculino
+  - "F" para femenino
+
+  DONDE BUSCAR:
+  - Campo "SEXO" en el anverso
+  - Codigo MRZ en el reverso (posicion especifica)
+
+--------------------------------------------------------------------------------
+
+CAMPO: Nacionalidad
+  Extrae la nacionalidad del propietario del identificativo.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Usar codigos ISO 3166-1 alfa-3
+  - Para Espana: "ESP"
+
+  Ejemplos de codigos:
+  - Espana -> "ESP"
+  - Francia -> "FRA"
+  - Alemania -> "DEU"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Domicilio
+  Extrae el domicilio de residencia acorde al documento identificativo.
+
+  REGLAS DE ESTANDARIZACION (OBLIGATORIAS):
+  - Estandariza en una sola linea en formato postal espanol, legible
+  - Expande abreviaturas:
+    - 'C/' -> 'Calle'
+    - 'Av/' o 'Avda.' -> 'Avenida'
+    - 'Pza.' -> 'Plaza'
+    - 'P' -> 'Paseo'
+    - 'Ctra.' -> 'Carretera'
+  - Normaliza mayusculas/minusculas (Title Case): primera letra mayuscula,
+    resto minusculas
+  - Mantén exactamente los mismos datos del documento (no inventes CP ni
+    provincia si no aparecen)
+  - Formato final: Via Nombre, numero, piso puerta letra, barrio, municipio
+
+  Ejemplos:
+  - "C/ MAYOR 15 3 A MADRID" -> "Calle Mayor, 15, 3 A, Madrid"
+  - "AVDA DIAGONAL 250 2-1 BARCELONA" -> "Avenida Diagonal, 250, 2 1, Barcelona"
+  - "PZA ESPANA 1 SEVILLA" -> "Plaza Espana, 1, Sevilla"
+
+
+================================================================================
+4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Los campos se muestran en una tabla con dos columnas:
+  - Columna izquierda: Nombre del campo
+  - Columna derecha: Valor extraido
+
+No hay campos con formato JSON array para este tipo documental.
+Todos los campos son de texto simple.
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================

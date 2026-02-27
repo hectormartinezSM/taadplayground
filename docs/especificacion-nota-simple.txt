@@ -1,0 +1,308 @@
+================================================================================
+  ESPECIFICACION DE CLASIFICACION Y EXTRACCION DE CERTIFICACION REGISTRAL
+  (NOTA SIMPLE)
+  Documento generado automaticamente desde la configuracion del sistema
+================================================================================
+
+
+1. CLASIFICACION
+================================================================================
+
+El sistema clasifica la Nota Simple informativa emitida por el Registro de
+la Propiedad.
+
+Tipologia exacta: "Nota Simple"
+
+Criterios de clasificacion:
+  - Documento oficial emitido por un Registro de la Propiedad
+  - Contiene informacion registral de una finca (inmueble)
+  - Incluye datos de titularidad, descripcion del inmueble y cargas
+  - Senales: "NOTA SIMPLE INFORMATIVA", "REGISTRO DE LA PROPIEDAD",
+    "FINCA", "INSCRIPCION", "LIBRO", "TOMO", "FOLIO", "TITULAR",
+    "CARGAS", "CRU" o "IDUFIR", nombre del Registrador
+
+
+================================================================================
+2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Contiene "nota simple"
+  - Contiene "certificacion registral"
+  - Contiene "registro de la propiedad"
+  - Contiene "certificado registral"
+
+
+================================================================================
+3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (9 en total, en este orden):
+
+  1. Registro de la propiedad
+  2. Registrador
+  3. Fecha de la nota
+  4. Numero de finca
+  5. CRU
+  6. Superficie total
+  7. Es VPO?
+  8. Tiene cargas?
+  9. Titularidades                    (JSON array)
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Registro de la propiedad
+  Extrae la localidad y el numero del Registro de la Propiedad.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: 'Registro de la Propiedad de <Localidad> n <Numero>'
+  - Title Case (primera letra mayuscula)
+  - Sin dobles espacios
+
+  Ejemplos:
+  - "Registro de la Propiedad de Madrid n 28"
+  - "Registro de la Propiedad de Barcelona n 15"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Registrador
+  Extrae el nombre del registrador/a que firma o emite la nota.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato legible (Title Case)
+  - Conserva acentos
+  - Elimina dobles espacios
+
+  DONDE BUSCAR:
+  - Pie del documento
+  - Zona de firma
+  - Puede aparecer como "El/La Registrador/a"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha de la nota
+  Extrae la fecha de expedicion/emision de la nota simple.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+  DONDE BUSCAR:
+  - Pie del documento
+  - Cabecera, junto al numero de entrada
+  - Zona de firma del registrador
+
+--------------------------------------------------------------------------------
+
+CAMPO: Numero de finca
+  Extrae el numero de finca registral tal y como figura en la nota simple.
+
+  DONDE BUSCAR:
+  - Busca expresiones como "Finca n", "Finca registral", "N de finca",
+    "Finca numero", "FINCA"
+  - Suele aparecer en la cabecera o en la descripcion de la finca
+  - NO confundir con el CRU/IDUFIR (codigo alfanumerico largo)
+
+  NORMALIZACION (OBLIGATORIA):
+  - Devuelve SOLO el identificador numerico de la finca
+  - Elimina los literales "finca", "finca registral", "n", "numero", etc.
+  - Elimina separadores de miles (puntos) y espacios: "12.345" -> "12345"
+  - Conserva posibles sufijos/indicadores si aparecen: BIS, letras, subfinca
+    (ej: "12345 BIS", "12345-A")
+
+  Ejemplos:
+  - "Finca n 12.345" -> "12345"
+  - "Finca registral 98765 BIS" -> "98765 BIS"
+  - "FINCA NUMERO 5.678-A" -> "5678-A"
+  - "N de finca: 1234" -> "1234"
+
+--------------------------------------------------------------------------------
+
+CAMPO: CRU
+  Extrae el Codigo Registral Unico (CRU) o IDUFIR si aparece.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Elimina espacios
+  - Devuelve el codigo en MAYUSCULAS exactamente como aparece
+
+  DONDE BUSCAR:
+  - Cerca del pie del documento
+  - En la cabecera
+  - Puede aparecer como "CRU", "IDUFIR" o "Codigo Registral Unico"
+
+  FORMATO TIPICO:
+  - Codigo alfanumerico de 14 caracteres
+  - Ejemplo: "28012345678901"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Superficie total
+  Extrae la superficie total de la finca.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Preferentemente la 'superficie construida total'
+  - Si no existe, la 'superficie total' indicada
+  - Devuelve numero en m2 (usa coma decimal si hay decimales)
+  - Formato: 'XX,XX m2'
+
+  Ejemplos:
+  - "120,50 m2"
+  - "85 m2"
+  - "250,00 m2"
+
+  DONDE BUSCAR:
+  - Descripcion de la finca
+  - Seccion de caracteristicas del inmueble
+
+--------------------------------------------------------------------------------
+
+CAMPO: Es VPO?
+  Determina si el inmueble esta calificado como VPO/Vivienda de Proteccion
+  Oficial (o equivalentes).
+
+  VALORES PERMITIDOS:
+  - "Si": si aparece cualquier mencion de calificacion/proteccion
+  - "No": si se indica explicitamente que no lo es o no existe ninguna mencion
+
+  EQUIVALENTES A VPO:
+  - VPPL (Vivienda de Proteccion Publica Limitada)
+  - VPP (Vivienda de Proteccion Publica)
+  - Proteccion publica
+  - Regimen de proteccion oficial
+
+  IMPORTANTE: No inventar. Solo marcar "Si" si hay mencion explicita.
+
+--------------------------------------------------------------------------------
+
+CAMPO: Tiene cargas?
+  Determina si existen cargas/gravamenes sobre la finca.
+
+  VALORES PERMITIDOS:
+  - "Si": si aparece cualquier seccion o mencion de cargas/gravamenes/
+    limitaciones con contenido
+  - "No": si consta explicitamente "libre de cargas" o "sin cargas"
+
+  TIPOS DE CARGAS:
+  - Hipoteca
+  - Embargo
+  - Servidumbre
+  - Afecciones
+  - Condiciones resolutorias
+  - Anotaciones preventivas
+  - Limitaciones de dominio
+
+  DONDE BUSCAR:
+  - Seccion "CARGAS" o "GRAVAMENES"
+  - Apartado de limitaciones
+  - Notas marginales
+
+--------------------------------------------------------------------------------
+
+CAMPO: Titularidades (JSON array)
+  Extrae los titulares que figuran en la nota simple.
+
+  FORMATO DE SALIDA OBLIGATORIO (JSON):
+  Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+    - titular: nombre completo del titular
+    - dni: identificativo del titular (o "N/D" si no aparece)
+    - tipoDerecho: tipo de derecho sobre la finca
+    - participacion: porcentaje o fraccion de participacion
+
+  REGLAS DE NORMALIZACION PARA "titular" (OBLIGATORIAS):
+  - Nombre completo en formato legible (Title Case)
+  - Sin dobles espacios
+  - Si viene en formato "APELLIDOS, NOMBRE" o todo mayusculas, normaliza
+    a "Nombre Apellidos"
+  - Conserva acentos
+  - Las conjunciones y preposiciones (y, de, del, la, las, los, el) van
+    SIEMPRE en MINUSCULAS
+
+  Ejemplos de normalizacion de titular:
+  - "JUAN GARCIA Y LOPEZ" -> "Juan Garcia y Lopez"
+  - "MARIA DE LA FUENTE" -> "Maria de la Fuente"
+  - "PEDRO DEL CASTILLO" -> "Pedro del Castillo"
+
+  REGLAS PARA OTROS CAMPOS:
+  - dni: Sin espacios ni guiones, en MAYUSCULAS. Si no aparece, pon "N/D"
+  - tipoDerecho: Tipo de derecho tal cual aparezca (pleno dominio, nuda
+    propiedad, usufructo, etc.), solo limpiando espacios sobrantes
+  - participacion: Exactamente como aparezca en el documento (1/2, 50%, 100%,
+    etc.), sin recalcular ni modificar
+
+  REGLAS ADICIONALES:
+  - Manten el orden en que aparecen en el documento
+  - Si hay varios titulares, incluye todos
+  - NO añadas texto adicional, SOLO el JSON
+
+  Ejemplo de salida exacta:
+  [
+    {
+      "titular": "Juan Garcia y Lopez",
+      "dni": "12345678A",
+      "tipoDerecho": "Pleno dominio",
+      "participacion": "1/2"
+    },
+    {
+      "titular": "Maria de la Fuente",
+      "dni": "87654321B",
+      "tipoDerecho": "Pleno dominio",
+      "participacion": "1/2"
+    }
+  ]
+
+  TIPOS DE DERECHO COMUNES:
+  - Pleno dominio: propiedad completa
+  - Nuda propiedad: propiedad sin usufructo
+  - Usufructo: derecho de uso y disfrute
+  - Usufructo vitalicio: usufructo de por vida
+  - Derecho de superficie: uso del suelo ajeno
+
+  Visualizacion en tabla:
+    - Columnas: Titular | DNI | Tipo Derecho | Participacion
+
+
+================================================================================
+4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Campos simples: Se muestran en tabla de dos columnas (Campo | Valor)
+
+Campo JSON (Titularidades): Se renderiza como tabla independiente con columnas:
+  - Titular
+  - DNI
+  - Tipo Derecho
+  - Participacion
+
+
+================================================================================
+5. NOTAS ADICIONALES
+================================================================================
+
+TIPOS DE NOTA SIMPLE:
+  - Nota simple informativa: informacion basica de la finca
+  - Nota simple con historial: incluye inscripciones anteriores
+  - Certificacion registral: documento con mayor valor probatorio
+
+SECCIONES TIPICAS DE UNA NOTA SIMPLE:
+  - Datos del Registro
+  - Descripcion de la finca
+  - Titularidad
+  - Cargas y gravamenes
+  - Notas marginales
+
+DATOS REGISTRALES RELACIONADOS:
+  - Tomo: volumen del libro de inscripciones
+  - Libro: libro especifico dentro del tomo
+  - Folio: pagina dentro del libro
+  - Inscripcion: numero de inscripcion de cada acto
+
+VALIDEZ DEL DOCUMENTO:
+  - La nota simple tiene caracter meramente informativo
+  - No tiene valor de documento publico
+  - Para operaciones legales se requiere certificacion registral
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================

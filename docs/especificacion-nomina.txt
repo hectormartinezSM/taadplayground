@@ -1,0 +1,293 @@
+================================================================================
+  ESPECIFICACION DE CLASIFICACION Y EXTRACCION DE NOMINA
+  Documento generado automaticamente desde la configuracion del sistema
+================================================================================
+
+
+1. CLASIFICACION
+================================================================================
+
+El sistema clasifica los recibos de salario/nominas.
+
+Tipologia exacta: "Nomina"
+
+Criterios de clasificacion:
+  - Recibo oficial de salario emitido por una empresa
+  - Contiene datos del trabajador y de la empresa
+  - Muestra devengos (conceptos que suman) y deducciones/retenciones
+  - Indica liquido a percibir (sueldo neto)
+  - Senales: "RECIBO DE SALARIOS", "NOMINA", "LIQUIDO A PERCIBIR",
+    "DEVENGOS", "DEDUCCIONES", periodo de liquidacion, datos de cotizacion
+
+
+================================================================================
+2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Contiene "nomina" o "nomina"
+  - Contiene "recibo de salario"
+  - Contiene "recibo salarial"
+
+
+================================================================================
+3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (10 en total, en este orden):
+
+  1.  Nombre completo
+  2.  DNI
+  3.  N Seguridad Social trabajador
+  4.  Fecha antiguedad
+  5.  Nombre empresa
+  6.  CIF empresa
+  7.  Periodo
+  8.  Liquido a percibir
+  9.  Devengos                        (JSON array)
+  10. Retenciones                     (JSON array)
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre completo
+  Extrae el nombre completo del trabajador incluyendo nombre y apellidos.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: 'Nombre Apellido1 Apellido2'
+  - Si viene en formato 'APELLIDOS, NOMBRE', invertirlo a 'Nombre Apellidos'
+  - Capitalizacion normal (primera letra mayuscula, resto minusculas)
+  - Conservar acentos y eliminar dobles espacios
+
+--------------------------------------------------------------------------------
+
+CAMPO: DNI
+  Extrae el identificativo del trabajador (DNI, NIF o NIE).
+
+  DONDE BUSCAR (en orden de prioridad):
+  1. En la seccion de datos del trabajador, junto al nombre
+  2. Cerca de etiquetas como "NIF", "DNI", "D.N.I.", "N.I.F.", "Identificador",
+     "Doc. Identidad"
+  3. En la cabecera del recibo de nomina, zona superior izquierda o derecha
+  4. Cerca del numero de afiliacion a la Seguridad Social
+
+  FORMATO ESPERADO:
+  - 8 digitos seguidos de 1 letra (ej: 12345678Z)
+  - El ultimo caracter SIEMPRE es una LETRA, nunca un numero
+  - Puede aparecer con o sin guiones/espacios (12345678-Z, 12345678 Z)
+
+  NORMALIZACION (OBLIGATORIA):
+  - Elimina espacios, guiones u otros separadores
+  - Devuelve en MAYUSCULAS
+  - Si encuentras varios identificativos, devuelve el del TRABAJADOR, no el
+    de la empresa
+
+  IMPORTANTE: No confundir con:
+  - CIF de la empresa (empieza por letra como B, A, etc.)
+  - Numero de Seguridad Social (tiene mas de 9 caracteres, formato XX/XXXXXXXX-XX)
+
+--------------------------------------------------------------------------------
+
+CAMPO: N Seguridad Social trabajador
+  Extrae el codigo o numero de la Seguridad Social del trabajador.
+
+  NORMALIZACION:
+  - Manten el formato original del documento
+  - Puede aparecer como NAF (Numero de Afiliacion)
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha antiguedad
+  Extrae la fecha de incorporacion a la empresa.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre empresa
+  Extrae el nombre de la empresa contratante.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Primera letra en MAYUSCULA y el resto en minusculas
+  - Mantén siglas societarias en mayusculas (S.A., S.L., S.L.U.)
+
+  Ejemplos:
+  - "TELEFONICA DE ESPANA S.A." -> "Telefonica De Espana S.A."
+  - "BANCO BBVA S.A." -> "Banco BBVA S.A."
+
+--------------------------------------------------------------------------------
+
+CAMPO: CIF empresa
+  Extrae el codigo identificador del contratador (CIF de la empresa).
+
+  FORMATO ESPERADO:
+  - Letra + 8 digitos (ej: B12345678)
+  - La letra inicial indica el tipo de entidad
+
+  NORMALIZACION:
+  - Sin espacios, en MAYUSCULAS
+
+--------------------------------------------------------------------------------
+
+CAMPO: Periodo
+  Extrae el periodo de liquidacion al cual hace referencia la nomina.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA - DD/MM/AAAA
+  - Si solo aparece mes y ano, indica el primer y ultimo dia de ese mes
+
+  Ejemplos:
+  - "Enero 2024" -> "01/01/2024 - 31/01/2024"
+  - "Marzo 2024" -> "01/03/2024 - 31/03/2024"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Liquido a percibir
+  Extrae el sueldo neto (liquido total) a percibir por parte del trabajador.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: XX.XXX,XX EUR
+  - Separador de miles: punto
+  - Separador decimal: coma
+  - Simbolo EUR al final
+
+  Ejemplos:
+  - "1.850,00 EUR"
+  - "2.345,67 EUR"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Devengos (JSON array)
+  Extrae todos los devengos que aparezcan en la nomina (conceptos que suman
+  al salario bruto del trabajador).
+
+  FORMATO DE SALIDA OBLIGATORIO (JSON):
+  Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+    - concepto: descripcion del devengo
+    - tipo: categoria del devengo (ver lista abajo)
+    - importe: cantidad en formato XX.XXX,XX sin simbolo EUR
+
+  REGLAS DE NORMALIZACION PARA "concepto" (OBLIGATORIAS):
+  - Expande abreviaturas comunes sin cambiar el sentido:
+    - "Sal." -> "Salario"
+    - "Comp." -> "Complemento"
+    - "Pror." -> "Prorrata"
+    - "Extraord." -> "Extraordinaria"
+    - "Antig." -> "Antiguedad"
+    - "H.E." o "HH.EE." -> "Horas Extraordinarias"
+    - "Plus Conv." -> "Plus Convenio"
+    - "Paga Ext." -> "Paga Extraordinaria"
+  - Quita puntos y guiones separadores
+  - Elimina dobles espacios
+  - Pasa a Title Case (primera letra de cada palabra en mayuscula)
+  - EXCEPCION: Manten siglas en MAYUSCULAS (IRPF, SS, etc.)
+  - Si no conoces una abreviatura, conservala tal cual
+  - Manten el orden de aparicion en el documento
+
+  VALORES PERMITIDOS PARA "tipo" (OBLIGATORIOS):
+  - "Salario base": salario/sueldo base
+  - "Paga extra prorrateada": contiene "prorrata/prorrateada/prorrateo" y hace
+    referencia a paga extra
+  - "Paga extra completa": contiene "paga extra" / "paga navidad" / "paga verano"
+    y NO contiene prorrata
+  - "Vacaciones": vacaciones/pago vacaciones/bolsa vacaciones
+  - "Bonus": bonus/bono/objetivos/premios/participacion en beneficios
+  - "Indemnizacion/finiquito": indemnizacion, finiquito, despido, traslado,
+    accidente
+  - "ERE/ERTE": ERE o ERTE
+  - "No considerar": atrasos, regularizacion salarial, anticipos o conceptos
+    explicitamente nulos/no considerables
+  - "Fijo": complementos fijos (antiguedad/trienios, convenio/pacto empresa,
+    complementos fijos de puesto o personales, mejoras voluntarias,
+    seguros/planes pensiones/sanidad privada, complementos por IT si figuran
+    como complemento)
+  - "Variable": dietas/transporte/kilometraje/locomocion, distancia/destino,
+    nocturnidad/turnicidad, festivos/guardias/horas extra, comisiones/primas/
+    productividad/asistencia-puntualidad, retribucion en especie/ayudas, y
+    cualquier "otros" sin asociacion clara
+
+  DESEMPATE OBLIGATORIO (aplica el primero que coincida):
+  "No considerar" > "Indemnizacion/finiquito" > "Vacaciones" > "Bonus" >
+  "Paga extra prorrateada" > "Paga extra completa" > "Variable" > "Fijo" >
+  "Salario base"
+
+  REGLAS PARA "importe":
+  - Numero con coma decimal y sin separadores de miles (ej: "1234,56", "250,00")
+  - Sin simbolo EUR ni texto adicional
+
+  Ejemplo de salida exacta:
+  [
+    {"concepto":"Salario Base","tipo":"Salario base","importe":"1500,00"},
+    {"concepto":"Complemento Antiguedad","tipo":"Fijo","importe":"150,00"},
+    {"concepto":"Prorrata Paga Extraordinaria","tipo":"Paga extra prorrateada","importe":"250,00"},
+    {"concepto":"Horas Extraordinarias","tipo":"Variable","importe":"120,00"}
+  ]
+
+  Visualizacion en tabla:
+    - Columnas: Concepto | Tipo | Importe
+
+--------------------------------------------------------------------------------
+
+CAMPO: Retenciones (JSON array)
+  Extrae todas las retenciones/deducciones a cargo del trabajador que aparezcan
+  en la nomina (excluye conceptos a cargo de la empresa).
+
+  FORMATO DE SALIDA OBLIGATORIO (JSON):
+  Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+    - nombre: descripcion de la retencion
+    - porcentaje: porcentaje aplicado (sin simbolo %)
+    - importe: cantidad en formato XX.XXX,XX sin simbolo EUR
+
+  REGLAS DE NORMALIZACION PARA "nombre" (OBLIGATORIAS):
+  - Expande abreviaturas comunes:
+    - "DTO." -> "Descuento"
+    - "Cta." -> "Cuenta"
+    - "Esp." -> "Especie"
+    - "Cgo." -> "Cargo"
+    - "Tra." -> "Trabajador"
+    - "Conting." -> "Contingencias"
+    - "Com." -> "Comunes"
+    - "Prof." -> "Profesional"
+    - "Form." -> "Formacion"
+    - "Desempl." -> "Desempleo"
+  - Sustituye puntos por espacios y elimina dobles espacios
+  - Pasa a Title Case
+  - EXCEPCION: Manten siglas en MAYUSCULAS (IRPF, MEI, FOGASA, etc.)
+
+  REGLAS PARA OTROS CAMPOS:
+  - porcentaje: Numero sin simbolo % (ej: "4.7", "6.35"). Si no aparece, pon "---"
+  - importe: Numero con coma decimal y sin separadores de miles
+
+  Reglas adicionales:
+  - Incluye solo retenciones a cargo del trabajador (IRPF, Seguridad Social
+    contingencias comunes, desempleo, formacion, etc.)
+  - Excluye conceptos a cargo de la empresa
+  - NO añadas texto adicional, SOLO el JSON
+
+  Ejemplo de salida exacta:
+  [
+    {"nombre":"IRPF","porcentaje":"15","importe":"450,00"},
+    {"nombre":"Contingencias Comunes","porcentaje":"4.7","importe":"141,00"},
+    {"nombre":"Desempleo","porcentaje":"1.55","importe":"46,50"},
+    {"nombre":"Formacion Profesional","porcentaje":"0.1","importe":"3,00"}
+  ]
+
+  Visualizacion en tabla:
+    - Columnas: Nombre | Porcentaje | Importe
+
+
+================================================================================
+4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Campos simples: Se muestran en tabla de dos columnas (Campo | Valor)
+
+Campos JSON (Devengos y Retenciones): Se renderizan como tablas independientes
+con sus respectivas columnas.
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================

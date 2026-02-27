@@ -1,0 +1,237 @@
+================================================================================
+  ESPECIFICACION DE CLASIFICACION Y EXTRACCION DE VIDA LABORAL
+  Documento generado automaticamente desde la configuracion del sistema
+================================================================================
+
+
+1. CLASIFICACION
+================================================================================
+
+El sistema clasifica el Informe de Vida Laboral emitido por la Tesoreria
+General de la Seguridad Social.
+
+Tipologia exacta: "Vida laboral"
+
+Criterios de clasificacion:
+  - Informe oficial emitido por la Tesoreria General de la Seguridad Social
+  - Contiene historial de cotizaciones del trabajador
+  - Lista de empresas, periodos de alta/baja y dias cotizados
+  - Senales: "INFORME DE VIDA LABORAL", "TESORERIA GENERAL DE LA SEGURIDAD
+    SOCIAL", "MINISTERIO", escudo de Espana, NAF (Numero de Afiliacion),
+    "SITUACIONES EN EL REGIMEN", "TOTAL DIAS", "ALTA", "BAJA"
+
+
+================================================================================
+2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Contiene "vida laboral"
+  - Contiene "informe de vida laboral"
+  - Contiene "certificado de vida laboral"
+  - Contiene "historial laboral"
+
+
+================================================================================
+3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (7 en total, en este orden):
+
+  1. Nombre completo
+  2. DNI
+  3. N Seguridad Social trabajador
+  4. Total dias cotizados
+  5. Fecha documento
+  6. Codigo CEA
+  7. Situaciones                     (JSON array)
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre completo
+  Extrae el nombre y apellidos del trabajador.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato legible (Title Case)
+  - Conserva acentos
+  - Elimina dobles espacios
+  - Formato: 'Nombre Apellido1 Apellido2'
+
+  DONDE BUSCAR:
+  - Cabecera del informe
+  - Seccion de datos del trabajador
+
+--------------------------------------------------------------------------------
+
+CAMPO: DNI
+  Extrae el identificativo del trabajador (DNI/NIF/NIE).
+
+  NORMALIZACION (OBLIGATORIA):
+  - Quita espacios/guiones
+  - Devuelve en MAYUSCULAS
+  - Formato: 8 digitos + 1 letra (ej: 12345678A)
+
+--------------------------------------------------------------------------------
+
+CAMPO: N Seguridad Social trabajador
+  Extrae el NAF/Numero de Seguridad Social del trabajador.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Dejar solo digitos
+  - Si hay 12 digitos, formatear como: PP/NNNNNNNN-CC
+    (2 digitos / 8 digitos - 2 digitos)
+
+  Ejemplos:
+  - "331254743532" -> "33/12547435-32"
+  - "28/12345678-90" -> "28/12345678-90"
+
+  DONDE BUSCAR:
+  - Campo "N.A.F." o "Numero de Afiliacion"
+  - Cabecera del documento junto al DNI
+
+--------------------------------------------------------------------------------
+
+CAMPO: Total dias cotizados
+  Extrae el total de dias cotizados del informe.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Entero eliminando separadores de miles y texto accesorio
+  - Devuelve solo el numero
+
+  Ejemplos:
+  - "4.532 dias" -> "4532"
+  - "12,345" -> "12345"
+
+  DONDE BUSCAR:
+  - Seccion "TOTAL DIAS" o "DIAS COTIZADOS"
+  - Resumen al final del documento
+  - Suele aparecer destacado
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha documento
+  Extrae la fecha de emision/generacion del informe.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+  IMPORTANTE: No confundir con fechas de altas/bajas de las situaciones.
+
+  DONDE BUSCAR:
+  - Pie del documento
+  - Cabecera, cerca de "Fecha de expedicion"
+  - Zona de firma/validacion
+
+--------------------------------------------------------------------------------
+
+CAMPO: Codigo CEA
+  Extrae el 'Codigo CEA' SOLO si aparece explicitamente como 'CEA' o
+  'Codigo CEA' en el documento.
+
+  NORMALIZACION:
+  - Elimina espacios sobrantes
+  - Devuelve el valor tal cual (o en MAYUSCULAS si es alfanumerico)
+  - Si no aparece, devuelve 'N/D'
+
+  NOTA: No todos los informes de vida laboral contienen este codigo.
+
+--------------------------------------------------------------------------------
+
+CAMPO: Situaciones (JSON array)
+  Extrae las 5 situaciones laborales mas recientes del informe de vida laboral.
+
+  FORMATO DE SALIDA OBLIGATORIO (JSON):
+  Devuelve EXACTAMENTE un array JSON con objetos que contengan:
+    - empresa: nombre de la empresa
+    - fechaAlta: fecha de alta en formato DD/MM/AAAA
+    - fechaBaja: fecha de baja en formato DD/MM/AAAA (o "---" si vigente)
+    - diasCotizados: numero entero de dias cotizados en esa situacion
+
+  REGLAS DE NORMALIZACION DE NOMBRES DE EMPRESA (OBLIGATORIAS):
+  - Primera letra de cada palabra en MAYUSCULA, resto en minusculas
+  - EXCEPCION: Las siglas van SIEMPRE en MAYUSCULAS
+    (S.A., S.L., S.L.U., ETT, RRHH, IT, etc.)
+  - Detecta siglas: palabras de 2-4 letras todas mayusculas, o letras
+    seguidas de puntos
+
+  Ejemplos de normalizacion de empresa:
+  - "TELEFONICA DE ESPANA SAU" -> "Telefonica De Espana SAU"
+  - "SERIMAG SOLUCIONES DIGITALES S.L." -> "Serimag Soluciones Digitales S.L."
+  - "BANCO BBVA S.A." -> "Banco BBVA S.A."
+  - "IBM GLOBAL SERVICES" -> "IBM Global Services"
+
+  REGLAS ADICIONALES:
+  - Fechas en formato DD/MM/AAAA
+  - Si no hay fecha de baja (situacion vigente/actual/en curso o campo vacio),
+    pon "---"
+  - diasCotizados: numero entero de dias cotizados en esa empresa/situacion
+  - Ordena de mas reciente a menos reciente (la situacion actual primero)
+  - Maximo 5 situaciones
+  - NO añadas texto adicional, SOLO el JSON
+
+  Ejemplo de salida exacta:
+  [
+    {
+      "empresa": "Serimag Soluciones Digitales S.L.",
+      "fechaAlta": "01/03/2023",
+      "fechaBaja": "---",
+      "diasCotizados": 650
+    },
+    {
+      "empresa": "Banco BBVA S.A.",
+      "fechaAlta": "15/06/2020",
+      "fechaBaja": "28/02/2023",
+      "diasCotizados": 990
+    },
+    {
+      "empresa": "IBM Global Services",
+      "fechaAlta": "01/01/2018",
+      "fechaBaja": "14/06/2020",
+      "diasCotizados": 896
+    }
+  ]
+
+  Visualizacion en tabla:
+    - Columnas: Empresa | Fecha Alta | Fecha Baja | Dias Cotizados
+
+
+================================================================================
+4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Campos simples: Se muestran en tabla de dos columnas (Campo | Valor)
+
+Campo JSON (Situaciones): Se renderiza como tabla independiente con columnas:
+  - Empresa
+  - Fecha Alta
+  - Fecha Baja
+  - Dias Cotizados
+
+
+================================================================================
+5. NOTAS ADICIONALES
+================================================================================
+
+TIPOS DE INFORME DE VIDA LABORAL:
+  - Informe completo: todas las situaciones desde la primera alta
+  - Informe parcial: situaciones de un periodo concreto
+
+REGIMENES DE COTIZACION COMUNES:
+  - Regimen General
+  - Regimen Especial de Trabajadores Autonomos (RETA)
+  - Regimen Especial del Mar
+  - Regimen Especial de la Mineria del Carbon
+  - Sistema Especial Agrario
+  - Sistema Especial de Empleados de Hogar
+
+SITUACIONES ESPECIALES:
+  - Situacion vigente: sin fecha de baja, trabajador actualmente en alta
+  - Pluriempleo: varias situaciones simultaneas
+  - Periodos solapados: cuando hay alta en varias empresas al mismo tiempo
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================

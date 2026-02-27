@@ -1,0 +1,213 @@
+================================================================================
+  ESPECIFICACION DE CLASIFICACION Y EXTRACCION DE MODELO 100 - IRPF
+  Documento generado automaticamente desde la configuracion del sistema
+================================================================================
+
+
+1. CLASIFICACION
+================================================================================
+
+El sistema clasifica la Declaracion del Impuesto sobre la Renta de las
+Personas Fisicas (IRPF).
+
+Tipologia exacta: "Modelo 100 - Declaracion de IRPF"
+
+Criterios de clasificacion:
+  - Declaracion anual del IRPF presentada ante la Agencia Tributaria
+  - Documento oficial con formato de la AEAT
+  - Senales: "MODELO 100", "IRPF", "IMPUESTO SOBRE LA RENTA DE LAS PERSONAS
+    FISICAS", "DECLARACION", "EJERCICIO", "AGENCIA TRIBUTARIA", logo de la AEAT,
+    "RENTA", numero de justificante, CSV (Codigo Seguro de Verificacion)
+
+
+================================================================================
+2. DETECCION EN EL SISTEMA
+================================================================================
+
+El sistema detecta este tipo documental si el tipo normalizado:
+  - Contiene "modelo 100"
+  - Contiene "declaracion de irpf" o "declaracion de irpf"
+  - Contiene "irpf"
+  - Contiene "renta"
+
+
+================================================================================
+3. CAMPOS Y PROMPTS DE EXTRACCION
+================================================================================
+
+Campos (7 en total, en este orden):
+
+  1. Nombre completo
+  2. Periodo
+  3. Fecha de presentacion
+  4. Estado civil
+  5. Rendimiento del trabajo
+  6. Resultado de la declaracion
+  7. CSV
+
+--------------------------------------------------------------------------------
+Detalle de cada campo:
+--------------------------------------------------------------------------------
+
+CAMPO: Nombre completo
+  Extrae el nombre y apellidos del declarante (o declarante principal si hay
+  declaracion conjunta).
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato legible (Title Case)
+  - Conserva acentos
+  - Elimina dobles espacios
+  - Formato: 'Nombre Apellido1 Apellido2'
+
+  DONDE BUSCAR:
+  - Seccion "Datos identificativos" o "Primer declarante"
+  - Casillas iniciales del modelo
+
+--------------------------------------------------------------------------------
+
+CAMPO: Periodo
+  Extrae el ejercicio/periodo fiscal de la declaracion.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: YYYY (solo el ano, 4 digitos)
+  - Si el documento muestra "Ejercicio 2024" o "2024", devuelve solo "2024"
+
+  DONDE BUSCAR:
+  - Cabecera del documento
+  - Campo "Ejercicio"
+  - Titulo del modelo
+
+  Ejemplos:
+  - "Ejercicio 2024" -> "2024"
+  - "IRPF 2023" -> "2023"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Fecha de presentacion
+  Extrae la fecha de presentacion/registro de la declaracion.
+
+  DONDE BUSCAR:
+  - Terminos como "fecha de presentacion", "presentado el", "registrado el"
+  - Pie del documento o zona de validacion
+  - Justificante de presentacion
+
+  NORMALIZACION (OBLIGATORIA):
+  - Formato: DD/MM/AAAA
+
+--------------------------------------------------------------------------------
+
+CAMPO: Estado civil
+  Extrae el estado civil indicado en la declaracion.
+
+  VALORES PERMITIDOS (normalizar a uno de estos):
+  - "Soltero/a"
+  - "Casado/a"
+  - "Divorciado/a"
+  - "Viudo/a"
+  - "Pareja de hecho"
+
+  Si el documento usa otra categoria explicita, devuelve el literal tal cual.
+
+  DONDE BUSCAR:
+  - Seccion de datos personales
+  - Casillas relativas a situacion familiar
+  - Opcion de tributacion (individual/conjunta puede indicar estado)
+
+--------------------------------------------------------------------------------
+
+CAMPO: Rendimiento del trabajo
+  Extrae el importe de la seccion "Rendimiento neto reducido" dentro de
+  Rendimientos del trabajo.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Numero decimal con punto (.) como separador decimal
+  - Sin separadores de miles
+  - Manten el signo si aparece (positivo o negativo)
+
+  Ejemplos:
+  - "25.432,15 EUR" -> "25432.15"
+  - "-1.234,50 EUR" -> "-1234.50"
+
+  DONDE BUSCAR:
+  - Seccion "Rendimientos del trabajo"
+  - Casilla de rendimiento neto reducido del trabajo
+  - Resumen de rendimientos
+
+--------------------------------------------------------------------------------
+
+CAMPO: Resultado de la declaracion
+  Extrae el resultado final de la declaracion y su importe.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Normaliza el tipo a uno de: 'A ingresar', 'A devolver', 'Cero'
+  - Formato de salida: 'Tipo: Importe EUR'
+
+  DONDE BUSCAR:
+  - Seccion "Resultado de la declaracion" o "Liquidacion"
+  - Casilla final del modelo
+  - Resumen/documento de ingreso o devolucion
+
+  Ejemplos:
+  - "A devolver: 523,45 EUR"
+  - "A ingresar: 1.234,00 EUR"
+  - "Cero: 0,00 EUR"
+
+  INDICADORES DE CADA TIPO:
+  - A ingresar: casilla con importe positivo a pagar, "cuota a ingresar"
+  - A devolver: casilla con importe a devolver, "cuota diferencial negativa"
+  - Cero: cuando el resultado es 0,00 o "sin cuota"
+
+--------------------------------------------------------------------------------
+
+CAMPO: CSV
+  Extrae el Codigo Seguro de Verificacion (CSV) del documento.
+
+  NORMALIZACION (OBLIGATORIA):
+  - Elimina espacios
+  - Devuelve el codigo en MAYUSCULAS exactamente como aparece
+
+  DONDE BUSCAR:
+  - Pie del documento
+  - Cabecera, cerca del numero de justificante
+  - Zona de validacion electronica
+  - Suele tener formato alfanumerico largo
+
+  El CSV permite verificar la autenticidad del documento en la sede
+  electronica de la AEAT.
+
+
+================================================================================
+4. VISUALIZACION EN LA INTERFAZ
+================================================================================
+
+Todos los campos son de texto simple y se muestran en una tabla con dos columnas:
+  - Columna izquierda: Nombre del campo
+  - Columna derecha: Valor extraido
+
+No hay campos con formato JSON array para este tipo documental.
+
+
+================================================================================
+5. NOTAS ADICIONALES
+================================================================================
+
+TIPOS DE MODELO 100:
+  - Declaracion individual: un solo declarante
+  - Declaracion conjunta: dos declarantes (matrimonio/pareja)
+
+CASILLAS RELEVANTES COMUNES:
+  - Casilla 001-099: Datos identificativos
+  - Casilla 100-299: Rendimientos del trabajo
+  - Casilla 500-599: Base imponible
+  - Casilla 600-699: Liquidacion
+  - Casilla 700+: Resultado
+
+DOCUMENTOS RELACIONADOS:
+  - Borrador de la declaracion
+  - Datos fiscales
+  - Certificado de la declaracion presentada
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
