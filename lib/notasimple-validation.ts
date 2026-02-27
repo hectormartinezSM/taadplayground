@@ -29,6 +29,14 @@ function monthsDifference(date1: Date, date2: Date): number {
   return months + date2.getMonth() - date1.getMonth()
 }
 
+// Helper to format date in Spanish format
+function formatSpanishDate(date: Date): string {
+  const day = date.getDate().toString().padStart(2, "0")
+  const month = (date.getMonth() + 1).toString().padStart(2, "0")
+  const year = date.getFullYear()
+  return `${day}/${month}/${year}`
+}
+
 // NS2: Nota reciente
 export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
   if (!fechaNota || fechaNota === "N/D" || fechaNota === "N/A") {
@@ -36,7 +44,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
       id: "NS2",
       titulo: "Nota reciente",
       severidad: "ERROR",
-      mensaje: "Nota simple desactualizada"
+      mensaje: "Nota simple desactualizada: fecha no encontrada"
     }
   }
   
@@ -46,11 +54,15 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
       id: "NS2",
       titulo: "Nota reciente",
       severidad: "ERROR",
-      mensaje: "Nota simple desactualizada"
+      mensaje: "Nota simple desactualizada: formato de fecha inválido"
     }
   }
   
   const today = new Date()
+  
+  // Calculate the minimum valid date (6 months ago)
+  const minValidDate = new Date(today)
+  minValidDate.setMonth(minValidDate.getMonth() - 6)
   
   // ERROR if future date
   if (fechaDate > today) {
@@ -58,7 +70,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
       id: "NS2",
       titulo: "Nota reciente",
       severidad: "ERROR",
-      mensaje: "Nota simple desactualizada"
+      mensaje: `Nota simple desactualizada: fecha ${fechaNota} es futura`
     }
   }
   
@@ -70,7 +82,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
       id: "NS2",
       titulo: "Nota reciente",
       severidad: "OK",
-      mensaje: "Nota simple reciente"
+      mensaje: `Nota simple reciente (fecha: ${fechaNota})`
     }
   }
   
@@ -80,7 +92,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
       id: "NS2",
       titulo: "Nota reciente",
       severidad: "WARNING",
-      mensaje: "Nota simple con antigüedad superior a 3 meses"
+      mensaje: `Nota simple con antigüedad superior a 3 meses (fecha: ${fechaNota})`
     }
   }
   
@@ -89,7 +101,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
     id: "NS2",
     titulo: "Nota reciente",
     severidad: "ERROR",
-    mensaje: "Nota simple desactualizada"
+    mensaje: `Nota simple desactualizada: fecha ${fechaNota}, validez esperada posterior a ${formatSpanishDate(minValidDate)}`
   }
 }
 
@@ -100,19 +112,33 @@ export function validateCRU(cru: string): NotaSimpleRevision {
       id: "NS4",
       titulo: "CRU válido",
       severidad: "WARNING",
-      mensaje: "CRU no presente"
+      mensaje: "CRU no presente en el documento"
     }
   }
   
-  // Remove spaces and check if 14 numeric characters
+  // Remove spaces, hyphens
   const normalizedCRU = cru.replace(/[\s\-]/g, "")
   
+  // CRU/IDUFIR must be exactly 14 numeric characters
   if (/^\d{14}$/.test(normalizedCRU)) {
     return {
       id: "NS4",
       titulo: "CRU válido",
       severidad: "OK",
-      mensaje: "CRU estructuralmente válido"
+      mensaje: `CRU estructuralmente válido: ${cru}`
+    }
+  }
+  
+  // Check why it's invalid
+  const digitsOnly = normalizedCRU.replace(/\D/g, "")
+  const length = digitsOnly.length
+  
+  if (length !== 14) {
+    return {
+      id: "NS4",
+      titulo: "CRU válido",
+      severidad: "ERROR",
+      mensaje: `CRU con formato inválido: ${cru} (debe tener 14 dígitos, tiene ${length})`
     }
   }
   
@@ -120,7 +146,7 @@ export function validateCRU(cru: string): NotaSimpleRevision {
     id: "NS4",
     titulo: "CRU válido",
     severidad: "ERROR",
-    mensaje: "CRU con formato inválido"
+    mensaje: `CRU con formato inválido: ${cru} (contiene caracteres no numéricos)`
   }
 }
 
@@ -164,6 +190,7 @@ function parseParticipacion(participacion: string): number | null {
 }
 
 // NS6: Participaciones coherentes
+// Usufructo y Nuda propiedad cuentan como la mitad de su valor nominal
 export function validateParticipaciones(titularidadesJson: string): NotaSimpleRevision {
   if (!titularidadesJson || titularidadesJson === "N/D" || titularidadesJson === "N/A") {
     return {
@@ -174,7 +201,7 @@ export function validateParticipaciones(titularidadesJson: string): NotaSimpleRe
     }
   }
   
-  let titularidades: Array<{ participacion?: string }> = []
+  let titularidades: Array<{ participacion?: string; tipoDerecho?: string }> = []
   try {
     titularidades = JSON.parse(titularidadesJson)
   } catch {
@@ -203,7 +230,15 @@ export function validateParticipaciones(titularidadesJson: string): NotaSimpleRe
     if (participacion === null) {
       allParsed = false
     } else {
-      suma += participacion
+      // Usufructo y Nuda propiedad cuentan como mitad
+      const tipoDerecho = (titular.tipoDerecho || "").toLowerCase()
+      const isUsufructoOrNuda = tipoDerecho.includes("usufructo") || tipoDerecho.includes("nuda")
+      
+      if (isUsufructoOrNuda) {
+        suma += participacion / 2
+      } else {
+        suma += participacion
+      }
     }
   }
   
@@ -223,7 +258,7 @@ export function validateParticipaciones(titularidadesJson: string): NotaSimpleRe
       id: "NS6",
       titulo: "Participaciones coherentes",
       severidad: "OK",
-      mensaje: "Participaciones coherentes (100%)"
+      mensaje: `Participaciones coherentes (${(suma * 100).toFixed(0)}%)`
     }
   }
   
@@ -232,7 +267,7 @@ export function validateParticipaciones(titularidadesJson: string): NotaSimpleRe
       id: "NS6",
       titulo: "Participaciones coherentes",
       severidad: "ERROR",
-      mensaje: "Participaciones superiores al 100%"
+      mensaje: `Participaciones superiores al 100% (${(suma * 100).toFixed(1)}%)`
     }
   }
   
@@ -241,7 +276,7 @@ export function validateParticipaciones(titularidadesJson: string): NotaSimpleRe
     id: "NS6",
     titulo: "Participaciones coherentes",
     severidad: "WARNING",
-    mensaje: "Participaciones no alcanzan el 100%"
+    mensaje: `Participaciones no alcanzan el 100% (${(suma * 100).toFixed(1)}%)`
   }
 }
 
