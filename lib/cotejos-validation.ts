@@ -1,4 +1,4 @@
-import type { Document, Cotejo } from "./types"
+import type { Document, Cotejo, CotejoChecklistItem } from "./types"
 
 // Helper to get document type
 function getDocumentType(doc: Document): string {
@@ -68,25 +68,32 @@ function parseSpanishDate(dateStr: string): Date | null {
 export function validateDocumentosPresentados(documents: Document[]): Cotejo {
   const hasDNI = documents.some(isDNI)
   const nominas = documents.filter(isNomina)
+  const hasThreeNominas = nominas.length >= 3
   const hasVidaLaboral = documents.some(isVidaLaboral)
   const hasContrato = documents.some(isContrato)
+  const hasVidaLaboralOrContrato = hasVidaLaboral || hasContrato
   const hasNotaSimple = documents.some(isNotaSimple)
   const hasModelo100 = documents.some(isModelo100)
   
-  const missingDocs: string[] = []
+  // Build checklist
+  const checklist = [
+    { label: "DNI", checked: hasDNI },
+    { label: "Tres nóminas", checked: hasThreeNominas },
+    { label: "Vida laboral o contrato laboral", checked: hasVidaLaboralOrContrato },
+    { label: "Declaración de la renta", checked: hasModelo100 },
+    { label: "Nota Simple", checked: hasNotaSimple },
+  ]
   
-  if (!hasDNI) missingDocs.push("DNI")
-  if (nominas.length < 3) missingDocs.push(`Nóminas (${nominas.length}/3)`)
-  if (!hasVidaLaboral && !hasContrato) missingDocs.push("Vida Laboral o Contrato")
-  if (!hasNotaSimple) missingDocs.push("Nota Simple")
-  if (!hasModelo100) missingDocs.push("Modelo 100 - Declaración IRPF")
+  const allChecked = checklist.every(item => item.checked)
+  const checkedCount = checklist.filter(item => item.checked).length
   
-  if (missingDocs.length === 0) {
+  if (allChecked) {
     return {
       id: "DOC1",
       titulo: "Control de tipos documentales",
       severidad: "OK",
-      mensaje: "Expediente documental completo"
+      mensaje: "Expediente documental completo",
+      checklist
     }
   }
   
@@ -94,7 +101,8 @@ export function validateDocumentosPresentados(documents: Document[]): Cotejo {
     id: "DOC1",
     titulo: "Control de tipos documentales",
     severidad: "ERROR",
-    mensaje: `Expediente incompleto. Faltan: ${missingDocs.join(", ")}`
+    mensaje: `Expediente incompleto (${checkedCount}/${checklist.length})`,
+    checklist
   }
 }
 

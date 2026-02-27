@@ -1,8 +1,8 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Cotejo } from "@/lib/types"
-import { CheckCircle2, AlertTriangle, XCircle, FileStack } from "lucide-react"
+import type { Cotejo, CotejoChecklistItem } from "@/lib/types"
+import { CheckCircle2, AlertTriangle, XCircle, FileStack, Check, X } from "lucide-react"
 
 interface CotejosInterdocumentalesProps {
   cotejos: Cotejo[]
@@ -103,6 +103,23 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
               <p className={`text-sm mt-0.5 ${getSeverityTextColor(cotejo.severidad)} opacity-90`}>
                 {cotejo.mensaje}
               </p>
+              {/* Render checklist if present */}
+              {cotejo.checklist && cotejo.checklist.length > 0 && (
+                <ul className="mt-3 space-y-1.5">
+                  {cotejo.checklist.map((item, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-sm">
+                      {item.checked ? (
+                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      ) : (
+                        <X className="h-4 w-4 text-red-500 flex-shrink-0" />
+                      )}
+                      <span className={item.checked ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"}>
+                        {item.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         ))}

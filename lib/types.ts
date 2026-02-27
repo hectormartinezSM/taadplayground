@@ -80,11 +80,17 @@ export interface ActivityLogEntry {
 }
 
 // Cotejos Interdocumentales
+export interface CotejoChecklistItem {
+  label: string
+  checked: boolean
+}
+
 export interface Cotejo {
   id: string
   titulo: string
   severidad: RevisionSeverity
   mensaje: string
+  checklist?: CotejoChecklistItem[]
 }
 
 export type WorkflowStep =

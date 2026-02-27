@@ -212,13 +212,6 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
 
   return (
     <>
-      {/* Cotejos Interdocumentales - shown at the top when all documents are complete */}
-      {cotejos.length > 0 && (
-        <div className="mb-6">
-          <CotejosInterdocumentales cotejos={cotejos} />
-        </div>
-      )}
-
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-foreground">Documentos Procesados</h2>
 
@@ -350,6 +343,13 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
           )
         })}
       </div>
+
+      {/* Cotejos Interdocumentales - shown below all documents when complete */}
+      {cotejos.length > 0 && (
+        <div className="mt-8">
+          <CotejosInterdocumentales cotejos={cotejos} />
+        </div>
+      )}
 
       {viewerOpen && (
         <ImageViewer
