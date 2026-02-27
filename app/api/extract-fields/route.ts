@@ -749,6 +749,20 @@ REGLAS DE FORMATO (OBLIGATORIAS):
       }
     }
 
+    // For Nota Simple documents, run validations
+    if (isNotaSimple && !revisiones) {
+      console.log("[v0] API: Running Nota Simple validations...")
+      
+      try {
+        const { runNotaSimpleValidations } = await import("@/lib/notasimple-validation")
+        revisiones = runNotaSimpleValidations(result)
+        
+        console.log("[v0] API: Nota Simple validations completed:", revisiones.length, "checks")
+      } catch (error) {
+        console.log("[v0] API: Error running Nota Simple validations:", error)
+      }
+    }
+
     return NextResponse.json({ 
       extractedData: result,
       ...(dniTechnicalData && { dniTechnicalData }),

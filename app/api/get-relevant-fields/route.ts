@@ -92,7 +92,7 @@ function getPredefinedFields(documentType: string): string[] | null {
     return PREDEFINED_FIELDS["VIDA_LABORAL"]
   }
 
-  // Detectar Nota Simple
+  // Detectar Nota Simple Registro de la Propiedad
   if (
     normalizedType.includes("nota simple") ||
     normalizedType.includes("certificación registral") ||
