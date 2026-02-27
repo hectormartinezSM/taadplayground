@@ -230,9 +230,9 @@ export function validatePeriodo(periodo: string): NominaRevision {
   if (!periodo || periodo === "N/D" || periodo === "N/A") {
     return {
       id: "N4",
-      titulo: "Periodo",
+      titulo: "Periodo estándar",
       severidad: "ERROR",
-      mensaje: "No se ha encontrado el periodo de la nomina"
+      mensaje: "No se ha encontrado el periodo de la nómina"
     }
   }
   
@@ -243,7 +243,7 @@ export function validatePeriodo(periodo: string): NominaRevision {
   if (!match) {
     return {
       id: "N4",
-      titulo: "Periodo",
+      titulo: "Periodo estándar",
       severidad: "ERROR",
       mensaje: `Formato de periodo incorrecto: ${periodo}`
     }
@@ -256,7 +256,7 @@ export function validatePeriodo(periodo: string): NominaRevision {
   if (!startDate || !endDate) {
     return {
       id: "N4",
-      titulo: "Periodo",
+      titulo: "Periodo estándar",
       severidad: "ERROR",
       mensaje: "No se pueden parsear las fechas del periodo"
     }
@@ -265,7 +265,7 @@ export function validatePeriodo(periodo: string): NominaRevision {
   if (startDate > endDate) {
     return {
       id: "N4",
-      titulo: "Periodo",
+      titulo: "Periodo estándar",
       severidad: "ERROR",
       mensaje: "La fecha de inicio es posterior a la fecha de fin"
     }
@@ -273,20 +273,20 @@ export function validatePeriodo(periodo: string): NominaRevision {
   
   const duration = daysDifference(startDate, endDate) + 1
   
-  if (duration < 27 || duration > 32) {
+  if (duration < 28 || duration > 31) {
     return {
       id: "N4",
-      titulo: "Periodo",
+      titulo: "Periodo estándar",
       severidad: "WARNING",
-      mensaje: `Duracion del periodo fuera del rango habitual: ${duration} dias`
+      mensaje: `La duración del periodo no está entre 28 y 31 días: ${duration} días`
     }
   }
   
   return {
     id: "N4",
-    titulo: "Periodo",
+    titulo: "Periodo estándar",
     severidad: "OK",
-    mensaje: `Periodo valido con duracion de ${duration} dias`
+    mensaje: `La duración del periodo está entre 28 y 31 días (${duration} días)`
   }
 }
 
@@ -356,16 +356,16 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (!fechaAntiguedad || fechaAntiguedad === "N/D" || fechaAntiguedad === "N/A") {
     return {
       id: "N6",
-      titulo: "Antiguedad coherente",
+      titulo: "Antigüedad suficiente",
       severidad: "WARNING",
-      mensaje: "No se ha encontrado la fecha de antiguedad"
+      mensaje: "No se ha encontrado la fecha de antigüedad"
     }
   }
   
   if (!periodo || periodo === "N/D" || periodo === "N/A") {
     return {
       id: "N6",
-      titulo: "Antiguedad coherente",
+      titulo: "Antigüedad suficiente",
       severidad: "ERROR",
       mensaje: "No se puede verificar sin periodo"
     }
@@ -375,9 +375,9 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (!antiguedadDate) {
     return {
       id: "N6",
-      titulo: "Antiguedad coherente",
+      titulo: "Antigüedad suficiente",
       severidad: "ERROR",
-      mensaje: "No se puede parsear la fecha de antiguedad"
+      mensaje: "No se puede parsear la fecha de antigüedad"
     }
   }
   
@@ -388,7 +388,7 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (!match) {
     return {
       id: "N6",
-      titulo: "Antiguedad coherente",
+      titulo: "Antigüedad suficiente",
       severidad: "ERROR",
       mensaje: "No se puede parsear el periodo"
     }
@@ -398,7 +398,7 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (!endDate) {
     return {
       id: "N6",
-      titulo: "Antiguedad coherente",
+      titulo: "Antigüedad suficiente",
       severidad: "ERROR",
       mensaje: "No se puede parsear la fecha fin del periodo"
     }
@@ -407,20 +407,22 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (antiguedadDate > endDate) {
     return {
       id: "N6",
-      titulo: "Antiguedad coherente",
+      titulo: "Antigüedad suficiente",
       severidad: "ERROR",
-      mensaje: "La fecha de antiguedad es posterior al periodo de la nomina"
+      mensaje: "La fecha de antigüedad es posterior al periodo de la nómina"
     }
   }
   
   const monthsEmployed = monthsDifference(antiguedadDate, endDate)
   
   if (monthsEmployed < 12) {
+    const years = Math.floor(monthsEmployed / 12)
+    const months = monthsEmployed % 12
     return {
       id: "N6",
-      titulo: "Antiguedad coherente",
+      titulo: "Antigüedad suficiente",
       severidad: "WARNING",
-      mensaje: `Antiguedad menor a 1 anio (${monthsEmployed} meses)`
+      mensaje: `Menos de un año de antigüedad. Antigüedad de ${years} año(s) y ${months} mes(es)`
     }
   }
   
@@ -429,10 +431,15 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   
   return {
     id: "N6",
-    titulo: "Antiguedad coherente",
+    titulo: "Antigüedad suficiente",
     severidad: "OK",
-    mensaje: `Antiguedad de ${years} anio(s) y ${months} mes(es)`
+    mensaje: `Más de un año de antigüedad. Antigüedad de ${years} año(s) y ${months} mes(es)`
   }
+}
+
+// Helper to format amount in Spanish format
+function formatAmountSpanish(amount: number): string {
+  return amount.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€"
 }
 
 // N7: Validate total devengado matches sum of devengos
@@ -475,7 +482,7 @@ export function validateCuadreTotalDevengado(
       id: "N7",
       titulo: "Cuadre total devengado",
       severidad: "ERROR",
-      mensaje: `Descuadre: documento ${totalDoc.toFixed(2)} vs suma ${sumaDevengos.toFixed(2)} (diferencia: ${difference.toFixed(2)})`
+      mensaje: `Descuadre: documento ${formatAmountSpanish(totalDoc)} vs suma ${formatAmountSpanish(sumaDevengos)} (diferencia: ${formatAmountSpanish(difference)})`
     }
   }
   
@@ -483,7 +490,7 @@ export function validateCuadreTotalDevengado(
     id: "N7",
     titulo: "Cuadre total devengado",
     severidad: "OK",
-    mensaje: `Total devengado cuadra correctamente: ${totalDoc.toFixed(2)}`
+    mensaje: `Total devengado es igual a la suma de todos los devengos (${formatAmountSpanish(totalDoc)})`
   }
 }
 
@@ -527,7 +534,7 @@ export function validateCuadreTotalRetenciones(
       id: "N8",
       titulo: "Cuadre total retenciones",
       severidad: "ERROR",
-      mensaje: `Descuadre: documento ${totalDoc.toFixed(2)} vs suma ${sumaRetenciones.toFixed(2)} (diferencia: ${difference.toFixed(2)})`
+      mensaje: `Descuadre: documento ${formatAmountSpanish(totalDoc)} vs suma ${formatAmountSpanish(sumaRetenciones)} (diferencia: ${formatAmountSpanish(difference)})`
     }
   }
   
@@ -535,7 +542,7 @@ export function validateCuadreTotalRetenciones(
     id: "N8",
     titulo: "Cuadre total retenciones",
     severidad: "OK",
-    mensaje: `Total retenciones cuadra correctamente: ${totalDoc.toFixed(2)}`
+    mensaje: `Total retenciones es igual a la suma de todas las retenciones (${formatAmountSpanish(totalDoc)})`
   }
 }
 
@@ -588,17 +595,17 @@ export function validateCuadreLiquido(
   if (difference > 1) {
     return {
       id: "N9",
-      titulo: "Cuadre del liquido",
+      titulo: "Cuadre del líquido",
       severidad: "ERROR",
-      mensaje: `Descuadre: liquido ${liquido.toFixed(2)} vs esperado ${expectedLiquido.toFixed(2)} (devengado ${devengadoFinal.toFixed(2)} - retenciones ${retencionesFinal.toFixed(2)})`
+      mensaje: `Descuadre: líquido ${formatAmountSpanish(liquido)} vs esperado ${formatAmountSpanish(expectedLiquido)} (devengado ${formatAmountSpanish(devengadoFinal)} - retenciones ${formatAmountSpanish(retencionesFinal)})`
     }
   }
   
   return {
     id: "N9",
-    titulo: "Cuadre del liquido",
+    titulo: "Cuadre del líquido",
     severidad: "OK",
-    mensaje: `Liquido cuadra: ${liquido.toFixed(2)} = ${devengadoFinal.toFixed(2)} - ${retencionesFinal.toFixed(2)}`
+    mensaje: `Líquido cuadra: ${formatAmountSpanish(liquido)} = ${formatAmountSpanish(devengadoFinal)} - ${formatAmountSpanish(retencionesFinal)}`
   }
 }
 
