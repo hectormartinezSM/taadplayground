@@ -58,12 +58,14 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
   const errorCount = cotejos.filter(c => c.severidad === "ERROR").length
 
   return (
-    <Card className="border-2 border-primary/20 bg-card">
-      <CardHeader className="pt-6 pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <FileStack className="h-6 w-6 text-primary" />
-            <CardTitle className="text-xl font-bold text-foreground">
+    <Card className="shadow-sm hover:shadow-md transition-shadow">
+      <CardHeader className="border-b px-6 py-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shadow-sm">
+              <FileStack className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle className="text-lg font-semibold">
               Cotejos Interdocumentales del Expediente
             </CardTitle>
           </div>
