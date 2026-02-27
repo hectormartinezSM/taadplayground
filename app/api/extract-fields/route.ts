@@ -577,22 +577,22 @@ REGLAS DE FORMATO (OBLIGATORIAS):
         for (const fieldName of fields) {
           const valor = extractionResult.extraction[fieldName]
 
-          if (valor && typeof valor === "string") {
+          // ALWAYS force DNI/NIF to 12345678Z for Nomina, Modelo 100, and Vida Laboral (not Nota Simple)
+          const forceDNI = (isNomina || isModelo100IRPF || isVidaLaboral) && (fieldName === "DNI" || fieldName === "NIF")
+          if (forceDNI) {
+            result[fieldName] = {
+              value: "12345678Z",
+              confidence: 1,
+            }
+            console.log("[v0] API: Field", fieldName, "forced to demo value: 12345678Z")
+          } else if (valor && typeof valor === "string") {
             result[fieldName] = {
               value: valor.trim(),
               confidence: 1,
             }
             console.log("[v0] API: Field", fieldName, "extracted:", valor.trim())
           } else {
-            // DNI fallback for all document types except Nota Simple
-            const needsDNIFallback = (isNomina || isModelo100IRPF || isVidaLaboral) && (fieldName === "DNI" || fieldName === "NIF")
-            if (needsDNIFallback) {
-              result[fieldName] = {
-                value: "12345678Z",
-                confidence: 1,
-              }
-              console.log("[v0] API: Field", fieldName, "using demo fallback: 12345678Z")
-            } else if (isNomina && fieldName === "CIF empresa") {
+            if (isNomina && fieldName === "CIF empresa") {
               result[fieldName] = {
                 value: "A11111111",
                 confidence: 1,
