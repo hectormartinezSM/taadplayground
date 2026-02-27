@@ -720,6 +720,24 @@ REGLAS DE FORMATO (OBLIGATORIAS):
       }
     }
 
+    // For Modelo 100 IRPF documents, run validations
+    const isModelo100 = documentType.toLowerCase().includes("modelo 100") || 
+                        documentType.toLowerCase().includes("irpf") ||
+                        documentType.toLowerCase().includes("declaración de irpf")
+    
+    if (isModelo100 && !revisiones) {
+      console.log("[v0] API: Running Modelo 100 validations...")
+      
+      try {
+        const { runModelo100Validations } = await import("@/lib/modelo100-validation")
+        revisiones = runModelo100Validations(result)
+        
+        console.log("[v0] API: Modelo 100 validations completed:", revisiones.length, "checks")
+      } catch (error) {
+        console.log("[v0] API: Error running Modelo 100 validations:", error)
+      }
+    }
+
     return NextResponse.json({ 
       extractedData: result,
       ...(dniTechnicalData && { dniTechnicalData }),
