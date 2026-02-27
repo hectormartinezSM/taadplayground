@@ -76,12 +76,9 @@ export function DNIRevisions({ revisiones }: DNIRevisionsProps) {
           >
             {getSeverityIcon(revision.severidad)}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className={`font-medium text-sm ${getSeverityTextColor(revision.severidad)}`}>
-                  {revision.titulo}
-                </span>
-                <span className="text-xs text-muted-foreground">({revision.id})</span>
-              </div>
+              <span className={`font-medium text-sm ${getSeverityTextColor(revision.severidad)}`}>
+                {revision.titulo}
+              </span>
               <p className={`text-sm mt-0.5 ${getSeverityTextColor(revision.severidad)} opacity-90`}>
                 {revision.mensaje}
               </p>
