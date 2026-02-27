@@ -93,7 +93,12 @@ export function validateDNI(dni: string): VidaLaboralRevision {
   }
   
   // Normalize: remove spaces, hyphens, convert to uppercase
-  const normalizedDNI = dni.replace(/[\s\-]/g, "").toUpperCase()
+  let normalizedDNI = dni.replace(/[\s\-]/g, "").toUpperCase()
+  
+  // If DNI has 9 digits + 1 letter and starts with 0, remove the leading zero
+  if (/^0\d{8}[A-Z]$/.test(normalizedDNI)) {
+    normalizedDNI = normalizedDNI.substring(1)
+  }
   
   // Check format: 8 digits + 1 letter
   const dniPattern = /^(\d{8})([A-Z])$/
