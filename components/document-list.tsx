@@ -320,7 +320,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                   />
                 )}
 
-                {/* DNI Validations - Only show for DNI documents when complete */}
+                {/* Validations - Show for documents with revisions when complete */}
                 {doc.status === "complete" && 
                  doc.revisiones && 
                  doc.revisiones.length > 0 && (

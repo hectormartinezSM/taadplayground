@@ -456,7 +456,7 @@ El sistema detecta este tipo documental si el tipo normalizado:
 2.3. CAMPOS Y PROMPTS DE EXTRACCION
 ================================================================================
 
-Campos (10 en total, en este orden):
+Campos (12 en total, en este orden):
 
   1.  Nombre completo
   2.  DNI
@@ -466,8 +466,10 @@ Campos (10 en total, en este orden):
   6.  CIF empresa
   7.  Periodo
   8.  Liquido a percibir
-  9.  Devengos                        (JSON array)
-  10. Retenciones                     (JSON array)
+  9.  Total devengado (documento)     ** NUEVO **
+  10. Total retenciones (documento)   ** NUEVO **
+  11. Devengos                        (JSON array)
+  12. Retenciones                     (JSON array)
 
 --------------------------------------------------------------------------------
 Detalle de cada campo:
@@ -578,6 +580,47 @@ CAMPO: Liquido a percibir
   Ejemplos:
   - "1.850,00 EUR"
   - "2.345,67 EUR"
+
+--------------------------------------------------------------------------------
+
+CAMPO: Total devengado (documento)  ** NUEVO **
+  Extrae el TOTAL DEVENGADO que aparece explicitamente en el documento.
+
+  DONDE BUSCAR:
+  - En la seccion de devengos, al final como "TOTAL DEVENGADO", "TOTAL DEVENGO",
+    "TOTAL A DEVENGAR"
+  - En un resumen o pie del documento
+  - Puede aparecer como "TOTAL BRUTO" o "SALARIO BRUTO"
+
+  NORMALIZACION OBLIGATORIA:
+  - Devuelve SOLO el numero sin simbolo de moneda
+  - Formato: "XXXX,XX" (coma decimal, sin separadores de miles)
+  - Ejemplos:
+    - "1.850,00 EUR" -> "1850,00"
+    - "2.345,67 EUR" -> "2345,67"
+    - "3456.78" -> "3456,78"
+
+  Si NO aparece el total en el documento, devuelve exactamente: N/D
+
+--------------------------------------------------------------------------------
+
+CAMPO: Total retenciones (documento)  ** NUEVO **
+  Extrae el TOTAL RETENCIONES o TOTAL DEDUCCIONES que aparece explicitamente
+  en el documento.
+
+  DONDE BUSCAR:
+  - En la seccion de deducciones/retenciones, al final como "TOTAL DEDUCCIONES",
+    "TOTAL RETENCIONES", "TOTAL A DEDUCIR"
+  - En un resumen o pie del documento
+
+  NORMALIZACION OBLIGATORIA:
+  - Devuelve SOLO el numero sin simbolo de moneda
+  - Formato: "XXXX,XX" (coma decimal, sin separadores de miles)
+  - Ejemplos:
+    - "450,00 EUR" -> "450,00"
+    - "1.234,56 EUR" -> "1234,56"
+
+  Si NO aparece el total en el documento, devuelve exactamente: N/D
 
 --------------------------------------------------------------------------------
 
@@ -701,13 +744,164 @@ CAMPO: Retenciones (JSON array)
 
 
 ================================================================================
-2.4. VISUALIZACION EN LA INTERFAZ
+2.4. REVISIONES INTRADOCUMENTALES
+================================================================================
+
+El sistema ejecuta automaticamente 9 reglas de validacion sobre la Nomina.
+Los resultados se muestran como un semaforo de validaciones.
+
+FORMATO DE SALIDA:
+Array JSON llamado "revisiones" con objetos que contienen:
+  - id: Identificador de la regla (N1, N2, etc.)
+  - titulo: Nombre descriptivo de la validacion
+  - severidad: "OK" | "WARNING" | "ERROR"
+  - mensaje: Descripcion del resultado
+
+--------------------------------------------------------------------------------
+N1 - DNI trabajador: formato + letra de control
+--------------------------------------------------------------------------------
+  Input: DNI del trabajador
+  
+  Validacion:
+  - Debe cumplir patron: 8 digitos + 1 letra
+  - Calcular letra esperada: numero % 23
+  - Tabla de letras: TRWAGMYFPDXBNJZSQVHLCKE
+  
+  Resultados:
+  - OK: Formato correcto y letra de control valida
+  - ERROR: Formato incorrecto o letra no coincide
+
+--------------------------------------------------------------------------------
+N2 - CIF empresa: formato + digito de control
+--------------------------------------------------------------------------------
+  Input: CIF de la empresa
+  
+  Validacion:
+  - Debe cumplir patron: letra + 7 digitos + control (digito o letra)
+  - Validar digito de control segun algoritmo CIF
+  
+  Resultados:
+  - OK: CIF valido con digito de control correcto
+  - ERROR: Formato incorrecto o digito de control invalido
+
+--------------------------------------------------------------------------------
+N3 - NAF Seguridad Social: formato + control
+--------------------------------------------------------------------------------
+  Input: Numero de Seguridad Social del trabajador
+  
+  Validacion:
+  - Debe tener 12 digitos (estructura: PP/NNNNNNNN-CC)
+  - Validar digitos de control
+  
+  Resultados:
+  - OK: NAF con formato y control validos
+  - ERROR: Formato incorrecto
+
+--------------------------------------------------------------------------------
+N4 - Periodo: formato + duracion razonable
+--------------------------------------------------------------------------------
+  Input: Periodo de liquidacion (DD/MM/AAAA - DD/MM/AAAA)
+  
+  Validacion:
+  - Formato correcto con fecha inicio <= fecha fin
+  - Calcular duracion en dias (fin - inicio + 1)
+  
+  Resultados:
+  - OK: Duracion entre 27 y 32 dias (inclusive)
+  - WARNING: Duracion fuera del rango habitual
+  - ERROR: Formato invalido o inicio > fin
+
+--------------------------------------------------------------------------------
+N5 - Nomina reciente
+--------------------------------------------------------------------------------
+  Input: Fecha FIN del Periodo
+  
+  Validacion:
+  - Calcular meses desde la fecha fin hasta hoy
+  
+  Resultados:
+  - OK: Ultimos 3 meses
+  - WARNING: Entre 3 y 12 meses de antiguedad
+  - ERROR: Mas de 12 meses de antiguedad
+
+--------------------------------------------------------------------------------
+N6 - Antiguedad coherente
+--------------------------------------------------------------------------------
+  Input: fecha_antiguedad, fecha FIN del Periodo
+  
+  Validacion:
+  - Comparar fecha de antiguedad con fin del periodo
+  - Calcular tiempo de antiguedad en la empresa
+  
+  Resultados:
+  - OK: Antiguedad >= 1 anio
+  - WARNING: Antiguedad < 1 anio
+  - ERROR: Fecha de antiguedad posterior al periodo
+
+--------------------------------------------------------------------------------
+N7 - Cuadre total devengado
+--------------------------------------------------------------------------------
+  Input: Total devengado (documento), array Devengos
+  
+  Validacion:
+  - Sumar todos los importes del array Devengos
+  - Comparar con Total devengado (documento)
+  - Tolerancia: +/- 1,00 EUR
+  
+  Resultados:
+  - OK: Cuadra correctamente
+  - ERROR: Descuadre mayor a 1 EUR
+  - WARNING: Total devengado no presente en documento (N/D)
+
+--------------------------------------------------------------------------------
+N8 - Cuadre total retenciones
+--------------------------------------------------------------------------------
+  Input: Total retenciones (documento), array Retenciones
+  
+  Validacion:
+  - Sumar todos los importes del array Retenciones
+  - Comparar con Total retenciones (documento)
+  - Tolerancia: +/- 1,00 EUR
+  
+  Resultados:
+  - OK: Cuadra correctamente
+  - ERROR: Descuadre mayor a 1 EUR
+  - WARNING: Total retenciones no presente en documento (N/D)
+
+--------------------------------------------------------------------------------
+N9 - Cuadre del liquido
+--------------------------------------------------------------------------------
+  Input: Liquido a percibir, totales, arrays de devengos/retenciones
+  
+  Validacion:
+  - Si existen ambos totales del documento:
+    - liquido = total_devengado - total_retenciones
+  - Si falta algun total:
+    - liquido = suma_devengos - suma_retenciones
+  - Tolerancia: +/- 1,00 EUR
+  
+  Resultados:
+  - OK: Liquido cuadra con la formula
+  - ERROR: Descuadre mayor a 1 EUR
+
+
+================================================================================
+2.5. VISUALIZACION EN LA INTERFAZ
 ================================================================================
 
 Campos simples: Se muestran en tabla de dos columnas (Campo | Valor)
 
 Campos JSON (Devengos y Retenciones): Se renderizan como tablas independientes
 con sus respectivas columnas.
+
+Revisiones intradocumentales: Se muestran como lista con semaforo:
+  - Verde (OK): Validacion correcta
+  - Amarillo (WARNING): Aviso o dato no disponible
+  - Rojo (ERROR): Error de validacion
+
+REGLA FUNDAMENTAL:
+Las validaciones NO modifican los valores extraidos. Solo generan el array
+"revisiones" que se muestra en una seccion separada.
 
 
 ################################################################################

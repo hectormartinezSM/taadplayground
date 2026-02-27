@@ -22,6 +22,8 @@ const PREDEFINED_FIELDS: Record<string, string[]> = {
     "CIF empresa",
     "Periodo",
     "Líquido a percibir",
+    "Total devengado (documento)",
+    "Total retenciones (documento)",
     "Devengos",
     "Retenciones",
   ],

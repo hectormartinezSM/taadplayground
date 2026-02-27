@@ -129,6 +129,36 @@ IMPORTANTE: No confundir con el CIF de la empresa (empieza por letra como B, A, 
     "Periodo de liquidación al cual hace referencia la nómina. En formato DD/MM/AAAA - DD/MM/AAAA. Si solo aparece mes y año, indica el primer y último día de ese mes.",
   "Líquido a percibir":
     "Sueldo neto, a veces representado como líquido total, a percibir por parte del trabajador. Formato: XX.XXX,XX € (separador de miles: punto, separador decimal: coma).",
+  "Total devengado (documento)": `Extrae el TOTAL DEVENGADO que aparece explicitamente en el documento.
+
+DONDE BUSCAR:
+- En la seccion de devengos, al final como "TOTAL DEVENGADO", "TOTAL DEVENGO", "TOTAL A DEVENGAR"
+- En un resumen o pie del documento
+- Puede aparecer como "TOTAL BRUTO" o "SALARIO BRUTO"
+
+NORMALIZACION OBLIGATORIA:
+- Devuelve SOLO el numero sin simbolo de moneda
+- Formato: "XXXX,XX" (coma decimal, sin separadores de miles)
+- Ejemplos:
+  - "1.850,00 €" -> "1850,00"
+  - "2.345,67 EUR" -> "2345,67"
+  - "3456.78" -> "3456,78"
+
+Si NO aparece el total en el documento, devuelve exactamente: N/D`,
+  "Total retenciones (documento)": `Extrae el TOTAL RETENCIONES o TOTAL DEDUCCIONES que aparece explicitamente en el documento.
+
+DONDE BUSCAR:
+- En la seccion de deducciones/retenciones, al final como "TOTAL DEDUCCIONES", "TOTAL RETENCIONES", "TOTAL A DEDUCIR"
+- En un resumen o pie del documento
+
+NORMALIZACION OBLIGATORIA:
+- Devuelve SOLO el numero sin simbolo de moneda
+- Formato: "XXXX,XX" (coma decimal, sin separadores de miles)
+- Ejemplos:
+  - "450,00 €" -> "450,00"
+  - "1.234,56 EUR" -> "1234,56"
+
+Si NO aparece el total en el documento, devuelve exactamente: N/D`,
   Devengos: `Extrae todos los devengos que aparezcan en la nómina (conceptos que suman al salario bruto del trabajador).
 
 FORMATO DE SALIDA OBLIGATORIO (JSON):
@@ -675,6 +705,22 @@ REGLAS DE FORMATO (OBLIGATORIAS):
         }
       } catch (error) {
         console.log("[v0] API: Error extracting DNI technical fields:", error)
+      }
+    }
+
+    // For Nomina documents, run validations
+    const isNomina = documentType.toLowerCase().includes("nómina") || documentType.toLowerCase().includes("nomina")
+    
+    if (isNomina && !revisiones) {
+      console.log("[v0] API: Running Nomina validations...")
+      
+      try {
+        const { runNominaValidations } = await import("@/lib/nomina-validation")
+        revisiones = runNominaValidations(result)
+        
+        console.log("[v0] API: Nomina validations completed:", revisiones.length, "checks")
+      } catch (error) {
+        console.log("[v0] API: Error running Nomina validations:", error)
       }
     }
 

@@ -51,6 +51,14 @@ export interface DNITechnicalData {
   mrz_checksum_expiracion: string
 }
 
+// Nomina Validation Types (reuses RevisionSeverity and DNIRevision structure)
+export interface NominaRevision {
+  id: string
+  titulo: string
+  severidad: RevisionSeverity
+  mensaje: string
+}
+
 export interface Document {
   id: string
   pageIds: string[]
@@ -60,7 +68,8 @@ export interface Document {
   extractedData?: Record<string, ExtractedField>
   // DNI specific
   dniTechnicalData?: DNITechnicalData
-  revisiones?: DNIRevision[]
+  // Revisiones (both DNI and Nomina use the same structure)
+  revisiones?: (DNIRevision | NominaRevision)[]
 }
 
 export interface ActivityLogEntry {
