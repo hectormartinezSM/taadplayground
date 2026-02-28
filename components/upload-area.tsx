@@ -1,8 +1,10 @@
 "use client"
 
-import { useCallback, useState } from "react"
-import { Loader2, FileText, Wallet, Scale, Building2, Plane, Home } from "lucide-react"
+import type React from "react"
+import { useCallback, useState, useRef } from "react"
+import { Upload, Loader2, FileText, Wallet, Scale, Building2, Plane, Home } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import type { Page, ActivityLogEntry, WorkflowStep } from "@/lib/types"
 import { extractPagesFromPDF } from "@/lib/pdf-utils"
 import { useLocale } from "@/lib/locale-context"
@@ -17,13 +19,13 @@ const EXAMPLE_DOCUMENTS_ES = [
   {
     id: "expediente-activo",
     name: "Expediente activo",
-    description: "Justificante solicitud prestamo hipotecario",
+    description: "Justificante solicitud préstamo hipotecario",
     type: "Documento Bancario",
   },
   {
     id: "testamentaria",
-    name: "Testamentaria",
-    description: "Documentacion sobre procesos hereditarios",
+    name: "Testamentaría",
+    description: "Documentación sobre procesos hereditarios",
     type: "Documento Notarial",
   },
   {
@@ -34,7 +36,7 @@ const EXAMPLE_DOCUMENTS_ES = [
   },
   {
     id: "nominas",
-    name: "Nominas",
+    name: "Nóminas",
     description: "Recibos de salario",
     type: "Documento Laboral",
   },
@@ -143,8 +145,10 @@ const EXAMPLE_DOCUMENT_META: Array<{
 ]
 
 export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }: UploadAreaProps) {
+  const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { locale, t } = useLocale()
 
   const exampleDocs = locale === "en" ? EXAMPLE_DOCUMENTS_EN : EXAMPLE_DOCUMENTS_ES
@@ -192,6 +196,29 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
       }
     },
     [onFileUpload, updateWorkflowStep, t],
+  )
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+
+      const file = e.dataTransfer.files[0]
+      if (file && (file.type === "application/pdf" || file.type.startsWith("image/"))) {
+        handleFile(file)
+      }
+    },
+    [handleFile],
+  )
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (file) {
+        handleFile(file)
+      }
+    },
+    [handleFile],
   )
 
   const handleExampleDocument = useCallback(
@@ -260,18 +287,79 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8">
+      {/* File Upload Area */}
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardContent className="p-8">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault()
+              setIsDragging(true)
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            className={`flex flex-col items-center justify-center gap-6 rounded-xl border-2 border-dashed p-16 transition-all ${
+              isDragging ? "border-primary bg-primary/5 shadow-inner" : "border-border bg-muted/30"
+            }`}
+          >
+            <div className="rounded-full bg-muted p-4">
+              {isLoading ? (
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              ) : (
+                <Upload className="h-10 w-10 text-muted-foreground" />
+              )}
+            </div>
+
+            <div className="text-center">
+              <p className="text-lg font-semibold text-foreground">
+                {isLoading
+                  ? t("Procesando documento...", "Processing document...")
+                  : t("Cargar documento", "Upload document")}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {isLoading
+                  ? t("Extrayendo páginas del documento", "Extracting pages from document")
+                  : t(
+                      "Arrastra un archivo PDF o imagen aquí, o haz clic para seleccionar",
+                      "Drag a PDF or image file here, or click to select",
+                    )}
+              </p>
+            </div>
+
+            {error && <p className="text-sm text-red-600">Error: {error}</p>}
+
+            {!isLoading && (
+              <>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileInput}
+                  accept=".pdf,image/*"
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mt-2"
+                >
+                  {t("Seleccionar archivo", "Select file")}
+                </Button>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Example Documents Gallery */}
       <Card className="hover:shadow-lg transition-shadow">
         <CardContent className="p-12">
           <div className="text-center mb-8">
             <h3 className="text-xl font-semibold text-foreground mb-2">
-              {t("Galerias de documentos", "Document Gallery")}
+              {t("Galerías de documentos", "Document Gallery")}
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t("Prueba la demo con alguno de los ejemplos", "Try the demo with one of the examples")}
             </p>
           </div>
-
-          {error && <p className="mb-6 text-sm text-center text-red-600">Error: {error}</p>}
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center gap-4 py-16">
