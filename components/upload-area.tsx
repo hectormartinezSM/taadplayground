@@ -153,30 +153,37 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
 
   const exampleDocs = locale === "en" ? EXAMPLE_DOCUMENTS_EN : EXAMPLE_DOCUMENTS_ES
 
-  const handleFile = useCallback(
-    async (file: File) => {
+  const handleFiles = useCallback(
+    async (files: File[]) => {
       setIsLoading(true)
       setError(null)
       updateWorkflowStep("splitting")
 
       try {
-        let pageImages: string[] = []
+        let allPageImages: string[] = []
 
-        if (file.type === "application/pdf") {
-          pageImages = await extractPagesFromPDF(file)
-        } else if (file.type.startsWith("image/")) {
-          const reader = new FileReader()
-          const imageUrl = await new Promise<string>((resolve, reject) => {
-            reader.onload = () => resolve(reader.result as string)
-            reader.onerror = reject
-            reader.readAsDataURL(file)
-          })
-          pageImages = [imageUrl]
-        } else {
+        for (const file of files) {
+          if (file.type === "application/pdf") {
+            const pdfPages = await extractPagesFromPDF(file)
+            allPageImages = [...allPageImages, ...pdfPages]
+          } else if (file.type.startsWith("image/")) {
+            const reader = new FileReader()
+            const imageUrl = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string)
+              reader.onerror = reject
+              reader.readAsDataURL(file)
+            })
+            allPageImages.push(imageUrl)
+          } else {
+            console.warn(`Skipping unsupported file: ${file.name}`)
+          }
+        }
+
+        if (allPageImages.length === 0) {
           throw new Error(t("Tipo de archivo no soportado", "Unsupported file type"))
         }
 
-        const pages: Page[] = pageImages.map((imageUrl, index) => ({
+        const pages: Page[] = allPageImages.map((imageUrl, index) => ({
           id: `page-${index}`,
           index,
           imageUrl,
@@ -203,22 +210,24 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
       e.preventDefault()
       setIsDragging(false)
 
-      const file = e.dataTransfer.files[0]
-      if (file && (file.type === "application/pdf" || file.type.startsWith("image/"))) {
-        handleFile(file)
+      const droppedFiles = Array.from(e.dataTransfer.files).filter(
+        (file) => file.type === "application/pdf" || file.type.startsWith("image/"),
+      )
+      if (droppedFiles.length > 0) {
+        handleFiles(droppedFiles)
       }
     },
-    [handleFile],
+    [handleFiles],
   )
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (file) {
-        handleFile(file)
+      const files = e.target.files
+      if (files && files.length > 0) {
+        handleFiles(Array.from(files))
       }
     },
-    [handleFile],
+    [handleFiles],
   )
 
   const handleExampleDocument = useCallback(
@@ -255,7 +264,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         const pdfBlob = new Blob([blob], { type: "application/pdf" })
         const file = new File([pdfBlob], `${exampleId}.pdf`, { type: "application/pdf" })
 
-        await handleFile(file)
+        await handleFiles([file])
 
         addActivityLog({
           type: "success",
@@ -282,7 +291,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         })
       }
     },
-    [exampleDocs, updateWorkflowStep, addActivityLog, handleFile, t],
+    [exampleDocs, updateWorkflowStep, addActivityLog, handleFiles, t],
   )
 
   return (
@@ -334,6 +343,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                   ref={fileInputRef}
                   onChange={handleFileInput}
                   accept=".pdf,image/*"
+                  multiple
                   className="hidden"
                 />
                 <Button
