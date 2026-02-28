@@ -18,7 +18,7 @@ interface UploadAreaProps {
 const EXAMPLE_DOCUMENTS_ES = [
   {
     id: "expediente-activo",
-    name: "Expediente activo",
+    name: "Préstamo",
     description: "Justificante solicitud préstamo hipotecario",
     type: "Documento Bancario",
   },
@@ -57,7 +57,7 @@ const EXAMPLE_DOCUMENTS_ES = [
 const EXAMPLE_DOCUMENTS_EN = [
   {
     id: "expediente-activo",
-    name: "Active File",
+    name: "Loan",
     description: "Mortgage loan application document",
     type: "Banking Document",
   },
