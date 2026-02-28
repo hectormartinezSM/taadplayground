@@ -219,7 +219,7 @@ export default function MobileUploadPage() {
                   {isUploading && (
                     <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-50 text-blue-600 text-sm">
                       <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" />
-                      <span>Subiendo documento...</span>
+                      <span>Uploading document...</span>
                     </div>
                   )}
 
@@ -234,12 +234,12 @@ export default function MobileUploadPage() {
                     {isUploading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Subiendo...
+                        Uploading...
                       </>
                     ) : (
                       <>
                         <Upload className="h-4 w-4 mr-2" />
-                        Subir documento
+                        Upload document
                       </>
                     )}
                   </Button>

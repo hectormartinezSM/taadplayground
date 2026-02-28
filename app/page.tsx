@@ -112,20 +112,28 @@ function HomeContent() {
           <div className="flex items-center gap-4">
             <button
               onClick={handleReset}
-              className="hover:opacity-80 transition-opacity"
+              className="hover:opacity-80 transition-opacity flex flex-col items-center gap-0.5"
               aria-label={t("Volver a la página inicial", "Back to home")}
             >
               <Image
                 src="/images/design-mode/Serimag_logo_color-1-scaled.png"
                 alt="Serimag"
-                width={150}
-                height={50}
-                className="h-10 w-auto object-contain"
+                width={100}
+                height={33}
+                className="h-7 w-auto object-contain"
                 priority
               />
+              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">playground</span>
             </button>
-            <div className="border-l pl-4">
-              <h1 className="text-3xl font-bold text-foreground">playground</h1>
+            <div className="border-l pl-4 flex items-center">
+              <Image
+                src="/adeptia-logo.png"
+                alt="Adeptia"
+                width={180}
+                height={45}
+                className="h-8 w-auto object-contain"
+                priority
+              />
             </div>
           </div>
           <div className="flex items-center gap-2">

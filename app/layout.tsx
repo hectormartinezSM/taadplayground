@@ -11,9 +11,9 @@ const merriweather = Merriweather({
 })
 
 export const metadata: Metadata = {
-  title: "Automatización de Documentos con IA - Demo",
+  title: "AI Document Automation - Playground",
   description:
-    "Demo de procesamiento automático de documentos: clasificación, segmentación y extracción de datos con IA",
+    "Automatic document processing demo: classification, segmentation and data extraction with AI",
   generator: "v0.app",
   icons: {
     icon: [
