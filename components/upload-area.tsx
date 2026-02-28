@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { Loader2, FileText, Receipt, ShieldAlert, FlaskConical } from "lucide-react"
+import { Loader2, FileText, Wallet, Scale, Building2, Plane, Home } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Page, ActivityLogEntry, WorkflowStep } from "@/lib/types"
 import { extractPagesFromPDF } from "@/lib/pdf-utils"
@@ -15,97 +15,130 @@ interface UploadAreaProps {
 
 const EXAMPLE_DOCUMENTS_ES = [
   {
-    id: "lab-report",
-    name: "Informe de Laboratorio",
-    description: "Informe de patologia con diagnostico del paciente",
-    type: "Documento Medico",
+    id: "expediente-activo",
+    name: "Expediente activo",
+    description: "Justificante solicitud prestamo hipotecario",
+    type: "Documento Bancario",
   },
   {
-    id: "accident-statement",
-    name: "Declaracion de Accidente",
-    description: "Declaracion amistosa de accidente de trafico",
-    type: "Documento de Seguro",
+    id: "testamentaria",
+    name: "Testamentaria",
+    description: "Documentacion sobre procesos hereditarios",
+    type: "Documento Notarial",
   },
   {
-    id: "insurance-invoice",
-    name: "Factura de Seguro",
-    description: "Factura de prima de seguro con desglose",
-    type: "Documento de Seguro",
+    id: "pasaporte",
+    name: "Pasaporte",
+    description: "Documento identificativo internacional",
+    type: "Documento de Identidad",
   },
   {
-    id: "sales-receipt",
-    name: "Ticket de Compra",
-    description: "Ticket de venta con articulos y total",
-    type: "Documento Comercial",
+    id: "nominas",
+    name: "Nominas",
+    description: "Recibos de salario",
+    type: "Documento Laboral",
+  },
+  {
+    id: "factura",
+    name: "Factura",
+    description: "Factura con desglose completo",
+    type: "Documento Fiscal",
+  },
+  {
+    id: "contrato-alquiler",
+    name: "Contrato de alquiler",
+    description: "Contrato de arrendamiento de vivienda",
+    type: "Documento Legal",
   },
 ]
 
 const EXAMPLE_DOCUMENTS_EN = [
   {
-    id: "lab-report",
-    name: "Lab Report",
-    description: "Pathology report with patient diagnosis",
-    type: "Medical Document",
+    id: "expediente-activo",
+    name: "Active File",
+    description: "Mortgage loan application document",
+    type: "Banking Document",
   },
   {
-    id: "accident-statement",
-    name: "Accident Statement",
-    description: "Friendly accident declaration for traffic incident",
-    type: "Insurance Document",
+    id: "testamentaria",
+    name: "Testamentary",
+    description: "Documentation on inheritance processes",
+    type: "Notarial Document",
   },
   {
-    id: "insurance-invoice",
-    name: "Insurance Invoice",
-    description: "Insurance premium invoice with breakdown",
-    type: "Insurance Document",
+    id: "pasaporte",
+    name: "Passport",
+    description: "International identification document",
+    type: "Identity Document",
   },
   {
-    id: "sales-receipt",
-    name: "Sales Receipt",
-    description: "Sales receipt with items and total",
-    type: "Commercial Document",
+    id: "nominas",
+    name: "Payslips",
+    description: "Salary receipts",
+    type: "Employment Document",
+  },
+  {
+    id: "factura",
+    name: "Invoice",
+    description: "Invoice with full breakdown",
+    type: "Fiscal Document",
+  },
+  {
+    id: "contrato-alquiler",
+    name: "Rental Agreement",
+    description: "Residential lease contract",
+    type: "Legal Document",
   },
 ]
 
 const EXAMPLE_DOCUMENT_META: Array<{
   id: string
   url: string
-  fileType: "pdf" | "image"
   icon: typeof FileText
   iconColor: string
   bgColor: string
 }> = [
   {
-    id: "lab-report",
-    url: "/examples/lab_report.pdf",
-    fileType: "pdf",
-    icon: FlaskConical,
+    id: "expediente-activo",
+    url: "/examples/expediente_activo.pdf",
+    icon: Building2,
     iconColor: "text-blue-600",
     bgColor: "bg-blue-50",
   },
   {
-    id: "accident-statement",
-    url: "/examples/accident_statement.pdf",
-    fileType: "pdf",
-    icon: ShieldAlert,
-    iconColor: "text-amber-600",
-    bgColor: "bg-amber-50",
+    id: "testamentaria",
+    url: "/examples/testamentaria.pdf",
+    icon: Scale,
+    iconColor: "text-purple-600",
+    bgColor: "bg-purple-50",
   },
   {
-    id: "insurance-invoice",
-    url: "/examples/insurance_invoice.jpg",
-    fileType: "image",
-    icon: FileText,
+    id: "pasaporte",
+    url: "/examples/pasaporte.pdf",
+    icon: Plane,
     iconColor: "text-emerald-600",
     bgColor: "bg-emerald-50",
   },
   {
-    id: "sales-receipt",
-    url: "/examples/sales_receipt.jpg",
-    fileType: "image",
-    icon: Receipt,
+    id: "nominas",
+    url: "/examples/nominas.pdf",
+    icon: Wallet,
+    iconColor: "text-amber-600",
+    bgColor: "bg-amber-50",
+  },
+  {
+    id: "factura",
+    url: "/examples/factura.pdf",
+    icon: FileText,
     iconColor: "text-rose-600",
     bgColor: "bg-rose-50",
+  },
+  {
+    id: "contrato-alquiler",
+    url: "/examples/contrato_alquiler.pdf",
+    icon: Home,
+    iconColor: "text-cyan-600",
+    bgColor: "bg-cyan-50",
   },
 ]
 
@@ -192,19 +225,10 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         }
 
         const blob = await response.blob()
+        const pdfBlob = new Blob([blob], { type: "application/pdf" })
+        const file = new File([pdfBlob], `${exampleId}.pdf`, { type: "application/pdf" })
 
-        if (meta.fileType === "image") {
-          // For image-based documents, convert to a single-page image
-          const mimeType = meta.url.endsWith(".png") ? "image/png" : "image/jpeg"
-          const imageBlob = new Blob([blob], { type: mimeType })
-          const file = new File([imageBlob], `${exampleId}.jpg`, { type: mimeType })
-          await handleFile(file)
-        } else {
-          // For PDF documents
-          const pdfBlob = new Blob([blob], { type: "application/pdf" })
-          const file = new File([pdfBlob], `${exampleId}.pdf`, { type: "application/pdf" })
-          await handleFile(file)
-        }
+        await handleFile(file)
 
         addActivityLog({
           type: "success",
@@ -240,7 +264,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         <CardContent className="p-12">
           <div className="text-center mb-8">
             <h3 className="text-xl font-semibold text-foreground mb-2">
-              {t("Galeria de documentos", "Document Gallery")}
+              {t("Galerias de documentos", "Document Gallery")}
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t("Prueba la demo con alguno de los ejemplos", "Try the demo with one of the examples")}
@@ -257,7 +281,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
+            <div className="grid grid-cols-3 gap-4 max-w-4xl mx-auto">
               {exampleDocs.map((doc) => {
                 const meta = EXAMPLE_DOCUMENT_META.find((m) => m.id === doc.id)!
                 const IconComponent = meta.icon
