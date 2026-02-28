@@ -10,7 +10,7 @@ interface ParseResponse {
 
 interface ExtractResponse {
   extraction: {
-    es_blanca?: boolean
+    is_blank?: boolean
     rationale?: string
   }
 }
@@ -42,20 +42,20 @@ export async function POST(request: NextRequest) {
 
     const schema = JSON.stringify({
       properties: {
-        es_blanca: {
+        is_blank: {
           description:
-            "Devuele True si consideras que una pagina es blanca y False en caso contrarioEntendemos como página blanca una página sin información de ningun tipo, ni sellos, pies de pagina ni imagenes",
-          title: "Es Blanca",
+            "Return True if you consider that a page is blank and False otherwise. We define a blank page as a page without any information of any kind, no stamps, footers, or images.",
+          title: "Is Blank",
           type: "boolean",
         },
         rationale: {
-          description: "Breve explicación de por qué",
+          description: "Brief explanation of why",
           title: "Rationale",
           type: "string",
         },
       },
-      required: ["es_blanca", "rationale"],
-      title: "DetectorBlancas",
+      required: ["is_blank", "rationale"],
+      title: "BlankDetector",
       type: "object",
     })
 
@@ -72,13 +72,13 @@ export async function POST(request: NextRequest) {
 
     let isBlank = false
 
-    if (extractResult.extraction && "es_blanca" in extractResult.extraction) {
-      const esBlanca = extractResult.extraction.es_blanca
+    if (extractResult.extraction && "is_blank" in extractResult.extraction) {
+      const blank = extractResult.extraction.is_blank
       const rationale = extractResult.extraction.rationale?.trim() || ""
 
-      if (esBlanca === true) {
+      if (blank === true) {
         isBlank = true
-      } else if (esBlanca === null && rationale === "") {
+      } else if (blank === null && rationale === "") {
         isBlank = true
       }
     }
@@ -144,7 +144,7 @@ async function apiParse(imageBase64: string): Promise<string> {
 
 async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse | null> {
   const formData = new FormData()
-  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
+  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "document.md")
   formData.append("schema", schema)
   formData.append("model", "extract-latest")
 

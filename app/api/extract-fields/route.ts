@@ -9,7 +9,7 @@ interface ExtractResponse {
 
 async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse | null> {
   const formData = new FormData()
-  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
+  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "document.md")
   formData.append("schema", schema)
   formData.append("model", "extract-latest")
 
@@ -53,51 +53,50 @@ export async function POST(request: NextRequest) {
 
       properties[fieldName] = {
         type: "string",
-        description: `Extrae el valor de ${fieldName} del documento tipo ${documentType}.
+        description: `Extract the value of "${fieldName}" from a document of type "${documentType}".
 
-Tu objetivo es devolver los campos solicitados de forma MUY CONCISA: cuanto más breve, resumida y sintetizada sea la respuesta, mejor, sin perder información clave.
+Your goal is to return the requested fields as CONCISELY as possible: the shorter, more summarized and synthesized the answer, the better, without losing key information.
 
-REGLAS DE FORMATO (OBLIGATORIAS):
+FORMAT RULES (MANDATORY):
 
-1) Brevedad extrema:
-   - Cada valor debe ser lo más corto posible.
-   - Objetivo: <= 50 caracteres por campo.
-   - Si te pasas de 50, reescribe y acorta (elimina palabras redundantes, abrevia lo obvio).
-   - Prohibido: frases completas, explicaciones, coletillas ("según el documento…", "parece…").
-   - Solo el dato final. Si falta: "N/D".
+1) Extreme brevity:
+   - Each value must be as short as possible.
+   - Target: <= 50 characters per field.
+   - If you exceed 50, rewrite and shorten (remove redundant words, abbreviate the obvious).
+   - Forbidden: complete sentences, explanations, filler phrases ("according to the document...", "it appears...").
+   - Only the final data point. If missing: "N/A".
 
-2) Nombres de personas:
-   - Formato obligatorio: "Nombre Apellidos"
-   - Si el documento trae "Apellidos, Nombre" o "APELLIDOS, NOMBRE": invierte a "Nombre Apellidos".
-   - Capitalización normal: Primera letra en mayúscula y resto en minúsculas (respetando tildes).
-   - Elimina comas en el nombre final.
-   - Ejemplos:
-     - "PÉREZ GARCÍA, JUAN" → "Juan Pérez García"
-     - "GARCIA, ANA" → "Ana Garcia"
-     - "Juan Pérez García" → "Juan Pérez García"
+2) Person names:
+   - Required format: "First Last"
+   - If the document has "LAST, FIRST" or "LAST, First": invert to "First Last".
+   - Normal capitalization: First letter uppercase and rest lowercase (preserving accents).
+   - Remove commas from the final name.
+   - Examples:
+     - "SMITH, JOHN" -> "John Smith"
+     - "DOE, JANE M." -> "Jane M. Doe"
 
-3) Nombres de empresas:
-   - Primera letra en MAYÚSCULA y el resto en minúsculas.
-   - Mantén siglas y formas societarias en mayúsculas cuando aplique (ej.: "S.A.", "S.L.", "S.L.U.", "U.T.E.", "B.V.", "GmbH").
-   - Ejemplo:
-     - "SERIMAG SOLUCIONES DIGITALES S.L." → "Serimag Soluciones Digitales S.L."
+3) Company names:
+   - First letter UPPERCASE and rest lowercase.
+   - Keep acronyms and legal forms in uppercase where applicable (e.g.: "Inc.", "LLC", "Ltd.", "Corp.", "GmbH", "S.A.").
+   - Example:
+     - "LIBERTY MUTUAL INSURANCE COMPANY" -> "Liberty Mutual Insurance Company"
 
-4) Importes:
-   - Formato numérico: XX.XXX.XXX,XX
-   - Separador de miles: punto (.)
-   - Separador decimal: coma (,)
-   - Añade el símbolo de moneda (preferentemente detrás si no se indica lo contrario): "1.234,56 €"
-   - Si hay unidad adicional, usa formato simbólico (ej.: "%", "€/mes", "€/día", "u.").
-   - Ejemplos:
-     - "1234.5 EUR" → "1.234,50 €"
-     - "10 percent" → "10 %"
+4) Amounts:
+   - Numeric format: use appropriate separators for the currency detected.
+   - Add the currency symbol: "$1,234.56" or "1,234.56 EUR" or "£4.50"
+   - If there is an additional unit, use symbolic format (e.g.: "%", "/month", "/day").
+   - Examples:
+     - "1234.5 USD" -> "$1,234.50"
+     - "4.50 GBP" -> "£4.50"
+     - "10 percent" -> "10%"
 
-5) Fechas:
-   - Formato: DD/MM/AAAA
-   - Si es un intervalo o periodo: DD/MM/AAAA - DD/MM/AAAA
-   - Ejemplos:
-     - "2025-01-08" → "08/01/2025"
-     - "del 1 de enero al 31 de marzo de 2025" → "01/01/2025 - 31/03/2025"`,
+5) Dates:
+   - Format: MM/DD/YYYY
+   - If it's a range or period: MM/DD/YYYY - MM/DD/YYYY
+   - Examples:
+     - "2025-01-08" -> "01/08/2025"
+     - "from January 1 to March 31, 2025" -> "01/01/2025 - 03/31/2025"
+     - "01-01-76 TO 01-01-77" -> "01/01/1976 - 01/01/1977"`,
       }
       required.push(fieldName)
     }
@@ -116,7 +115,6 @@ REGLAS DE FORMATO (OBLIGATORIAS):
       const extractionResult = await apiExtract(markdown, schema)
 
       if (extractionResult && extractionResult.extraction) {
-        // Map the extraction results to our format
         for (const fieldName of fields) {
           const valor = extractionResult.extraction[fieldName]
 
@@ -128,7 +126,7 @@ REGLAS DE FORMATO (OBLIGATORIAS):
             console.log("[v0] API: Field", fieldName, "extracted:", valor.trim())
           } else {
             result[fieldName] = {
-              value: "N/D",
+              value: "N/A",
               confidence: 1,
             }
             console.log("[v0] API: No response for field:", fieldName)
@@ -136,20 +134,18 @@ REGLAS DE FORMATO (OBLIGATORIAS):
         }
       } else {
         console.log("[v0] API: No extraction results")
-        // Set all fields to N/D
         for (const fieldName of fields) {
           result[fieldName] = {
-            value: "N/D",
+            value: "N/A",
             confidence: 1,
           }
         }
       }
     } catch (error) {
       console.log("[v0] API: Error extracting fields -", error)
-      // Set all fields to N/D on error
       for (const fieldName of fields) {
         result[fieldName] = {
-          value: "N/D",
+          value: "N/A",
           confidence: 1,
         }
       }

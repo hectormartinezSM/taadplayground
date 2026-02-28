@@ -13,7 +13,7 @@ interface ExtractResponse {
 
 async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse> {
   const formData = new FormData()
-  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
+  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "document.md")
   formData.append("schema", schema)
   formData.append("model", "extract-latest")
 
@@ -53,39 +53,39 @@ export async function POST(request: NextRequest) {
     // Join all markdowns with page headers
     let combinedMarkdown = ""
     for (let i = 0; i < markdowns.length; i++) {
-      combinedMarkdown += `# Página ${i + 1}\n\n${markdowns[i]}\n\n---\n\n`
+      combinedMarkdown += `# Page ${i + 1}\n\n${markdowns[i]}\n\n---\n\n`
     }
 
     // Schema for batch segmentation
     const schema = JSON.stringify({
       properties: {
         segments: {
-          description: `Eres un experto en segmentación documental. Recibirás un Markdown con ${markdowns.length} páginas etiquetadas como "# Página 1", "# Página 2", etc. 
+          description: `You are an expert in document segmentation. You will receive a Markdown with ${markdowns.length} pages labeled as "# Page 1", "# Page 2", etc.
 
-Tu tarea es dividir estas páginas en documentos: cada documento es un conjunto de páginas consecutivas que pertenecen a la misma entidad y forman una unidad completa.
+Your task is to divide these pages into documents: each document is a set of consecutive pages that belong to the same entity and form a complete unit.
 
-Devuelve una lista de segmentos, donde cada segmento representa un documento con start_page y end_page (numeración de 1 a ${markdowns.length}).
+Return a list of segments, where each segment represents a document with start_page and end_page (numbering from 1 to ${markdowns.length}).
 
-Criterios de segmentación:
-- Tipología documental: páginas del mismo tipo (DNI, nómina, factura, etc.) suelen pertenecer al mismo documento
-- Continuidad semántica: el final de una página enlaza con el inicio de la siguiente
-- Coherencia visual: mismo formato, estructura o entidad emisora
-- Referencias cruzadas: números de página, continuación de tablas, etc.
+Segmentation criteria:
+- Document typology: pages of the same type (invoice, receipt, lab report, contract, etc.) usually belong to the same document
+- Semantic continuity: the end of one page links with the beginning of the next
+- Visual coherence: same format, structure, or issuing entity
+- Cross-references: page numbers, continuation of tables, etc.
 
-Ejemplos:
-- Si páginas 1-3 son una factura completa y 4-5 son un contrato: [{"start_page": 1, "end_page": 3}, {"start_page": 4, "end_page": 5}]
-- Si todas las páginas forman un único documento: [{"start_page": 1, "end_page": ${markdowns.length}}]
-- Si cada página es un documento diferente: [{"start_page": 1, "end_page": 1}, {"start_page": 2, "end_page": 2}, ...]`,
+Examples:
+- If pages 1-3 are a complete invoice and 4-5 are a contract: [{"start_page": 1, "end_page": 3}, {"start_page": 4, "end_page": 5}]
+- If all pages form a single document: [{"start_page": 1, "end_page": ${markdowns.length}}]
+- If each page is a different document: [{"start_page": 1, "end_page": 1}, {"start_page": 2, "end_page": 2}, ...]`,
           items: {
             properties: {
               start_page: {
-                description: "Número de página donde inicia el documento (1-indexed)",
+                description: "Page number where the document starts (1-indexed)",
                 type: "integer",
                 minimum: 1,
                 maximum: markdowns.length,
               },
               end_page: {
-                description: "Número de página donde termina el documento (1-indexed)",
+                description: "Page number where the document ends (1-indexed)",
                 type: "integer",
                 minimum: 1,
                 maximum: markdowns.length,
@@ -98,7 +98,7 @@ Ejemplos:
           type: "array",
         },
         rationale: {
-          description: "Breve explicación de cómo se hizo la segmentación",
+          description: "Brief explanation of how the segmentation was performed",
           type: "string",
         },
       },

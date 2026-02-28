@@ -64,7 +64,7 @@ async function apiParse(imageBase64: string): Promise<string> {
 
 async function apiExtract(markdown: string, schema: string): Promise<ExtractResponse> {
   const formData = new FormData()
-  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
+  formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "document.md")
   formData.append("schema", schema)
   formData.append("model", "extract-latest")
 
@@ -99,7 +99,7 @@ function joinMarkdowns(markdowns: string[]): string {
   let finalText = ""
 
   for (let i = 0; i < markdowns.length; i++) {
-    const newText = `# Página ${i + 1}\n\n${markdowns[i]}\n\n ---\n\n`
+    const newText = `# Page ${i + 1}\n\n${markdowns[i]}\n\n ---\n\n`
     finalText += newText
   }
 
@@ -131,102 +131,78 @@ export async function POST(request: NextRequest) {
         Clasify: {
           anyOf: [{ type: "string" }, { type: "null" }],
           default: null,
-          description: `INSTRUCCIONES DE CLASIFICACIÓN (OBLIGATORIAS)
+          description: `CLASSIFICATION INSTRUCTIONS (MANDATORY)
 
-Debes clasificar el documento usando IDEALMENTE una de las tipologías EXACTAS de la siguiente lista.
-- Si encaja con una de ellas, devuelve EL MISMO LITERAL (misma ortografía, mayúsculas y acentos).
-- No traduzcas, no reformules, no añadas aclaraciones.
-- Si NO puedes asignarlo con confianza a ninguna tipología de la lista, crea una tipología nueva:
-  - Debe ser lo MÁS CORTA POSIBLE (objetivo <= 25 caracteres).
-  - Sin artículos ("el/la"), sin frases, sin detalles redundantes.
-  - 2-4 palabras máximo.
+You must classify the document using IDEALLY one of the EXACT typologies from the following list.
+- If it matches one of them, return THE EXACT LITERAL (same spelling and capitalization).
+- Do not rephrase, do not add clarifications.
+- If you CANNOT confidently assign it to any typology in the list, create a new typology:
+  - It must be AS SHORT AS POSSIBLE (target <= 25 characters).
+  - No articles ("the/a"), no sentences, no redundant details.
+  - 2-4 words maximum.
 
-LISTA DE TIPOLOGÍAS PERMITIDAS (LITERAL EXACTO):
-DNI
-NIE
-Pasaporte
-ID No Español
-Libro de familia
-CIF
-Carnet conducir
-Certificado de nacimiento
-Certificado de matrimonio
-Certificado de defunción
-Sentencia de Separación
-Certificado últimas voluntades
-Certificado de empadronamiento
-Contrato laboral
-Finiquito laboral
-Nomina
-Vida laboral
-Certificado retenciones Seguridad Social
-Certificado corriente pago Seguridad social
-Certificado corriente pago Agencia Tributaria
-Pensión
-Toma posesión funcionario
-Escritura hipotecaria
-Escritura compraventa
-Testamento
-Repartición herencia
-Escritura de poder
-Escritura declaración de obra nueva
-Escritura constitución entidad
-Tasación
-Nota simple registro propiedad
-Contrato alquiler
-Resolución contra alquiler
-Certificado catastral
-Nota registro mercantil
-Declaración de Residencia Fiscal
-Modelo 100 AEAT
-Modelo 130 AEAT
-Modelo 131 AEAT
-Modelo 303 AEAT
-Modelo 200 AEAT
-Modelo 347 AEAT
-Otros modelos tributarios
-Contrato bancario
-Justificante bancario
-Certificado de titularidad de cuenta
-Factura
-Presupuesto
-Albarán
-Ticket
-Pagaré
-Cheque
-Parte médico
-Fotografía
-Póliza seguros
-Ficha técnica vehículo
-Atestado policial
-Permiso circulación vehículo
-Acta junta propietarios
-Declaración amistosa accidente
-Tarjeta embarque
-Reserva alojamiento
-Sanción
-Pago tasas
-CIRBE
-Auditoría anual empresa
-Licencia obras
-Balance
-Cuenta de pérdidas y ganancias
-Decreto
-Auto
-Denuncia
-Demanda
-Citación judicial
-Recibo IBI
-Recibo contribución urbana
-Recibo IVTM`,
+LIST OF ALLOWED TYPOLOGIES (EXACT LITERAL):
+Lab Report
+Medical Report
+Pathology Report
+Accident Statement
+Insurance Claim
+Insurance Invoice
+Insurance Policy
+Sales Receipt
+Receipt
+Invoice
+Purchase Order
+Delivery Note
+Credit Note
+Contract
+Employment Contract
+Payslip
+Tax Return
+Tax Form
+Bank Statement
+Bank Certificate
+Financial Statement
+Audit Report
+Balance Sheet
+Profit and Loss Statement
+Identity Document
+Passport
+Driver License
+Birth Certificate
+Marriage Certificate
+Death Certificate
+Mortgage Deed
+Property Deed
+Lease Agreement
+Power of Attorney
+Will and Testament
+Court Order
+Court Summons
+Police Report
+Medical Certificate
+Prescription
+Certificate of Incorporation
+Board Resolution
+Shipping Document
+Bill of Lading
+Customs Declaration
+Travel Itinerary
+Boarding Pass
+Hotel Reservation
+Inspection Report
+Appraisal Report
+Letter
+Memo
+Photograph`,
           title: "Clasify",
         },
       },
-      title: "TipoGeneral",
+      title: "GeneralType",
       type: "object",
     })
 
-    let classification = "Otros"
+    let classification = "Other"
 
     try {
       console.log("[v0] API: Trying general classification schema...")
@@ -236,35 +212,35 @@ Recibo IVTM`,
         classification = result1.extraction.Clasify
       }
     } catch (error) {
-      console.log("[v0] API: General classification failed, defaulting to Otros")
-      classification = "Otros"
+      console.log("[v0] API: General classification failed, defaulting to Other")
+      classification = "Other"
     }
 
-    if (classification === "Otros") {
-      const schemaClasOtros = JSON.stringify({
+    if (classification === "Other") {
+      const schemaClasOther = JSON.stringify({
         properties: {
           Clasify: {
             anyOf: [{ type: "string" }, { type: "null" }],
             default: null,
             description:
-              "No pudiste clasificar el documento con las tipologías predefinidas. Crea una tipología nueva lo MÁS CORTA POSIBLE (objetivo <= 25 caracteres). Sin artículos, sin frases, 2-4 palabras máximo. Ejemplos: 'Contrato franquicia', 'Informe pericial', 'Recibo donación'.",
+              "You could not classify the document with the predefined typologies. Create a new typology AS SHORT AS POSSIBLE (target <= 25 characters). No articles, no sentences, 2-4 words maximum. Examples: 'Franchise Contract', 'Expert Report', 'Donation Receipt'.",
             title: "Clasify",
           },
         },
-        title: "TipoOtros",
+        title: "OtherType",
         type: "object",
       })
 
       try {
-        console.log('[v0] API: Trying specific "Otros" classification schema...')
-        const result2 = await apiExtract(joinedMarkdown, schemaClasOtros)
+        console.log('[v0] API: Trying specific "Other" classification schema...')
+        const result2 = await apiExtract(joinedMarkdown, schemaClasOther)
 
         if (result2.extraction && result2.extraction.Clasify) {
           classification = result2.extraction.Clasify
         }
       } catch (error) {
-        console.log("[v0] API: Specific classification also failed, keeping as Otros")
-        classification = "Otros"
+        console.log("[v0] API: Specific classification also failed, keeping as Other")
+        classification = "Other"
       }
     }
 
