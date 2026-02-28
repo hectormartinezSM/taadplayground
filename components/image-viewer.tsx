@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Maximize2, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useLocale } from "@/lib/locale-context"
 
 interface ImageViewerProps {
   images: string[]
@@ -12,6 +13,7 @@ interface ImageViewerProps {
 }
 
 export function ImageViewer({ images, initialIndex, onClose, pageLabels }: ImageViewerProps) {
+  const { t } = useLocale()
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [zoom, setZoom] = useState(100)
   const [rotation, setRotation] = useState(0)
@@ -75,7 +77,7 @@ export function ImageViewer({ images, initialIndex, onClose, pageLabels }: Image
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `${pageLabels?.[currentIndex] || `Página ${currentIndex + 1}`}.png`
+      a.download = `${pageLabels?.[currentIndex] || t(`Página ${currentIndex + 1}`, `Page ${currentIndex + 1}`)}.png`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -123,7 +125,7 @@ export function ImageViewer({ images, initialIndex, onClose, pageLabels }: Image
           size="icon-sm"
           className="text-white hover:bg-white/20 h-8 w-8"
           onClick={handleRotate}
-          title="Rotar 90°"
+          title={t("Rotar 90°", "Rotate 90°")}
         >
           <RotateCw className="h-4 w-4" />
         </Button>
@@ -134,7 +136,7 @@ export function ImageViewer({ images, initialIndex, onClose, pageLabels }: Image
           size="icon-sm"
           className="text-white hover:bg-white/20 h-8 w-8"
           onClick={toggleFitMode}
-          title={fitMode === "contain" ? "Ajustar ancho" : "Ajustar pantalla"}
+          title={fitMode === "contain" ? t("Ajustar ancho", "Fit width") : t("Ajustar pantalla", "Fit screen")}
         >
           <Maximize2 className="h-4 w-4" />
         </Button>
@@ -147,7 +149,7 @@ export function ImageViewer({ images, initialIndex, onClose, pageLabels }: Image
           size="icon-sm"
           className="text-white hover:bg-white/20 h-8 w-8"
           onClick={handleDownload}
-          title="Descargar"
+          title={t("Descargar", "Download")}
         >
           <Download className="h-4 w-4" />
         </Button>
@@ -197,7 +199,7 @@ export function ImageViewer({ images, initialIndex, onClose, pageLabels }: Image
         >
           <img
             src={images[currentIndex] || "/placeholder.svg"}
-            alt={pageLabels?.[currentIndex] || `Página ${currentIndex + 1}`}
+            alt={pageLabels?.[currentIndex] || t(`Página ${currentIndex + 1}`, `Page ${currentIndex + 1}`)}
             className="max-h-[80vh] max-w-full"
             style={{
               objectFit: fitMode === "contain" ? "contain" : "cover",
@@ -208,7 +210,7 @@ export function ImageViewer({ images, initialIndex, onClose, pageLabels }: Image
 
         {/* Image Counter */}
         <div className="mt-4 rounded-lg bg-black/80 px-4 py-2 text-sm text-white border border-white/10">
-          {pageLabels?.[currentIndex] || `Página ${currentIndex + 1}`} de {images.length}
+          {pageLabels?.[currentIndex] || t(`Página ${currentIndex + 1}`, `Page ${currentIndex + 1}`)} {t("de", "of")} {images.length}
         </div>
       </div>
     </div>

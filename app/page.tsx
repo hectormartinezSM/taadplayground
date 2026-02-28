@@ -7,11 +7,21 @@ import { PageGrid } from "@/components/page-grid"
 import { DocumentList } from "@/components/document-list"
 import { ActivityLog } from "@/components/activity-log"
 import type { Page, Document, ActivityLogEntry, WorkflowStep, SegmentationStatus } from "@/lib/types"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import { LocaleProvider, useLocale } from "@/lib/locale-context"
 
 export default function Home() {
+  return (
+    <LocaleProvider>
+      <HomeContent />
+    </LocaleProvider>
+  )
+}
+
+function HomeContent() {
+  const { locale, setLocale, t } = useLocale()
   const [pages, setPages] = useState<Page[]>([])
   const [documents, setDocuments] = useState<Document[]>([])
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([])
@@ -103,7 +113,7 @@ export default function Home() {
             <button
               onClick={handleReset}
               className="hover:opacity-80 transition-opacity"
-              aria-label="Volver a la página inicial"
+              aria-label={t("Volver a la página inicial", "Back to home")}
             >
               <Image
                 src="/images/design-mode/Serimag_logo_color-1-scaled.png"
@@ -118,26 +128,30 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-foreground">playground</h1>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="default"
-              className="border-2 hover:bg-accent/50 font-medium bg-transparent"
-              asChild
-            >
-              <a href="https://serimag.com/contacto" target="_blank" rel="noopener noreferrer">
-                Hablemos
-              </a>
-            </Button>
-            <Button
-              size="default"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              asChild
-            >
-              <a href="https://serimag.com" target="_blank" rel="noopener noreferrer">
-                Volver a la Home
-              </a>
-            </Button>
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center rounded-md border bg-muted/30 p-0.5">
+              <button
+                onClick={() => setLocale("es")}
+                className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
+                  locale === "es"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                ES
+              </button>
+              <button
+                onClick={() => setLocale("en")}
+                className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
+                  locale === "en"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                EN
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -152,7 +166,7 @@ export default function Home() {
         >
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-between border-b px-4 py-4 bg-card">
-              <h2 className="text-sm font-semibold text-foreground">Etapas del Proceso</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t("Etapas del Proceso", "Process Stages")}</h2>
               <Button variant="ghost" size="icon-sm" onClick={() => setLeftSidebarOpen(false)} className="h-7 w-7">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -177,7 +191,7 @@ export default function Home() {
               onClick={() => setLeftSidebarOpen(true)}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
             >
-              <span>Etapas del Proceso</span>
+              <span>{t("Etapas del Proceso", "Process Stages")}</span>
               <ChevronRight className="h-3 w-3" />
             </button>
           </div>
@@ -232,7 +246,7 @@ export default function Home() {
         >
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-between border-b px-4 py-4 bg-card">
-              <h2 className="text-sm font-semibold text-foreground">Registro de Actividad</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t("Registro de Actividad", "Activity Log")}</h2>
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -282,7 +296,7 @@ export default function Home() {
               className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
             >
               <ChevronLeft className="h-3 w-3" />
-              <span>Registro de Actividad</span>
+              <span>{t("Registro de Actividad", "Activity Log")}</span>
             </button>
           </div>
         )}

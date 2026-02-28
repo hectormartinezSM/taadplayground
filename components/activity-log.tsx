@@ -2,6 +2,7 @@
 
 import { ActivityLogEntry } from '@/lib/types';
 import { FileX, FileText, Tag, List, FileCheck } from 'lucide-react';
+import { useLocale } from '@/lib/locale-context';
 
 interface ActivityLogProps {
   entries: ActivityLogEntry[];
@@ -24,6 +25,7 @@ const colorMap = {
 };
 
 export default function ActivityLog({ entries }: ActivityLogProps) {
+  const { locale } = useLocale();
   return (
     <div>
       <div className="space-y-3">
@@ -47,7 +49,7 @@ export default function ActivityLog({ entries }: ActivityLogProps) {
                     {entry.message}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    {entry.timestamp.toLocaleTimeString('es-ES')}
+                    {entry.timestamp.toLocaleTimeString(locale === 'en' ? 'en-US' : 'es-ES')}
                   </p>
                 </div>
               </div>

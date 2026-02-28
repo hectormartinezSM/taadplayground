@@ -5,6 +5,7 @@ import type { Page, Document, ActivityLogEntry, SegmentationStatus } from "@/lib
 import { Button } from "@/components/ui/button"
 import { prepareExportData, downloadJSON, downloadCSV } from "@/lib/export-utils"
 import { Progress } from "@/components/ui/progress"
+import { useLocale } from "@/lib/locale-context"
 
 interface WorkflowTimelineProps {
   currentStep: string
@@ -23,6 +24,7 @@ export function WorkflowTimeline({
   processedPages = 0,
   segmentationStatus = { isSegmenting: false, documentsGenerated: 0, processingDocuments: false },
 }: WorkflowTimelineProps) {
+  const { t } = useLocale()
   const hasData = pages.length > 0 && documents.length > 0
 
   const totalPages = pages.length
@@ -69,7 +71,7 @@ export function WorkflowTimeline({
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-foreground">
-                {allPagesProcessed ? "Parseado finalizado" : "Parseando páginas..."}
+                {allPagesProcessed ? t("Parseado finalizado", "Parsing complete") : t("Parseando páginas...", "Parsing pages...")}
               </h4>
               {allPagesProcessed && <Check className="h-4 w-4 text-green-600" />}
             </div>
@@ -82,7 +84,7 @@ export function WorkflowTimeline({
             </div>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                Parseadas {processedPages} de {totalPages}
+                {t("Parseadas", "Parsed")} {processedPages} {t("de", "of")} {totalPages}
               </p>
               {isProcessing && (
                 <div className="flex items-center gap-1.5">
@@ -105,7 +107,7 @@ export function WorkflowTimeline({
           <div className="mt-6 space-y-2">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-foreground">
-                {segmentationStatus.isSegmenting ? "Analizando segmentación" : "Segmentación finalizada"}
+                {segmentationStatus.isSegmenting ? t("Analizando segmentación", "Analyzing segmentation") : t("Segmentación finalizada", "Segmentation complete")}
               </h4>
               {segmentationStatus.isSegmenting ? (
                 <Loader2 className="h-4 w-4 text-primary animate-spin" />
@@ -116,7 +118,9 @@ export function WorkflowTimeline({
             {!segmentationStatus.isSegmenting && segmentationStatus.documentsGenerated > 0 && (
               <p className="text-xs text-muted-foreground">
                 {segmentationStatus.documentsGenerated}{" "}
-                {segmentationStatus.documentsGenerated === 1 ? "documento generado" : "documentos generados"}
+                {segmentationStatus.documentsGenerated === 1
+                  ? t("documento generado", "document generated")
+                  : t("documentos generados", "documents generated")}
               </p>
             )}
           </div>
@@ -126,7 +130,7 @@ export function WorkflowTimeline({
           <div className="mt-6 space-y-2">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-foreground">
-                {segmentationStatus.processingDocuments ? "Procesando subdocumentos..." : "Subdocumentos generados"}
+                {segmentationStatus.processingDocuments ? t("Procesando subdocumentos...", "Processing subdocuments...") : t("Subdocumentos generados", "Subdocuments generated")}
               </h4>
               {segmentationStatus.processingDocuments ? (
                 <Loader2 className="h-4 w-4 text-primary animate-spin" />
@@ -148,7 +152,7 @@ export function WorkflowTimeline({
                     className="w-full rounded-md px-3 py-2 text-left text-xs transition-colors hover:bg-muted flex items-center justify-between"
                   >
                     <div className="flex-1">
-                      <span className="font-medium">Documento {index + 1}</span>
+                      <span className="font-medium">{t("Documento", "Document")} {index + 1}</span>
                       {doc.documentType && (
                         <span className="text-muted-foreground">
                           {" - "}
@@ -166,7 +170,7 @@ export function WorkflowTimeline({
 
         {canExport && (
           <div className="mt-6 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Exportar Datos</p>
+            <p className="text-xs font-medium text-muted-foreground">{t("Exportar Datos", "Export Data")}</p>
             <div className="flex flex-col gap-2">
               <Button
                 variant="outline"
@@ -175,7 +179,7 @@ export function WorkflowTimeline({
                 className="w-full justify-start gap-2 text-xs bg-transparent"
               >
                 <Download className="h-3.5 w-3.5" />
-                Descargar JSON
+                {t("Descargar JSON", "Download JSON")}
               </Button>
               <Button
                 variant="outline"
@@ -184,7 +188,7 @@ export function WorkflowTimeline({
                 className="w-full justify-start gap-2 text-xs bg-transparent"
               >
                 <Download className="h-3.5 w-3.5" />
-                Descargar CSV
+                {t("Descargar CSV", "Download CSV")}
               </Button>
             </div>
           </div>

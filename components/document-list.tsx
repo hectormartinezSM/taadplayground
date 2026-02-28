@@ -9,6 +9,7 @@ import { ImageViewer } from "./image-viewer"
 import { Button } from "@/components/ui/button"
 import { jsPDF } from "jspdf"
 import { downloadDocumentJSON, downloadDocumentCSV } from "@/lib/export-utils"
+import { useLocale } from "@/lib/locale-context"
 
 interface DocumentListProps {
   documents: Document[]
@@ -18,6 +19,7 @@ interface DocumentListProps {
 }
 
 export function DocumentList({ documents, pages, updateDocuments, addActivityLog }: DocumentListProps) {
+  const { t } = useLocale()
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerImages, setViewerImages] = useState<string[]>([])
   const [viewerLabels, setViewerLabels] = useState<string[]>([])
@@ -25,7 +27,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
 
   const handlePageClick = (docPages: Page[], clickedIndex: number) => {
     setViewerImages(docPages.map((p) => p.imageUrl))
-    setViewerLabels(docPages.map((p, idx) => `Página ${idx + 1} de ${docPages.length}`))
+    setViewerLabels(docPages.map((p, idx) => t(`Página ${idx + 1} de ${docPages.length}`, `Page ${idx + 1} of ${docPages.length}`)))
     setViewerIndex(clickedIndex)
     setViewerOpen(true)
   }
@@ -55,12 +57,12 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
       }
 
       // Download the PDF
-      const fileName = `Documento_${docIndex + 1}_${doc.documentType?.type || "Desconocido"}.pdf`
+      const fileName = t(`Documento_${docIndex + 1}_${doc.documentType?.type || "Desconocido"}.pdf`, `Document_${docIndex + 1}_${doc.documentType?.type || "Unknown"}.pdf`)
       pdf.save(fileName)
 
       addActivityLog({
         type: "field_extracted",
-        message: `Documento ${docIndex + 1} descargado como PDF`,
+        message: t(`Documento ${docIndex + 1} descargado como PDF`, `Document ${docIndex + 1} downloaded as PDF`),
       })
     } catch (error) {
       console.error("[v0] Error generating PDF:", error)
@@ -191,7 +193,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
 
           addActivityLog({
             type: "field_extracted",
-            message: `Campo personalizado '${fieldName}' añadido a todos los documentos de tipo ${documentType}`,
+            message: t(`Campo personalizado '${fieldName}' añadido a todos los documentos de tipo ${documentType}`, `Custom field '${fieldName}' added to all documents of type ${documentType}`),
           })
         }
       }
@@ -203,7 +205,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
   return (
     <>
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-foreground">Documentos Procesados</h2>
+        <h2 className="text-2xl font-bold text-foreground">{t("Documentos Procesados", "Processed Documents")}</h2>
 
         {documents.map((doc, index) => {
           const docPages = pages ? pages.filter((p) => doc.pageIds.includes(p.id)) : []
@@ -218,11 +220,11 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                     </div>
                     <div>
                       <CardTitle className="text-lg font-semibold">
-                        Documento {index + 1}
+                        {t("Documento", "Document")} {index + 1}
                         {doc.documentType && ` - ${doc.documentType.type}`}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {docPages.length} {docPages.length === 1 ? "página" : "páginas"}
+                        {docPages.length} {docPages.length === 1 ? t("página", "page") : t("páginas", "pages")}
                       </p>
                     </div>
                   </div>
@@ -272,7 +274,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                     >
                       <img
                         src={page.imageUrl || "/placeholder.svg"}
-                        alt={`Página ${pageIndex + 1}`}
+                        alt={t(`Página ${pageIndex + 1}`, `Page ${pageIndex + 1}`)}
                         className="h-20 w-15 object-cover"
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-black/70 px-1 py-0.5 text-center">
@@ -286,21 +288,21 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                 {doc.status === "classifying" && !doc.documentType && (
                   <div className="flex items-center gap-3 text-sm text-muted-foreground py-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Clasificando documento...</span>
+                    <span>{t("Clasificando documento...", "Classifying document...")}</span>
                   </div>
                 )}
 
                 {doc.status === "classifying" && doc.documentType && !doc.fields && (
                   <div className="flex items-center gap-3 text-sm text-muted-foreground py-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Detectando campos relevantes...</span>
+                    <span>{t("Detectando campos relevantes...", "Detecting relevant fields...")}</span>
                   </div>
                 )}
 
                 {doc.status === "extracting" && (
                   <div className="flex items-center gap-3 text-sm text-muted-foreground py-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Extrayendo campos...</span>
+                    <span>{t("Extrayendo campos...", "Extracting fields...")}</span>
                   </div>
                 )}
 

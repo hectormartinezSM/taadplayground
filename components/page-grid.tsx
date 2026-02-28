@@ -6,6 +6,7 @@ import type { Page, Document, ExtractedField, SegmentationProgress, Segmentation
 import { mockGetRelevantFields } from "@/lib/mock-api"
 import { FileX, CheckCircle2 } from "lucide-react"
 import { ImageViewer } from "./image-viewer"
+import { useLocale } from "@/lib/locale-context"
 
 interface PageGridProps {
   pages: Page[]
@@ -44,6 +45,7 @@ export function PageGrid({
   setProcessedPages,
   setSegmentationStatus,
 }: PageGridProps) {
+  const { t } = useLocale()
   const processingStarted = useRef(false)
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerIndex, setViewerIndex] = useState(0)
@@ -67,7 +69,7 @@ export function PageGrid({
         updateCurrentStep("blank_detection")
         addActivityLog({
           type: "parse_started",
-          message: `Procesando ${pages.length} páginas en paralelo...`,
+          message: t(`Procesando ${pages.length} páginas en paralelo...`, `Processing ${pages.length} pages in parallel...`),
         })
 
         const pagesToProcess = pages.filter((page) => !processedPageIds.current.has(page.id))
@@ -117,12 +119,12 @@ export function PageGrid({
               if (data.isBlank) {
                 addActivityLog({
                   type: "page_discarded",
-                  message: `Página ${index + 1} descartada (página en blanco)`,
+                  message: t(`Página ${index + 1} descartada (página en blanco)`, `Page ${index + 1} discarded (blank page)`),
                 })
               } else {
                 addActivityLog({
                   type: "info",
-                  message: `Página ${index + 1} analizada correctamente`,
+                  message: t(`Página ${index + 1} analizada correctamente`, `Page ${index + 1} analyzed successfully`),
                 })
               }
 
@@ -175,7 +177,7 @@ export function PageGrid({
         updateCurrentStep("segmentation")
         addActivityLog({
           type: "segmentation_started",
-          message: `Analizando segmentación de ${nonBlankIndices.length} páginas...`,
+          message: t(`Analizando segmentación de ${nonBlankIndices.length} páginas...`, `Analyzing segmentation of ${nonBlankIndices.length} pages...`),
         })
 
         setSegmentationStatus({
@@ -260,12 +262,12 @@ export function PageGrid({
 
             const startPage = docPages[0].index + 1
             const endPage = docPages[docPages.length - 1].index + 1
-            addActivityLog({
+              addActivityLog({
               type: "document_created",
               message:
                 docPages.length === 1
-                  ? `Documento ${docIdx + 1} creado con la página ${startPage}`
-                  : `Documento ${docIdx + 1} creado con las páginas ${startPage}-${endPage}`,
+                  ? t(`Documento ${docIdx + 1} creado con la página ${startPage}`, `Document ${docIdx + 1} created with page ${startPage}`)
+                  : t(`Documento ${docIdx + 1} creado con las páginas ${startPage}-${endPage}`, `Document ${docIdx + 1} created with pages ${startPage}-${endPage}`),
             })
           }
 
@@ -347,7 +349,7 @@ export function PageGrid({
 
     let combinedMarkdown = ""
     for (let i = 0; i < markdowns.length; i++) {
-      combinedMarkdown += `# Página ${i + 1}\n\n${markdowns[i]}\n\n---\n\n`
+      combinedMarkdown += `# ${t("Página", "Page")} ${i + 1}\n\n${markdowns[i]}\n\n---\n\n`
     }
 
     sessionStorage.setItem(`doc-${doc.id}-markdown`, combinedMarkdown)
@@ -388,7 +390,7 @@ export function PageGrid({
 
       log({
         type: "document_classified",
-        message: `Documento ${docIndex + 1} clasificado como ${documentType.type}`,
+        message: t(`Documento ${docIndex + 1} clasificado como ${documentType.type}`, `Document ${docIndex + 1} classified as ${documentType.type}`),
       })
     } catch (error) {
       console.error("[v0] Classification error for document", docIndex + 1, error)
@@ -401,7 +403,7 @@ export function PageGrid({
 
       log({
         type: "document_classified",
-        message: `Documento ${docIndex + 1} clasificado como ${documentType.type} (error en clasificación)`,
+        message: t(`Documento ${docIndex + 1} clasificado como ${documentType.type} (error en clasificación)`, `Document ${docIndex + 1} classified as ${documentType.type} (classification error)`),
       })
     }
 
@@ -419,7 +421,7 @@ export function PageGrid({
 
     log({
       type: "fields_detected",
-      message: `Campos detectados para ${documentType.type}: ${fields.map((f) => f.name).join(", ")}`,
+      message: t(`Campos detectados para ${documentType.type}: ${fields.map((f) => f.name).join(", ")}`, `Fields detected for ${documentType.type}: ${fields.map((f) => f.name).join(", ")}`),
     })
 
     const fieldNames = fields.map((f) => f.name)
@@ -452,7 +454,7 @@ export function PageGrid({
           if (fieldData) {
             log({
               type: "field_extracted",
-              message: `Campo '${fieldName}' extraído: ${fieldData.value}`,
+              message: t(`Campo '${fieldName}' extraído: ${fieldData.value}`, `Field '${fieldName}' extracted: ${fieldData.value}`),
             })
           }
         }
@@ -529,7 +531,7 @@ export function PageGrid({
                   <div className="aspect-[2/3] overflow-hidden relative">
                     <img
                       src={page.imageUrl || "/placeholder.svg"}
-                      alt={`Página ${page.index + 1}`}
+                      alt={t(`Página ${page.index + 1}`, `Page ${page.index + 1}`)}
                       className={`h-full w-full object-cover transition-all ${
                         !isProcessed ? "brightness-[0.3] grayscale" : ""
                       }`}
@@ -544,20 +546,20 @@ export function PageGrid({
                     {page.isBlank && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
                         <span className="text-[0.5rem] xs:text-xs sm:text-sm font-bold text-gray-400/70 rotate-[-30deg] select-none whitespace-nowrap">
-                          BLANCA
+                          {t("BLANCA", "BLANK")}
                         </span>
                       </div>
                     )}
 
                     {isBeingSegmented && (
                       <div className="absolute top-1 left-1 bg-primary/90 backdrop-blur-sm text-primary-foreground px-1.5 py-0.5 rounded text-[0.5rem] xs:text-[0.6rem] font-semibold shadow-sm">
-                        Analizando
+                        {t("Analizando", "Analyzing")}
                       </div>
                     )}
 
                     {isSegmentStart && segmentNumber && (
                       <div className="absolute top-1 right-1 bg-green-500 text-white text-[8px] font-bold py-0.5 px-1 rounded shadow-sm">
-                        Subdoc #{segmentNumber}
+                        {t("Subdoc", "Subdoc")} #{segmentNumber}
                       </div>
                     )}
                   </div>
@@ -581,7 +583,7 @@ export function PageGrid({
           images={pages.map((p) => p.imageUrl)}
           initialIndex={viewerIndex}
           onClose={() => setViewerOpen(false)}
-          pageLabels={pages.map((p) => `Página ${p.index + 1}`)}
+          pageLabels={pages.map((p) => t(`Página ${p.index + 1}`, `Page ${p.index + 1}`))}
         />
       )}
     </>

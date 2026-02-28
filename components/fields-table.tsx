@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
+import { useLocale } from '@/lib/locale-context';
 
 interface FieldsTableProps {
   fields: Field[];
@@ -31,6 +32,7 @@ export function FieldsTable({
   onAddCustomField,
   isComplete = false,
 }: FieldsTableProps) {
+  const { t } = useLocale();
   const [isAddingField, setIsAddingField] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
   const [isExtractingNewField, setIsExtractingNewField] = useState(false);
@@ -61,8 +63,8 @@ export function FieldsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-1/3">Campo</TableHead>
-            <TableHead className="w-2/3">Valor</TableHead>
+            <TableHead className="w-1/3">{t("Campo", "Field")}</TableHead>
+            <TableHead className="w-2/3">{t("Valor", "Value")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -96,7 +98,7 @@ export function FieldsTable({
                       value={newFieldName}
                       onChange={(e) => setNewFieldName(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Nombre del campo..."
+                      placeholder={t("Nombre del campo...", "Field name...")}
                       disabled={isExtractingNewField}
                       autoFocus
                       className="h-8"
@@ -106,7 +108,7 @@ export function FieldsTable({
                     {isExtractingNewField ? (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Extrayendo...</span>
+                        <span>{t("Extrayendo...", "Extracting...")}</span>
                       </div>
                     ) : (
                       <div className="flex gap-2">
@@ -115,7 +117,7 @@ export function FieldsTable({
                           onClick={handleAddField}
                           disabled={!newFieldName.trim()}
                         >
-                          Extraer
+                          {t("Extraer", "Extract")}
                         </Button>
                         <Button
                           size="sm"
@@ -125,7 +127,7 @@ export function FieldsTable({
                             setNewFieldName('');
                           }}
                         >
-                          Cancelar
+                          {t("Cancelar", "Cancel")}
                         </Button>
                       </div>
                     )}
@@ -141,7 +143,7 @@ export function FieldsTable({
                       className="w-full gap-2 text-muted-foreground hover:text-foreground"
                     >
                       <Plus className="h-4 w-4" />
-                      Añadir campo personalizado
+                      {t("Añadir campo personalizado", "Add custom field")}
                     </Button>
                   </TableCell>
                 </TableRow>

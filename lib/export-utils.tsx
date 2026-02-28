@@ -56,11 +56,11 @@ export function downloadCSV(data: any) {
   
   // Header row
   rows.push([
-    'Documento ID',
-    'Tipo de Documento',
-    'Páginas',
-    'Campo',
-    'Valor',
+    'Document ID',
+    'Document Type',
+    'Pages',
+    'Field',
+    'Value',
   ]);
 
   // Data rows
@@ -119,7 +119,7 @@ export function downloadDocumentJSON(doc: any, index: number) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `documento-${index + 1}-${Date.now()}.json`;
+  link.download = `document-${index + 1}-${Date.now()}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -131,11 +131,11 @@ export function downloadDocumentCSV(doc: any, index: number) {
   
   // Header row
   rows.push([
-    'Documento ID',
-    'Tipo de Documento',
-    'Páginas',
-    'Campo',
-    'Valor',
+    'Document ID',
+    'Document Type',
+    'Pages',
+    'Field',
+    'Value',
   ]);
 
   // Data rows
@@ -165,7 +165,7 @@ export function downloadDocumentCSV(doc: any, index: number) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `documento-${index + 1}-${Date.now()}.csv`;
+  link.download = `document-${index + 1}-${Date.now()}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

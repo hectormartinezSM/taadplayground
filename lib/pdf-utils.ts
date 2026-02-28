@@ -144,7 +144,7 @@ function createEnhancedPlaceholder(pageNum: number, totalPages: number, fileName
     // Page number
     ctx.font = '16px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#6b7280';
-    ctx.fillText(`Página ${pageNum} de ${totalPages}`, canvas.width / 2, 95);
+    ctx.fillText(`Page ${pageNum} of ${totalPages}`, canvas.width / 2, 95);
     
     // Content area - simulate text lines
     ctx.strokeStyle = '#d1d5db';
@@ -177,7 +177,7 @@ function createEnhancedPlaceholder(pageNum: number, totalPages: number, fileName
     ctx.fillStyle = '#9ca3af';
     ctx.font = '13px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Vista previa del documento', canvas.width / 2, canvas.height - 30);
+    ctx.fillText('Document preview', canvas.width / 2, canvas.height - 30);
   }
   
   return canvas.toDataURL('image/png', 0.9);

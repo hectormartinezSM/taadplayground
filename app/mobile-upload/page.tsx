@@ -45,7 +45,7 @@ export default function MobileUploadPage() {
   const handleUpload = async () => {
     if (!selectedFile || !sessionId) {
       console.log("[v0] Missing required data for upload")
-      setErrorMessage("Información de sesión inválida")
+      setErrorMessage("Invalid session information")
       setUploadStatus("error")
       return
     }
@@ -93,7 +93,7 @@ export default function MobileUploadPage() {
           errorData = { error: errorText }
         }
 
-        throw new Error(errorData.error || errorData.details || "Error al subir el archivo")
+        throw new Error(errorData.error || errorData.details || "Error uploading file")
       }
 
       const result = await response.json()
@@ -105,10 +105,10 @@ export default function MobileUploadPage() {
     } catch (error) {
       console.error("[v0] Upload failed:", error)
 
-      let errorMsg = "Error desconocido"
+      let errorMsg = "Unknown error"
       if (error instanceof Error) {
         if (error.name === "AbortError") {
-          errorMsg = "Tiempo de espera agotado (45s)"
+          errorMsg = "Request timed out (45s)"
         } else {
           errorMsg = error.message
         }
@@ -136,9 +136,9 @@ export default function MobileUploadPage() {
           <CardContent className="p-8">
             <div className="flex flex-col items-center text-center gap-4">
               <AlertCircle className="h-12 w-12 text-red-500" />
-              <h1 className="text-xl font-bold">Sesión inválida</h1>
+              <h1 className="text-xl font-bold">Invalid session</h1>
               <p className="text-sm text-muted-foreground">
-                El código QR escaneado no es válido. Por favor, escanea un nuevo código QR.
+                The scanned QR code is not valid. Please scan a new QR code.
               </p>
             </div>
           </CardContent>
@@ -167,20 +167,20 @@ export default function MobileUploadPage() {
                 <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
                   <Check className="h-8 w-8 text-green-600" />
                 </div>
-                <h1 className="text-xl font-bold">¡Documento enviado!</h1>
+                <h1 className="text-xl font-bold">Document sent!</h1>
                 <p className="text-sm text-muted-foreground">
-                  Tu documento se ha subido correctamente. Puedes ver el resultado en la pantalla del ordenador.
+                  Your document has been uploaded successfully. You can see the result on the computer screen.
                 </p>
                 <Button onClick={() => setUploadStatus("idle")} className="w-full">
-                  Subir otro documento
+                  Upload another document
                 </Button>
               </div>
             ) : (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h1 className="text-2xl font-bold mb-2">Sube tu documento</h1>
+                  <h1 className="text-2xl font-bold mb-2">Upload your document</h1>
                   <p className="text-sm text-muted-foreground">
-                    Selecciona un archivo PDF o toma una foto con tu cámara
+                    Select a PDF file or take a photo with your camera
                   </p>
                 </div>
 
@@ -200,8 +200,8 @@ export default function MobileUploadPage() {
                           </>
                         ) : (
                           <>
-                            <p className="font-medium">Toca para seleccionar</p>
-                            <p className="text-xs text-muted-foreground mt-1">PDF o imagen</p>
+                            <p className="font-medium">Tap to select</p>
+                            <p className="text-xs text-muted-foreground mt-1">PDF or image</p>
                           </>
                         )}
                       </div>
