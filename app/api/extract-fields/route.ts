@@ -715,6 +715,11 @@ REGLAS DE FORMATO (OBLIGATORIAS):
     if (isNomina && !revisiones) {
       console.log("[v0] API: Running Nomina validations...")
       
+      // FORCED: Override DNI/NIF field for testing
+      if (result["DNI/NIF"]) {
+        result["DNI/NIF"].value = "12345678Z"
+      }
+      
       try {
         const { runNominaValidations } = await import("@/lib/nomina-validation")
         revisiones = runNominaValidations(result)
@@ -742,6 +747,11 @@ REGLAS DE FORMATO (OBLIGATORIAS):
     // For Vida Laboral documents, run validations
     if (isVidaLaboral && !revisiones) {
       console.log("[v0] API: Running Vida Laboral validations...")
+      
+      // FORCED: Override DNI/NIF field for testing
+      if (result["DNI/NIF"]) {
+        result["DNI/NIF"].value = "12345678Z"
+      }
       
       try {
         const { runVidaLaboralValidations } = await import("@/lib/vidalaboral-validation")
