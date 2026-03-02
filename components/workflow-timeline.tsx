@@ -3,7 +3,7 @@
 import { Download, Check, Loader2, FileArchive } from "lucide-react"
 import type { Page, Document, ActivityLogEntry, SegmentationStatus } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { prepareExportData, downloadJSON, downloadCSV } from "@/lib/export-utils"
+import { prepareExportData, downloadJSON, downloadCSV, downloadCRMJSON, downloadCRMXML } from "@/lib/export-utils"
 import { Progress } from "@/components/ui/progress"
 import JSZip from "jszip"
 
@@ -42,6 +42,14 @@ export function WorkflowTimeline({
   const handleExportCSV = () => {
     const data = prepareExportData(pages, documents, activityLog)
     downloadCSV(data)
+  }
+
+  const handleExportCRMJSON = () => {
+    downloadCRMJSON(pages, documents)
+  }
+
+  const handleExportCRMXML = () => {
+    downloadCRMXML(pages, documents)
   }
 
   const handleExportZIP = async () => {
@@ -220,36 +228,61 @@ export function WorkflowTimeline({
         )}
 
         {canExport && (
-          <div className="mt-6 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Exportar Datos</p>
-            <div className="flex flex-col gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportJSON}
-                className="w-full justify-start gap-2 text-xs bg-transparent"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Descargar JSON
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCSV}
-                className="w-full justify-start gap-2 text-xs bg-transparent"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Descargar CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportZIP}
-                className="w-full justify-start gap-2 text-xs bg-transparent"
-              >
-                <FileArchive className="h-3.5 w-3.5" />
-                Descargar PDFs (ZIP)
-              </Button>
+          <div className="mt-6 space-y-3">
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Exportar para CRM</p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleExportCRMJSON}
+                  className="w-full justify-start gap-2 text-xs"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Expediente JSON (CRM)
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleExportCRMXML}
+                  className="w-full justify-start gap-2 text-xs"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Expediente XML (CRM)
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Otros formatos</p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportJSON}
+                  className="w-full justify-start gap-2 text-xs bg-transparent"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  JSON Simple
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCSV}
+                  className="w-full justify-start gap-2 text-xs bg-transparent"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportZIP}
+                  className="w-full justify-start gap-2 text-xs bg-transparent"
+                >
+                  <FileArchive className="h-3.5 w-3.5" />
+                  PDFs (ZIP)
+                </Button>
+              </div>
             </div>
           </div>
         )}
