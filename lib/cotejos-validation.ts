@@ -544,7 +544,7 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
     return periodo.substring(0, 15)
   }).join(", ")
   
-  if (diferencia <= 0.20) {
+  if (diferencia <= 0.10) {
     return {
       id: "ING1",
       titulo: "Coherencia de ingresos laborales",
@@ -556,12 +556,12 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
         { label: "Estimación anual", value: formatAmount(estimacionAnual) },
         { label: "Rendimiento del trabajo (IRPF)", value: formatAmount(rendimientoValue) },
         { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
-        { label: "Resultado", value: "Coherencia confirmada (≤20%)" }
+        { label: "Resultado", value: "Coherencia confirmada (≤10%)" }
       ]
     }
   }
   
-  if (diferencia <= 0.40) {
+  if (diferencia <= 0.25) {
     return {
       id: "ING1",
       titulo: "Coherencia de ingresos laborales",
@@ -573,7 +573,7 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
         { label: "Estimación anual", value: formatAmount(estimacionAnual) },
         { label: "Rendimiento del trabajo (IRPF)", value: formatAmount(rendimientoValue) },
         { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
-        { label: "Resultado", value: "Desviación significativa (20-40%)" }
+        { label: "Resultado", value: "Desviación significativa (10-25%)" }
       ]
     }
   }
@@ -589,7 +589,7 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
       { label: "Estimación anual", value: formatAmount(estimacionAnual) },
       { label: "Rendimiento del trabajo (IRPF)", value: formatAmount(rendimientoValue) },
       { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
-      { label: "Resultado", value: "Incoherencia detectada (>40%)" }
+      { label: "Resultado", value: "Incoherencia detectada (>25%)" }
     ]
   }
 }
