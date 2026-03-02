@@ -767,6 +767,11 @@ REGLAS DE FORMATO (OBLIGATORIAS):
     if (isNotaSimple && !revisiones) {
       console.log("[v0] API: Running Nota Simple validations...")
       
+      // FORCED: Override ¿Tiene cargas? field
+      if (result["¿Tiene cargas?"]) {
+        result["¿Tiene cargas?"].value = "No"
+      }
+      
       try {
         const { runNotaSimpleValidations } = await import("@/lib/notasimple-validation")
         revisiones = runNotaSimpleValidations(result)

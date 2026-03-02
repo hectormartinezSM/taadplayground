@@ -249,11 +249,11 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
             id: "EMP1",
             titulo: "Coherencia de empresa",
             severidad: "OK",
-            mensaje: "Coincidencia exacta",
+            mensaje: "Coincidencia consistente",
             detalle: [
               { label: "Empresa (nómina)", value: empresaNomina },
               { label: "Empresa (vida laboral)", value: empresaVida },
-              { label: "Resultado", value: "Coincidencia exacta" }
+              { label: "Resultado", value: "Coincidencia consistente" }
             ]
           }
         }
@@ -291,11 +291,11 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
           id: "EMP1",
           titulo: "Coherencia de empresa",
           severidad: "OK",
-          mensaje: "Coincidencia exacta",
+          mensaje: "Coincidencia consistente",
           detalle: [
             { label: "Empresa (nómina)", value: empresaNomina },
             { label: "Empresa (contrato)", value: empresaContrato },
-            { label: "Resultado", value: "Coincidencia exacta" }
+            { label: "Resultado", value: "Coincidencia consistente" }
           ]
         }
       }
