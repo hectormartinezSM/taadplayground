@@ -172,7 +172,7 @@ Escritura de poder
 Escritura declaración de obra nueva
 Escritura constitución entidad
 Tasación
-Nota Simple Registro de la Propiedad
+Nota Simple
 Contrato alquiler
 Resolución contra alquiler
 Certificado catastral

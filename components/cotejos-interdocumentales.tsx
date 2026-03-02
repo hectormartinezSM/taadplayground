@@ -148,7 +148,7 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
                       ) : (
                         <X className="h-4 w-4 text-red-500 flex-shrink-0" />
                       )}
-                      <span className={item.checked ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"}>
+                      <span className={item.checked ? "text-foreground" : "text-red-700 dark:text-red-300"}>
                         {item.label}
                       </span>
                     </li>
