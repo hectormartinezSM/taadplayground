@@ -3,7 +3,7 @@
 import { Download, Check, Loader2, FileArchive } from "lucide-react"
 import type { Page, Document, ActivityLogEntry, SegmentationStatus } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { downloadIntegrationJSON } from "@/lib/export-utils"
+import { downloadJSON } from "@/lib/export-utils"
 import { Progress } from "@/components/ui/progress"
 import JSZip from "jszip"
 
@@ -35,7 +35,7 @@ export function WorkflowTimeline({
   const allPagesProcessed = processedPages === totalPages && totalPages > 0
 
   const handleExportJSON = () => {
-    downloadIntegrationJSON(pages, documents)
+    downloadJSON(pages, documents)
   }
 
   const handleExportZIP = async () => {

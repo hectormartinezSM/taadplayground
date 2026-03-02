@@ -9,7 +9,7 @@ import { FileText, Loader2, Download, CheckCircle2 } from "lucide-react"
 import { ImageViewer } from "./image-viewer"
 import { Button } from "@/components/ui/button"
 import { jsPDF } from "jspdf"
-import { downloadDocumentJSON, downloadDocumentCSV } from "@/lib/export-utils"
+import { downloadDocumentJSON } from "@/lib/export-utils"
 import { CotejosInterdocumentales } from "./cotejos-interdocumentales"
 import { runCotejosInterdocumentales } from "@/lib/cotejos-validation"
 import type { Cotejo } from "@/lib/types"
@@ -78,43 +78,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
   }
 
   const handleDownloadDocumentJSON = (doc: Document, docIndex: number) => {
-    const docPages = pages.filter((p) => doc.pageIds.includes(p.id))
-    const extractedFields: Record<string, string> = {}
-
-    if (doc.extractedData) {
-      Object.entries(doc.extractedData).forEach(([key, value]) => {
-        extractedFields[key] = value.value
-      })
-    }
-
-    const exportDoc = {
-      documentId: doc.id,
-      type: doc.documentType?.type || "Unknown",
-      pageNumbers: docPages.map((p) => p.index + 1),
-      fields: extractedFields,
-    }
-
-    downloadDocumentJSON(exportDoc, docIndex)
-  }
-
-  const handleDownloadDocumentCSV = (doc: Document, docIndex: number) => {
-    const docPages = pages.filter((p) => doc.pageIds.includes(p.id))
-    const extractedFields: Record<string, string> = {}
-
-    if (doc.extractedData) {
-      Object.entries(doc.extractedData).forEach(([key, value]) => {
-        extractedFields[key] = value.value
-      })
-    }
-
-    const exportDoc = {
-      documentId: doc.id,
-      type: doc.documentType?.type || "Unknown",
-      pageNumbers: docPages.map((p) => p.index + 1),
-      fields: extractedFields,
-    }
-
-    downloadDocumentCSV(exportDoc, docIndex)
+    downloadDocumentJSON(doc, pages, docIndex)
   }
 
   const handleAddCustomField = async (docId: string, fieldName: string, documentType: string) => {
@@ -264,15 +228,6 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                       >
                         <Download className="h-4 w-4" />
                         JSON
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownloadDocumentCSV(doc, index)}
-                        className="gap-2 shadow-xs hover:shadow-sm"
-                      >
-                        <Download className="h-4 w-4" />
-                        CSV
                       </Button>
                     </div>
                   )}
