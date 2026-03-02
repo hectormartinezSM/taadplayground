@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Cotejo } from "@/lib/types"
+import type { Cotejo, CotejoDetalle } from "@/lib/types"
 import { CheckCircle2, AlertTriangle, XCircle, ClipboardCheck, Check, X } from "lucide-react"
 
 interface CotejosInterdocumentalesProps {
@@ -29,7 +29,8 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
   const getSeverityBgColor = (severidad: string) => {
     switch (severidad) {
       case "OK":
-        return "bg-green-50/50 dark:bg-green-950/10 border-green-200/60 dark:border-green-800/40"
+        // Neutral background for OK - analytical style
+        return "bg-background border-border"
       case "WARNING":
         return "bg-yellow-50/50 dark:bg-yellow-950/10 border-yellow-200/60 dark:border-yellow-800/40"
       case "ERROR":
@@ -42,7 +43,8 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
   const getSeverityTextColor = (severidad: string) => {
     switch (severidad) {
       case "OK":
-        return "text-green-800 dark:text-green-200"
+        // Neutral text for OK - analytical style
+        return "text-foreground"
       case "WARNING":
         return "text-yellow-800 dark:text-yellow-200"
       case "ERROR":
@@ -152,6 +154,17 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
                     </li>
                   ))}
                 </ul>
+              )}
+              {/* Render detalle if present */}
+              {cotejo.detalle && cotejo.detalle.length > 0 && (
+                <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+                  {cotejo.detalle.map((item, idx) => (
+                    <div key={idx} className="contents">
+                      <dt className="text-muted-foreground">{item.label}:</dt>
+                      <dd className="font-medium">{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
               )}
             </div>
           </div>

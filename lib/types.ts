@@ -85,12 +85,18 @@ export interface CotejoChecklistItem {
   checked: boolean
 }
 
+export interface CotejoDetalle {
+  label: string
+  value: string
+}
+
 export interface Cotejo {
   id: string
   titulo: string
   severidad: RevisionSeverity
   mensaje: string
   checklist?: CotejoChecklistItem[]
+  detalle?: CotejoDetalle[]
 }
 
 export type WorkflowStep =

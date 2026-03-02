@@ -257,7 +257,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
             id: "EMP1",
             titulo: "Empresa coherente",
             severidad: "OK",
-            mensaje: `La empresa indicada en nómina coincide con la vida laboral (${empresaNomina})`
+            mensaje: "Coincidencia exacta",
+            detalle: [
+              { label: "Empresa en nómina más reciente", value: empresaNomina },
+              { label: "Empresa vigente en vida laboral", value: empresaVida },
+              { label: "Resultado", value: "Coincidencia exacta" }
+            ]
           }
         }
         
@@ -265,7 +270,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
           id: "EMP1",
           titulo: "Empresa coherente",
           severidad: "ERROR",
-          mensaje: `Empresa de nómina no coincide con empleo vigente. Nómina: ${empresaNomina}, Vida Laboral: ${empresaVida}`
+          mensaje: "No coinciden",
+          detalle: [
+            { label: "Empresa en nómina más reciente", value: empresaNomina },
+            { label: "Empresa vigente en vida laboral", value: empresaVida },
+            { label: "Resultado", value: "No coinciden" }
+          ]
         }
       }
     } catch {
@@ -289,7 +299,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
           id: "EMP1",
           titulo: "Empresa coherente",
           severidad: "OK",
-          mensaje: `La empresa indicada en nómina coincide con el contrato (${empresaNomina})`
+          mensaje: "Coincidencia exacta",
+          detalle: [
+            { label: "Empresa en nómina más reciente", value: empresaNomina },
+            { label: "Empresa en contrato", value: empresaContrato },
+            { label: "Resultado", value: "Coincidencia exacta" }
+          ]
         }
       }
       
@@ -297,7 +312,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
         id: "EMP1",
         titulo: "Empresa coherente",
         severidad: "ERROR",
-        mensaje: `Empresa de nómina no coincide con contrato. Nómina: ${empresaNomina}, Contrato: ${empresaContrato}`
+        mensaje: "No coinciden",
+        detalle: [
+          { label: "Empresa en nómina más reciente", value: empresaNomina },
+          { label: "Empresa en contrato", value: empresaContrato },
+          { label: "Resultado", value: "No coinciden" }
+        ]
       }
     }
   }
@@ -387,7 +407,13 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
               id: "EMP2",
               titulo: "Antigüedad coherente",
               severidad: "OK",
-              mensaje: `La fecha de antigüedad coincide entre nómina y vida laboral (diferencia de ${diffDays} días)`
+              mensaje: "Dentro del margen permitido",
+              detalle: [
+                { label: "Antigüedad en nómina", value: antiguedadNomina },
+                { label: "Alta en vida laboral", value: empleoVigente.fechaAlta },
+                { label: "Diferencia", value: `${diffDays} días` },
+                { label: "Resultado", value: "Dentro del margen permitido" }
+              ]
             }
           }
           
@@ -396,7 +422,13 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
               id: "EMP2",
               titulo: "Antigüedad coherente",
               severidad: "WARNING",
-              mensaje: `Discrepancia leve en fecha de antigüedad (${diffDays} días). Nómina: ${antiguedadNomina}, Vida Laboral: ${empleoVigente.fechaAlta}`
+              mensaje: "Discrepancia leve detectada",
+              detalle: [
+                { label: "Antigüedad en nómina", value: antiguedadNomina },
+                { label: "Alta en vida laboral", value: empleoVigente.fechaAlta },
+                { label: "Diferencia", value: `${diffDays} días` },
+                { label: "Resultado", value: "Discrepancia leve (>30 días)" }
+              ]
             }
           }
           
@@ -404,7 +436,13 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
             id: "EMP2",
             titulo: "Antigüedad coherente",
             severidad: "ERROR",
-            mensaje: `Discrepancia significativa en fecha de antigüedad (${diffDays} días). Nómina: ${antiguedadNomina}, Vida Laboral: ${empleoVigente.fechaAlta}`
+            mensaje: "Discrepancia significativa detectada",
+            detalle: [
+              { label: "Antigüedad en nómina", value: antiguedadNomina },
+              { label: "Alta en vida laboral", value: empleoVigente.fechaAlta },
+              { label: "Diferencia", value: `${diffDays} días` },
+              { label: "Resultado", value: "Discrepancia significativa (>90 días)" }
+            ]
           }
         }
       }
@@ -504,12 +542,30 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
   // Format amounts for message
   const formatAmount = (n: number) => n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€"
   
+  // Get the months analyzed
+  const mesesAnalizados = recentNominas.map(n => {
+    const periodo = n.extractedData?.["Periodo"]?.value || ""
+    const match = periodo.match(/(\d{1,2})\/(\d{4})|(\w+)\s+(\d{4})/)
+    if (match) {
+      return match[0]
+    }
+    return periodo.substring(0, 15)
+  }).join(", ")
+  
   if (diferencia <= 0.20) {
     return {
       id: "ING1",
       titulo: "Coherencia de ingresos",
       severidad: "OK",
-      mensaje: `Estimación anual según nóminas: ${formatAmount(estimacionAnual)}. Declarado en IRPF: ${formatAmount(rendimientoValue)}. Diferencia: ${(diferencia * 100).toFixed(1)}% (dentro del rango aceptable)`
+      mensaje: "Dentro del rango aceptable",
+      detalle: [
+        { label: "Nóminas analizadas", value: mesesAnalizados || "3 nóminas más recientes" },
+        { label: "Promedio mensual", value: formatAmount(promedioNeto) },
+        { label: "Estimación anual", value: formatAmount(estimacionAnual) },
+        { label: "Declarado en IRPF", value: formatAmount(rendimientoValue) },
+        { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
+        { label: "Resultado", value: "Dentro del rango aceptable (≤20%)" }
+      ]
     }
   }
   
@@ -518,7 +574,15 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
       id: "ING1",
       titulo: "Coherencia de ingresos",
       severidad: "WARNING",
-      mensaje: `Estimación anual según nóminas: ${formatAmount(estimacionAnual)}. Declarado en IRPF: ${formatAmount(rendimientoValue)}. Diferencia: ${(diferencia * 100).toFixed(1)}% (desviación significativa)`
+      mensaje: "Desviación significativa",
+      detalle: [
+        { label: "Nóminas analizadas", value: mesesAnalizados || "3 nóminas más recientes" },
+        { label: "Promedio mensual", value: formatAmount(promedioNeto) },
+        { label: "Estimación anual", value: formatAmount(estimacionAnual) },
+        { label: "Declarado en IRPF", value: formatAmount(rendimientoValue) },
+        { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
+        { label: "Resultado", value: "Desviación significativa (20-40%)" }
+      ]
     }
   }
   
@@ -526,7 +590,15 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
     id: "ING1",
     titulo: "Coherencia de ingresos",
     severidad: "ERROR",
-    mensaje: `Estimación anual según nóminas: ${formatAmount(estimacionAnual)}. Declarado en IRPF: ${formatAmount(rendimientoValue)}. Diferencia: ${(diferencia * 100).toFixed(1)}% (incoherencia detectada)`
+    mensaje: "Incoherencia detectada",
+    detalle: [
+      { label: "Nóminas analizadas", value: mesesAnalizados || "3 nóminas más recientes" },
+      { label: "Promedio mensual", value: formatAmount(promedioNeto) },
+      { label: "Estimación anual", value: formatAmount(estimacionAnual) },
+      { label: "Declarado en IRPF", value: formatAmount(rendimientoValue) },
+      { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
+      { label: "Resultado", value: "Incoherencia detectada (>40%)" }
+    ]
   }
 }
 
