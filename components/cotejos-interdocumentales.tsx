@@ -66,7 +66,7 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
               <FileStack className="h-6 w-6 text-primary" />
             </div>
             <CardTitle className="text-lg font-semibold">
-              Cotejos Interdocumentales del Expediente
+              Análisis de coherencia del expediente
             </CardTitle>
           </div>
           <div className="flex items-center gap-3 text-sm">

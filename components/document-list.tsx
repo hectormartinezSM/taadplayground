@@ -342,7 +342,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
                  doc.revisiones && 
                  doc.revisiones.length > 0 && (
                   <div className="space-y-3">
-                    <h3 className="text-base font-semibold text-foreground">Revisiones Intradocumentales</h3>
+                    <h3 className="text-base font-semibold text-foreground">Validaciones del documento</h3>
                     <DNIRevisions revisiones={doc.revisiones} />
                   </div>
                 )}
@@ -352,7 +352,7 @@ export function DocumentList({ documents, pages, updateDocuments, addActivityLog
         })}
       </div>
 
-      {/* Cotejos Interdocumentales - shown below all documents when complete */}
+      {/* Análisis de coherencia del expediente - shown below all documents when complete */}
       {cotejos.length > 0 && (
         <div className="mt-8">
           <CotejosInterdocumentales cotejos={cotejos} />
