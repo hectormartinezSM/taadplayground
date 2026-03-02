@@ -87,11 +87,11 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
         <CardContent className="p-12">
           <div className="flex flex-col items-center justify-center gap-8 text-center">
             {/* Icon */}
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#0154FA]/10 shadow-sm">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#F37021]/10 shadow-sm">
               {isLoading ? (
-                <Loader2 className="h-12 w-12 animate-spin text-[#0154FA]" />
+                <Loader2 className="h-12 w-12 animate-spin text-[#F37021]" />
               ) : (
-                <Landmark className="h-12 w-12 text-[#0154FA]" />
+                <Landmark className="h-12 w-12 text-[#F37021]" />
               )}
             </div>
 
@@ -106,10 +106,10 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
                   : "Experimenta el poder de SERIMAG para clasificar y extraer información de documentos automáticamente."}
               </p>
               {!isLoading && (
-                <div className="flex items-center justify-center gap-2 text-base text-foreground/80 font-medium bg-[#4A9FFF]/15 rounded-lg px-5 py-4 border border-[#4A9FFF]/25">
-                  <FileText className="h-6 w-6 text-[#0154FA] flex-shrink-0" />
+                <div className="flex items-center justify-center gap-2 text-base text-foreground/80 font-medium bg-[#F37021]/15 rounded-lg px-5 py-4 border border-[#F37021]/25">
+                  <FileText className="h-6 w-6 text-[#F37021] flex-shrink-0" />
                   <span className="text-muted-foreground whitespace-nowrap">Caso de uso:</span>
-                  <span className="text-[#0154FA] font-semibold whitespace-nowrap">
+                  <span className="text-[#F37021] font-semibold whitespace-nowrap">
                     Solicitud de préstamo hipotecario
                   </span>
                 </div>
@@ -122,15 +122,15 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
               <div className="space-y-3">
                 <p className="text-sm font-medium text-foreground mb-3">Esta demo incluye:</p>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-[#0154FA]" />
+                  <CheckCircle2 className="h-4 w-4 text-[#F37021]" />
                   <span>Segmentación en documentos individuales</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-[#0154FA]" />
+                  <CheckCircle2 className="h-4 w-4 text-[#F37021]" />
                   <span>Clasificación inteligente de documentos</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-[#0154FA]" />
+                  <CheckCircle2 className="h-4 w-4 text-[#F37021]" />
                   <span>Extracción de datos estructurados</span>
                 </div>
               </div>
@@ -143,7 +143,7 @@ export function UploadArea({ onFileUpload, updateWorkflowStep, addActivityLog }:
             {!isLoading && (
               <Button
                 size="lg"
-                className="shadow-md hover:shadow-lg text-lg px-8 py-6 h-auto bg-[#0154FA] hover:bg-[#0043CC] text-white"
+                className="shadow-md hover:shadow-lg text-lg px-8 py-6 h-auto bg-[#F37021] hover:bg-[#D85F18] text-white"
                 onClick={handleStartDemo}
               >
                 <Play className="h-5 w-5 mr-2" />

@@ -105,14 +105,24 @@ export default function Home() {
               className="hover:opacity-80 transition-opacity flex items-center gap-3"
               aria-label="Volver a la página inicial"
             >
-              <Image
-                src="/images/design-mode/Serimag_logo_color-1-scaled.png"
-                alt="Serimag"
-                width={120}
-                height={40}
-                className="h-8 w-auto object-contain"
-                priority
-              />
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/images/design-mode/Serimag_logo_color-1-scaled.png"
+                  alt="Serimag"
+                  width={120}
+                  height={40}
+                  className="h-8 w-auto object-contain"
+                  priority
+                />
+                <span className="text-muted-foreground font-medium text-lg">x</span>
+                <Image
+                  src="/images/bankinter-logo.png"
+                  alt="Bankinter"
+                  width={120}
+                  height={40}
+                  className="h-8 w-auto object-contain"
+                />
+              </div>
             </button>
             <div className="border-l pl-4">
               <h1 className="text-2xl font-bold text-foreground">Demo Expediente Activo</h1>
