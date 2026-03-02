@@ -28,9 +28,9 @@ export function validateNIF(nif: string): Modelo100Revision {
   if (!nif || nif === "N/D" || nif === "N/A" || nif.trim() === "") {
     return {
       id: "M0",
-      titulo: "NIF válido",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
-      mensaje: "NIF no encontrado en el documento"
+      mensaje: "DNI/NIF no encontrado en el documento"
     }
   }
   
@@ -44,9 +44,9 @@ export function validateNIF(nif: string): Modelo100Revision {
   if (!match) {
     return {
       id: "M0",
-      titulo: "NIF válido",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
-      mensaje: `Formato de NIF incorrecto: ${nif}`
+      mensaje: `Formato de DNI/NIF incorrecto: ${nif}`
     }
   }
   
@@ -56,7 +56,7 @@ export function validateNIF(nif: string): Modelo100Revision {
   if (letter !== expectedLetter) {
     return {
       id: "M0",
-      titulo: "NIF válido",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
       mensaje: `Letra de control incorrecta: ${nif} (esperada: ${expectedLetter})`
     }
@@ -64,9 +64,9 @@ export function validateNIF(nif: string): Modelo100Revision {
   
   return {
     id: "M0",
-    titulo: "NIF válido",
+    titulo: "DNI/NIF válido",
     severidad: "OK",
-    mensaje: `NIF válido con letra de control correcta: ${nif}`
+    mensaje: `DNI/NIF válido con letra de control correcta: ${nif}`
   }
 }
 
@@ -137,7 +137,7 @@ export function validateEjercicioReciente(periodo: string): Modelo100Revision {
   if (!periodo || periodo === "N/D" || periodo === "N/A") {
     return {
       id: "M2",
-      titulo: "Ejercicio más reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: "Ejercicio desactualizado o incoherente"
     }
@@ -147,7 +147,7 @@ export function validateEjercicioReciente(periodo: string): Modelo100Revision {
   if (isNaN(ejercicio)) {
     return {
       id: "M2",
-      titulo: "Ejercicio más reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: "Ejercicio desactualizado o incoherente"
     }
@@ -166,7 +166,7 @@ export function validateEjercicioReciente(periodo: string): Modelo100Revision {
   if (ejercicio === ejercicioEsperado) {
     return {
       id: "M2",
-      titulo: "Ejercicio más reciente",
+      titulo: "Actualidad del documento",
       severidad: "OK",
       mensaje: "Ejercicio actualizado (más reciente disponible)"
     }
@@ -175,7 +175,7 @@ export function validateEjercicioReciente(periodo: string): Modelo100Revision {
   if (ejercicio === ejercicioEsperado - 1) {
     return {
       id: "M2",
-      titulo: "Ejercicio más reciente",
+      titulo: "Actualidad del documento",
       severidad: "WARNING",
       mensaje: "Ejercicio válido pero no es el más reciente disponible"
     }
@@ -184,7 +184,7 @@ export function validateEjercicioReciente(periodo: string): Modelo100Revision {
   // ejercicio < ejercicioEsperado - 1 OR ejercicio > ejercicioEsperado
   return {
     id: "M2",
-    titulo: "Ejercicio más reciente",
+    titulo: "Actualidad del documento",
     severidad: "ERROR",
     mensaje: "Ejercicio desactualizado o incoherente"
   }
@@ -250,7 +250,7 @@ export function runModelo100Validations(
 ): Modelo100Revision[] {
   const revisiones: Modelo100Revision[] = []
   
-  const nif = extractedData["NIF"]?.value || ""
+  const nif = extractedData["DNI/NIF"]?.value || extractedData["NIF"]?.value || ""
   const periodo = extractedData["Periodo"]?.value || ""
   const fechaPresentacion = extractedData["Fecha de presentación"]?.value || ""
   const csv = extractedData["CSV"]?.value || ""

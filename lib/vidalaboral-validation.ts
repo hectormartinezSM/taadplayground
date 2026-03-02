@@ -86,9 +86,9 @@ export function validateDNI(dni: string): VidaLaboralRevision {
   if (!dni || dni === "N/D" || dni === "N/A" || dni.trim() === "") {
     return {
       id: "VL4",
-      titulo: "DNI válido",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
-      mensaje: "DNI no encontrado en el documento"
+      mensaje: "DNI/NIF no encontrado en el documento"
     }
   }
   
@@ -107,9 +107,9 @@ export function validateDNI(dni: string): VidaLaboralRevision {
   if (!match) {
     return {
       id: "VL4",
-      titulo: "DNI válido",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
-      mensaje: `Formato de DNI incorrecto: ${dni}`
+      mensaje: `Formato de DNI/NIF incorrecto: ${dni}`
     }
   }
   
@@ -119,7 +119,7 @@ export function validateDNI(dni: string): VidaLaboralRevision {
   if (letter !== expectedLetter) {
     return {
       id: "VL4",
-      titulo: "DNI válido",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
       mensaje: `Letra de control incorrecta: ${dni} (esperada: ${expectedLetter})`
     }
@@ -127,9 +127,9 @@ export function validateDNI(dni: string): VidaLaboralRevision {
   
   return {
     id: "VL4",
-    titulo: "DNI válido",
+    titulo: "DNI/NIF válido",
     severidad: "OK",
-    mensaje: `DNI válido con letra de control correcta: ${dni}`
+    mensaje: `DNI/NIF válido con letra de control correcta: ${dni}`
   }
 }
 
@@ -138,7 +138,7 @@ export function validateDocumentoReciente(fechaDocumento: string): VidaLaboralRe
   if (!fechaDocumento || fechaDocumento === "N/D" || fechaDocumento === "N/A") {
     return {
       id: "VL2",
-      titulo: "Documento reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: "Fecha del documento no encontrada"
     }
@@ -148,7 +148,7 @@ export function validateDocumentoReciente(fechaDocumento: string): VidaLaboralRe
   if (!docDate) {
     return {
       id: "VL2",
-      titulo: "Documento reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: `Formato de fecha inválido: ${fechaDocumento}`
     }
@@ -161,7 +161,7 @@ export function validateDocumentoReciente(fechaDocumento: string): VidaLaboralRe
   if (docDate > today) {
     return {
       id: "VL2",
-      titulo: "Documento reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: `Fecha del documento es futura: ${fechaDocumento}`
     }
@@ -172,7 +172,7 @@ export function validateDocumentoReciente(fechaDocumento: string): VidaLaboralRe
   if (months <= 3) {
     return {
       id: "VL2",
-      titulo: "Documento reciente",
+      titulo: "Actualidad del documento",
       severidad: "OK",
       mensaje: `Documento emitido hace ${months} mes(es)`
     }
@@ -181,7 +181,7 @@ export function validateDocumentoReciente(fechaDocumento: string): VidaLaboralRe
   if (months <= 12) {
     return {
       id: "VL2",
-      titulo: "Documento reciente",
+      titulo: "Actualidad del documento",
       severidad: "WARNING",
       mensaje: `Documento emitido hace ${months} mes(es) (entre 3 y 12 meses)`
     }
@@ -189,7 +189,7 @@ export function validateDocumentoReciente(fechaDocumento: string): VidaLaboralRe
   
   return {
     id: "VL2",
-    titulo: "Documento reciente",
+    titulo: "Actualidad del documento",
     severidad: "ERROR",
     mensaje: `Documento emitido hace más de 12 meses (${months} meses)`
   }
@@ -408,7 +408,7 @@ export function validateAntiguedadEmpleoActual(situacionesJson: string, fechaDoc
   if (!vigente) {
     return {
       id: "VL10",
-      titulo: "Antigüedad en empleo actual",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "WARNING",
       mensaje: "Sin empleo vigente"
     }
@@ -419,7 +419,7 @@ export function validateAntiguedadEmpleoActual(situacionesJson: string, fechaDoc
   if (!fechaAlta || !docDate) {
     return {
       id: "VL10",
-      titulo: "Antigüedad en empleo actual",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "WARNING",
       mensaje: "No se puede calcular la antigüedad"
     }
@@ -432,7 +432,7 @@ export function validateAntiguedadEmpleoActual(situacionesJson: string, fechaDoc
   if (meses >= 12) {
     return {
       id: "VL10",
-      titulo: "Antigüedad en empleo actual",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "OK",
       mensaje: `Más de un año de antigüedad. Antigüedad de ${anios} año(s) y ${mesesRestantes} mes(es)`
     }
@@ -440,7 +440,7 @@ export function validateAntiguedadEmpleoActual(situacionesJson: string, fechaDoc
   
   return {
     id: "VL10",
-    titulo: "Antigüedad en empleo actual",
+    titulo: "Antigüedad laboral suficiente",
     severidad: "WARNING",
     mensaje: `Menos de un año de antigüedad (${meses} meses)`
   }
@@ -453,7 +453,7 @@ export function runVidaLaboralValidations(
   const revisiones: VidaLaboralRevision[] = []
   
   const naf = extractedData["Nº Seguridad Social trabajador"]?.value || ""
-  const dni = extractedData["DNI"]?.value || ""
+  const dni = extractedData["DNI/NIF"]?.value || extractedData["DNI"]?.value || ""
   const fechaDocumento = extractedData["Fecha documento"]?.value || ""
   const situacionesJson = extractedData["Situaciones"]?.value || "[]"
   const totalDias = extractedData["Total días cotizados"]?.value || ""

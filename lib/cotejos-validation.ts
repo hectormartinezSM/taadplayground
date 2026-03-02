@@ -90,16 +90,16 @@ export function validateDocumentosPresentados(documents: Document[]): Cotejo {
   if (allChecked) {
     return {
       id: "DOC1",
-      titulo: "Control de tipos documentales",
+      titulo: "Completitud documental",
       severidad: "OK",
-      mensaje: "Expediente documental completo",
+      mensaje: "Documentación obligatoria aportada",
       checklist
     }
   }
   
   return {
     id: "DOC1",
-    titulo: "Control de tipos documentales",
+    titulo: "Completitud documental",
     severidad: "ERROR",
     mensaje: `Expediente incompleto (${checkedCount}/${checklist.length})`,
     checklist
@@ -112,48 +112,40 @@ export function validateDNIConsistente(documents: Document[]): Cotejo {
   
   // Get DNI from DNI document
   const dniDoc = documents.find(isDNI)
-  if (dniDoc?.extractedData?.["DNI"]) {
-    const dniValue = dniDoc.extractedData["DNI"].value
-    if (dniValue && dniValue !== "N/D") {
-      dniValues.push({ source: "DNI", dni: dniValue.toUpperCase().replace(/[\s\-]/g, "") })
-    }
+  const dniDocValue = dniDoc?.extractedData?.["DNI/NIF"]?.value || dniDoc?.extractedData?.["DNI"]?.value
+  if (dniDocValue && dniDocValue !== "N/D") {
+    dniValues.push({ source: "DNI", dni: dniDocValue.toUpperCase().replace(/[\s\-]/g, "") })
   }
   
   // Get DNI from all nóminas
   const nominas = documents.filter(isNomina)
   for (const nomina of nominas) {
-    if (nomina.extractedData?.["DNI"]) {
-      const dniValue = nomina.extractedData["DNI"].value
-      if (dniValue && dniValue !== "N/D") {
-        dniValues.push({ source: "Nómina", dni: dniValue.toUpperCase().replace(/[\s\-]/g, "") })
-      }
+    const nominaDniValue = nomina.extractedData?.["DNI/NIF"]?.value || nomina.extractedData?.["DNI"]?.value
+    if (nominaDniValue && nominaDniValue !== "N/D") {
+      dniValues.push({ source: "Nómina", dni: nominaDniValue.toUpperCase().replace(/[\s\-]/g, "") })
     }
   }
   
   // Get DNI from Vida Laboral
   const vidaLaboral = documents.find(isVidaLaboral)
-  if (vidaLaboral?.extractedData?.["DNI"]) {
-    const dniValue = vidaLaboral.extractedData["DNI"].value
-    if (dniValue && dniValue !== "N/D") {
-      dniValues.push({ source: "Vida Laboral", dni: dniValue.toUpperCase().replace(/[\s\-]/g, "") })
-    }
+  const vidaDniValue = vidaLaboral?.extractedData?.["DNI/NIF"]?.value || vidaLaboral?.extractedData?.["DNI"]?.value
+  if (vidaDniValue && vidaDniValue !== "N/D") {
+    dniValues.push({ source: "Vida Laboral", dni: vidaDniValue.toUpperCase().replace(/[\s\-]/g, "") })
   }
   
   // Get NIF from Modelo 100
   const modelo100 = documents.find(isModelo100)
-  if (modelo100?.extractedData?.["NIF"]) {
-    const nifValue = modelo100.extractedData["NIF"].value
-    if (nifValue && nifValue !== "N/D") {
-      dniValues.push({ source: "Modelo 100", dni: nifValue.toUpperCase().replace(/[\s\-]/g, "") })
-    }
+  const modelo100NifValue = modelo100?.extractedData?.["DNI/NIF"]?.value || modelo100?.extractedData?.["NIF"]?.value
+  if (modelo100NifValue && modelo100NifValue !== "N/D") {
+    dniValues.push({ source: "Modelo 100", dni: modelo100NifValue.toUpperCase().replace(/[\s\-]/g, "") })
   }
   
   if (dniValues.length === 0) {
     return {
       id: "ID1",
-      titulo: "DNI consistente",
+      titulo: "DNI/NIF consistente",
       severidad: "ERROR",
-      mensaje: "No se encontró DNI en ningún documento"
+      mensaje: "No se encontró DNI/NIF en ningún documento"
     }
   }
   
@@ -163,9 +155,9 @@ export function validateDNIConsistente(documents: Document[]): Cotejo {
   if (uniqueDNIs.length === 1) {
     return {
       id: "ID1",
-      titulo: "DNI consistente",
+      titulo: "DNI/NIF consistente",
       severidad: "OK",
-      mensaje: `El DNI coincide en todos los documentos (${uniqueDNIs[0]})`
+      mensaje: `El DNI/NIF coincide en todos los documentos (${uniqueDNIs[0]})`
     }
   }
   
@@ -184,9 +176,9 @@ export function validateDNIConsistente(documents: Document[]): Cotejo {
   
   return {
     id: "ID1",
-    titulo: "DNI consistente",
+    titulo: "DNI/NIF consistente",
     severidad: "ERROR",
-    mensaje: `Inconsistencia de DNI entre documentos: ${differences}`
+    mensaje: `Inconsistencia de DNI/NIF entre documentos: ${differences}`
   }
 }
 
@@ -198,7 +190,7 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
   if (nominas.length === 0) {
     return {
       id: "EMP1",
-      titulo: "Empresa coherente",
+      titulo: "Coherencia de empresa",
       severidad: "ERROR",
       mensaje: "No se encontraron nóminas para comparar"
     }
@@ -220,12 +212,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
   })
   
   const mostRecentNomina = sortedNominas[0]
-  const empresaNomina = mostRecentNomina.extractedData?.["Nombre empresa"]?.value || ""
+  const empresaNomina = mostRecentNomina.extractedData?.["Empresa"]?.value || mostRecentNomina.extractedData?.["Nombre empresa"]?.value || ""
   
   if (!empresaNomina || empresaNomina === "N/D") {
     return {
       id: "EMP1",
-      titulo: "Empresa coherente",
+      titulo: "Coherencia de empresa",
       severidad: "ERROR",
       mensaje: "No se encontró nombre de empresa en la nómina"
     }
@@ -255,12 +247,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
             normalizeEmpresa(empresaVida).includes(normalizeEmpresa(empresaNomina))) {
           return {
             id: "EMP1",
-            titulo: "Empresa coherente",
+            titulo: "Coherencia de empresa",
             severidad: "OK",
             mensaje: "Coincidencia exacta",
             detalle: [
-              { label: "Empresa en nómina más reciente", value: empresaNomina },
-              { label: "Empresa vigente en vida laboral", value: empresaVida },
+              { label: "Empresa (nómina)", value: empresaNomina },
+              { label: "Empresa (vida laboral)", value: empresaVida },
               { label: "Resultado", value: "Coincidencia exacta" }
             ]
           }
@@ -268,12 +260,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
         
         return {
           id: "EMP1",
-          titulo: "Empresa coherente",
+          titulo: "Coherencia de empresa",
           severidad: "ERROR",
           mensaje: "No coinciden",
           detalle: [
-            { label: "Empresa en nómina más reciente", value: empresaNomina },
-            { label: "Empresa vigente en vida laboral", value: empresaVida },
+            { label: "Empresa (nómina)", value: empresaNomina },
+            { label: "Empresa (vida laboral)", value: empresaVida },
             { label: "Resultado", value: "No coinciden" }
           ]
         }
@@ -287,8 +279,8 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
   const contrato = documents.find(isContrato)
   
   if (contrato) {
-    const empresaContrato = contrato.extractedData?.["Nombre empresa"]?.value || 
-                            contrato.extractedData?.["Empresa"]?.value || ""
+    const empresaContrato = contrato.extractedData?.["Empresa"]?.value || 
+                            contrato.extractedData?.["Nombre empresa"]?.value || ""
     
     if (empresaContrato && empresaContrato !== "N/D") {
       const normalizeEmpresa = (str: string) => str.toLowerCase().replace(/\s+/g, " ").trim()
@@ -297,12 +289,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
           normalizeEmpresa(empresaContrato).includes(normalizeEmpresa(empresaNomina))) {
         return {
           id: "EMP1",
-          titulo: "Empresa coherente",
+          titulo: "Coherencia de empresa",
           severidad: "OK",
           mensaje: "Coincidencia exacta",
           detalle: [
-            { label: "Empresa en nómina más reciente", value: empresaNomina },
-            { label: "Empresa en contrato", value: empresaContrato },
+            { label: "Empresa (nómina)", value: empresaNomina },
+            { label: "Empresa (contrato)", value: empresaContrato },
             { label: "Resultado", value: "Coincidencia exacta" }
           ]
         }
@@ -310,12 +302,12 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
       
       return {
         id: "EMP1",
-        titulo: "Empresa coherente",
+        titulo: "Coherencia de empresa",
         severidad: "ERROR",
         mensaje: "No coinciden",
         detalle: [
-          { label: "Empresa en nómina más reciente", value: empresaNomina },
-          { label: "Empresa en contrato", value: empresaContrato },
+          { label: "Empresa (nómina)", value: empresaNomina },
+          { label: "Empresa (contrato)", value: empresaContrato },
           { label: "Resultado", value: "No coinciden" }
         ]
       }
@@ -324,23 +316,23 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
   
   return {
     id: "EMP1",
-    titulo: "Empresa coherente",
+    titulo: "Coherencia de empresa",
     severidad: "ERROR",
     mensaje: "No se encontró Vida Laboral ni Contrato para comparar empresa"
   }
 }
 
-// EMP2: Antigüedad coherente
+// EMP2: Coherencia de fecha de inicio laboral
 export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
-  // Get antigüedad from most recent nómina
+  // Get fecha inicio laboral from most recent nómina
   const nominas = documents.filter(isNomina)
   
   if (nominas.length === 0) {
     return {
       id: "EMP2",
-      titulo: "Antigüedad coherente",
+      titulo: "Coherencia de fecha de inicio laboral",
       severidad: "ERROR",
-      mensaje: "No se encontraron nóminas para comparar antigüedad"
+      mensaje: "No se encontraron nóminas para comparar fecha de inicio laboral"
     }
   }
   
@@ -359,14 +351,14 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
   })
   
   const mostRecentNomina = sortedNominas[0]
-  const antiguedadNomina = mostRecentNomina.extractedData?.["Fecha antigüedad"]?.value || ""
+  const antiguedadNomina = mostRecentNomina.extractedData?.["Fecha de inicio laboral"]?.value || mostRecentNomina.extractedData?.["Fecha antigüedad"]?.value || ""
   
   if (!antiguedadNomina || antiguedadNomina === "N/D") {
     return {
       id: "EMP2",
-      titulo: "Antigüedad coherente",
+      titulo: "Coherencia de fecha de inicio laboral",
       severidad: "ERROR",
-      mensaje: "No se encontró fecha de antigüedad en la nómina"
+      mensaje: "No se encontró fecha de inicio laboral en la nómina"
     }
   }
   
@@ -375,9 +367,9 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
   if (!fechaAntiguedadNomina) {
     return {
       id: "EMP2",
-      titulo: "Antigüedad coherente",
+      titulo: "Coherencia de fecha de inicio laboral",
       severidad: "ERROR",
-      mensaje: "No se pudo parsear la fecha de antigüedad de la nómina"
+      mensaje: "No se pudo parsear la fecha de inicio laboral de la nómina"
     }
   }
   
@@ -405,12 +397,12 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
           if (diffDays <= 30) {
             return {
               id: "EMP2",
-              titulo: "Antigüedad coherente",
+              titulo: "Coherencia de fecha de inicio laboral",
               severidad: "OK",
               mensaje: "Dentro del margen permitido",
               detalle: [
-                { label: "Antigüedad en nómina", value: antiguedadNomina },
-                { label: "Alta en vida laboral", value: empleoVigente.fechaAlta },
+                { label: "Fecha inicio (nómina)", value: antiguedadNomina },
+                { label: "Fecha alta (vida laboral)", value: empleoVigente.fechaAlta },
                 { label: "Diferencia", value: `${diffDays} días` },
                 { label: "Resultado", value: "Dentro del margen permitido" }
               ]
@@ -420,12 +412,12 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
           if (diffDays <= 90) {
             return {
               id: "EMP2",
-              titulo: "Antigüedad coherente",
+              titulo: "Coherencia de fecha de inicio laboral",
               severidad: "WARNING",
               mensaje: "Discrepancia leve detectada",
               detalle: [
-                { label: "Antigüedad en nómina", value: antiguedadNomina },
-                { label: "Alta en vida laboral", value: empleoVigente.fechaAlta },
+                { label: "Fecha inicio (nómina)", value: antiguedadNomina },
+                { label: "Fecha alta (vida laboral)", value: empleoVigente.fechaAlta },
                 { label: "Diferencia", value: `${diffDays} días` },
                 { label: "Resultado", value: "Discrepancia leve (>30 días)" }
               ]
@@ -434,12 +426,12 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
           
           return {
             id: "EMP2",
-            titulo: "Antigüedad coherente",
+            titulo: "Coherencia de fecha de inicio laboral",
             severidad: "ERROR",
             mensaje: "Discrepancia significativa detectada",
             detalle: [
-              { label: "Antigüedad en nómina", value: antiguedadNomina },
-              { label: "Alta en vida laboral", value: empleoVigente.fechaAlta },
+              { label: "Fecha inicio (nómina)", value: antiguedadNomina },
+              { label: "Fecha alta (vida laboral)", value: empleoVigente.fechaAlta },
               { label: "Diferencia", value: `${diffDays} días` },
               { label: "Resultado", value: "Discrepancia significativa (>90 días)" }
             ]
@@ -453,9 +445,9 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
   
   return {
     id: "EMP2",
-    titulo: "Antigüedad coherente",
+    titulo: "Coherencia de fecha de inicio laboral",
     severidad: "WARNING",
-    mensaje: "No se pudo comparar antigüedad con Vida Laboral"
+    mensaje: "No se pudo comparar fecha de inicio laboral con Vida Laboral"
   }
 }
 
@@ -467,7 +459,7 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
   if (nominas.length < 3) {
     return {
       id: "ING1",
-      titulo: "Coherencia de ingresos",
+      titulo: "Coherencia de ingresos laborales",
       severidad: "ERROR",
       mensaje: `Se requieren al menos 3 nóminas para calcular la coherencia de ingresos (hay ${nominas.length})`
     }
@@ -490,10 +482,10 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
   // Get the 3 most recent nóminas
   const recentNominas = sortedNominas.slice(0, 3)
   
-  // Calculate average of "Líquido a percibir"
+  // Calculate average of "Líquido neto mensual"
   const liquidoValues: number[] = []
   for (const nomina of recentNominas) {
-    const liquido = nomina.extractedData?.["Líquido a percibir"]?.value || ""
+    const liquido = nomina.extractedData?.["Líquido neto mensual"]?.value || nomina.extractedData?.["Líquido a percibir"]?.value || ""
     const value = parseAmount(liquido)
     if (value !== null) {
       liquidoValues.push(value)
@@ -503,36 +495,36 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
   if (liquidoValues.length < 3) {
     return {
       id: "ING1",
-      titulo: "Coherencia de ingresos",
+      titulo: "Coherencia de ingresos laborales",
       severidad: "ERROR",
-      mensaje: "No se encontró el líquido a percibir en todas las nóminas"
+      mensaje: "No se encontró el líquido neto mensual en todas las nóminas"
     }
   }
   
   const promedioNeto = liquidoValues.reduce((sum, v) => sum + v, 0) / liquidoValues.length
   const estimacionAnual = promedioNeto * 12
   
-  // Get Rendimiento del trabajo from Modelo 100
+  // Get Rendimiento del trabajo (IRPF) from Modelo 100
   const modelo100 = documents.find(isModelo100)
   
   if (!modelo100) {
     return {
       id: "ING1",
-      titulo: "Coherencia de ingresos",
+      titulo: "Coherencia de ingresos laborales",
       severidad: "ERROR",
       mensaje: "No se encontró Modelo 100 para comparar ingresos"
     }
   }
   
-  const rendimientoTrabajo = modelo100.extractedData?.["Rendimiento del trabajo"]?.value || ""
+  const rendimientoTrabajo = modelo100.extractedData?.["Rendimiento del trabajo (IRPF)"]?.value || modelo100.extractedData?.["Rendimiento del trabajo"]?.value || ""
   const rendimientoValue = parseAmount(rendimientoTrabajo)
   
   if (rendimientoValue === null || rendimientoValue === 0) {
     return {
       id: "ING1",
-      titulo: "Coherencia de ingresos",
+      titulo: "Coherencia de ingresos laborales",
       severidad: "ERROR",
-      mensaje: "No se encontró el Rendimiento del trabajo en el Modelo 100"
+      mensaje: "No se encontró el Rendimiento del trabajo (IRPF) en el Modelo 100"
     }
   }
   
@@ -555,16 +547,16 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
   if (diferencia <= 0.20) {
     return {
       id: "ING1",
-      titulo: "Coherencia de ingresos",
+      titulo: "Coherencia de ingresos laborales",
       severidad: "OK",
-      mensaje: "Dentro del rango aceptable",
+      mensaje: "Coherencia confirmada",
       detalle: [
         { label: "Nóminas analizadas", value: mesesAnalizados || "3 nóminas más recientes" },
         { label: "Promedio mensual", value: formatAmount(promedioNeto) },
         { label: "Estimación anual", value: formatAmount(estimacionAnual) },
-        { label: "Declarado en IRPF", value: formatAmount(rendimientoValue) },
+        { label: "Rendimiento del trabajo (IRPF)", value: formatAmount(rendimientoValue) },
         { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
-        { label: "Resultado", value: "Dentro del rango aceptable (≤20%)" }
+        { label: "Resultado", value: "Coherencia confirmada (≤20%)" }
       ]
     }
   }
@@ -572,14 +564,14 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
   if (diferencia <= 0.40) {
     return {
       id: "ING1",
-      titulo: "Coherencia de ingresos",
+      titulo: "Coherencia de ingresos laborales",
       severidad: "WARNING",
       mensaje: "Desviación significativa",
       detalle: [
         { label: "Nóminas analizadas", value: mesesAnalizados || "3 nóminas más recientes" },
         { label: "Promedio mensual", value: formatAmount(promedioNeto) },
         { label: "Estimación anual", value: formatAmount(estimacionAnual) },
-        { label: "Declarado en IRPF", value: formatAmount(rendimientoValue) },
+        { label: "Rendimiento del trabajo (IRPF)", value: formatAmount(rendimientoValue) },
         { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
         { label: "Resultado", value: "Desviación significativa (20-40%)" }
       ]
@@ -588,14 +580,14 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
   
   return {
     id: "ING1",
-    titulo: "Coherencia de ingresos",
+    titulo: "Coherencia de ingresos laborales",
     severidad: "ERROR",
     mensaje: "Incoherencia detectada",
     detalle: [
       { label: "Nóminas analizadas", value: mesesAnalizados || "3 nóminas más recientes" },
       { label: "Promedio mensual", value: formatAmount(promedioNeto) },
       { label: "Estimación anual", value: formatAmount(estimacionAnual) },
-      { label: "Declarado en IRPF", value: formatAmount(rendimientoValue) },
+      { label: "Rendimiento del trabajo (IRPF)", value: formatAmount(rendimientoValue) },
       { label: "Diferencia", value: `${(diferencia * 100).toFixed(1)}%` },
       { label: "Resultado", value: "Incoherencia detectada (>40%)" }
     ]

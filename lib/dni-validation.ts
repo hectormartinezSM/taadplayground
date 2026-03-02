@@ -13,9 +13,9 @@ export function validateDNIControlDigit(dni: string): DNIRevision {
   if (!match) {
     return {
       id: "R1",
-      titulo: "Digito de control DNI",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
-      mensaje: `El DNI "${dni}" no tiene el formato correcto (8 digitos + 1 letra)`
+      mensaje: `El DNI/NIF "${dni}" no tiene el formato correcto (8 digitos + 1 letra)`
     }
   }
   
@@ -25,17 +25,17 @@ export function validateDNIControlDigit(dni: string): DNIRevision {
   if (letter !== expectedLetter) {
     return {
       id: "R1",
-      titulo: "Digito de control DNI",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
-      mensaje: `La letra del DNI no es correcta. Esperada: ${expectedLetter}, Encontrada: ${letter}`
+      mensaje: `La letra del DNI/NIF no es correcta. Esperada: ${expectedLetter}, Encontrada: ${letter}`
     }
   }
   
   return {
     id: "R1",
-    titulo: "Digito de control DNI",
+    titulo: "DNI/NIF válido",
     severidad: "OK",
-    mensaje: "El digito de control del DNI es correcto"
+    mensaje: "DNI/NIF válido con letra de control correcta"
   }
 }
 
@@ -302,7 +302,7 @@ export function runDNIValidations(
 ): DNIRevision[] {
   const revisiones: DNIRevision[] = []
   
-  const dni = extractedData["DNI"]?.value || ""
+  const dni = extractedData["DNI/NIF"]?.value || extractedData["DNI"]?.value || ""
   const fechaNacimiento = extractedData["Fecha de nacimiento"]?.value || ""
   const fechaValidez = extractedData["Fecha de validez"]?.value || ""
   

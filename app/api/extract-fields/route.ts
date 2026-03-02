@@ -10,7 +10,7 @@ interface ExtractResponse {
 const DNI_FIELD_PROMPTS: Record<string, string> = {
   "Nombre completo":
     "Nombre completo de la persona propietaria del identificativo incluyendo nombre y apellidos. Formato: 'Nombre Apellido1 Apellido2'. Si viene en formato 'APELLIDOS, NOMBRE', invertirlo a 'Nombre Apellidos'. Capitalización normal (primera letra mayúscula, resto minúsculas).",
-  DNI: "Numero de DNI que salga en el documento. Los DNIs están formados por 8 dígitos seguidos de una letra (12345678A). El último carácter SIEMPRE debe ser una LETRA, nunca un número. Elimina espacios, guiones u otros separadores.",
+  "DNI/NIF": "Numero de DNI que salga en el documento. Los DNIs están formados por 8 dígitos seguidos de una letra (12345678A). El último carácter SIEMPRE debe ser una LETRA, nunca un número. Elimina espacios, guiones u otros separadores.",
   "Fecha de nacimiento":
     "Fecha que indica cuando nació el propietario del identificativo según el documento. Retornalo en el formato DD/MM/AAAA",
   "Fecha de validez":
@@ -99,7 +99,7 @@ Si no detectas MRZ, devuelve exactamente: N/D`,
 const NOMINA_FIELD_PROMPTS: Record<string, string> = {
   "Nombre completo":
     "Nombre completo del trabajador incluyendo nombre y apellidos. Formato: 'Nombre Apellido1 Apellido2'. Si viene en formato 'APELLIDOS, NOMBRE', invertirlo a 'Nombre Apellidos'. Capitalización normal (primera letra mayúscula, resto minúsculas).",
-  DNI: `Identificativo del trabajador (DNI, NIF o NIE).
+  "DNI/NIF": `Identificativo del trabajador (DNI, NIF o NIE).
 
 DÓNDE BUSCAR (en orden de prioridad):
 1. En la sección de datos del trabajador, junto al nombre
@@ -120,14 +120,14 @@ NORMALIZACIÓN:
 IMPORTANTE: No confundir con el CIF de la empresa (empieza por letra como B, A, etc.) ni con el número de Seguridad Social (tiene más de 9 caracteres y formato XX/XXXXXXXX-XX).`,
   "Nº Seguridad Social trabajador":
     "Código o número de la seguridad social del trabajador. Mantén el formato original del documento.",
-  "Fecha antigüedad": "Fecha de incorporación a la empresa en formato DD/MM/AAAA",
-  "Nombre empresa":
+  "Fecha de inicio laboral": "Fecha de incorporación a la empresa en formato DD/MM/AAAA",
+  "Empresa":
     "Nombre de la empresa contratante. Primera letra en MAYÚSCULA y el resto en minúsculas. Mantén siglas societarias en mayúsculas (S.A., S.L., S.L.U.).",
   "CIF empresa":
     "Código identificador del contratador. Generalmente se trata de un CIF que hace referencia a la empresa que contrata al trabajador. Formato: letra + 8 dígitos (ej: B12345678).",
   Periodo:
     "Periodo de liquidación al cual hace referencia la nómina. En formato DD/MM/AAAA - DD/MM/AAAA. Si solo aparece mes y año, indica el primer y último día de ese mes.",
-  "Líquido a percibir":
+  "Líquido neto mensual":
     "Sueldo neto, a veces representado como líquido total, a percibir por parte del trabajador. Formato: XX.XXX,XX € (separador de miles: punto, separador decimal: coma).",
   "Total devengado": `Extrae el TOTAL DEVENGADO que aparece explicitamente en el documento.
 
@@ -246,7 +246,7 @@ Ejemplo de salida exacta:
 const VIDA_LABORAL_FIELD_PROMPTS: Record<string, string> = {
   "Nombre completo":
     "Extrae el nombre y apellidos del trabajador; normaliza a formato legible (Title Case), conserva acentos y elimina dobles espacios. Formato: 'Nombre Apellido1 Apellido2'.",
-  DNI: "Extrae el identificativo del trabajador (DNI/NIF/NIE); normaliza quitando espacios/guiones y devolviendo en MAYÚSCULAS. Formato: 8 dígitos + 1 letra (ej: 12345678A).",
+  "DNI/NIF": "Extrae el identificativo del trabajador (DNI/NIF/NIE); normaliza quitando espacios/guiones y devolviendo en MAYÚSCULAS. Formato: 8 dígitos + 1 letra (ej: 12345678A).",
   "Nº Seguridad Social trabajador":
     "Extrae el NAF/Nº SS; normaliza dejando solo dígitos y, si hay 12 dígitos, formatea como PP/NNNNNNNN-CC (2 dígitos / 8 dígitos - 2 dígitos) por ejemplo: 33/12547435-32.",
   "Total días cotizados":
@@ -343,14 +343,14 @@ Ejemplo de salida exacta:
 const MODELO_100_IRPF_FIELD_PROMPTS: Record<string, string> = {
   "Nombre completo":
     "Extrae el nombre y apellidos del declarante (o declarante principal si hay varios); normaliza a formato legible (Title Case), conserva acentos y elimina dobles espacios. Formato: 'Nombre Apellido1 Apellido2'.",
-  NIF: "Extrae el NIF/DNI del primer declarante (declarante principal). Los NIF están formados por 8 dígitos seguidos de una letra (12345678A). El último carácter SIEMPRE debe ser una LETRA, nunca un número. Elimina espacios, guiones u otros separadores.",
+  "DNI/NIF": "Extrae el NIF/DNI del primer declarante (declarante principal). Los NIF están formados por 8 dígitos seguidos de una letra (12345678A). El último carácter SIEMPRE debe ser una LETRA, nunca un número. Elimina espacios, guiones u otros separadores.",
   Periodo:
     "Extrae el ejercicio/periodo fiscal de la declaración (p. ej., 'Ejercicio 2024'); normaliza a YYYY (solo el año, 4 dígitos). Si el documento muestra 'Ejercicio 2024' o '2024', devuelve solo '2024'.",
   "Fecha de presentación":
     "Extrae la fecha de presentación/registro de la declaración; normaliza a DD/MM/AAAA. Busca términos como 'fecha de presentación', 'presentado el', 'registrado el'.",
   "Estado civil":
     "Extrae el estado civil indicado (soltero, casado, divorciado, viudo, pareja de hecho, etc.); normaliza a una de estas etiquetas: 'Soltero/a', 'Casado/a', 'Divorciado/a', 'Viudo/a', 'Pareja de hecho'. Si el documento usa otra categoría explícita, devuelve el literal.",
-  "Rendimiento del trabajo":
+  "Rendimiento del trabajo (IRPF)":
     "Extrae el importe de la sección 'Rendimiento neto reducido' dentro de Rendimientos del trabajo; normaliza a número decimal con punto (.) como separador decimal y sin separadores de miles. Mantén el signo si aparece (positivo o negativo). Ejemplo: '25432.15' o '-1234.50'.",
   "Resultado de la declaración":
     "Extrae el resultado final de la declaración y su importe. Normaliza el tipo a uno de: 'A ingresar', 'A devolver', 'Cero'. Formato de salida: 'Tipo: Importe €'. Ejemplos: 'A devolver: 523,45 €', 'A ingresar: 1.234,00 €', 'Cero: 0,00 €'.",

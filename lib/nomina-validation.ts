@@ -46,9 +46,9 @@ export function validateDNI(dni: string): NominaRevision {
   if (!dni || dni === "N/D" || dni === "N/A") {
     return {
       id: "N1",
-      titulo: "DNI trabajador",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
-      mensaje: "No se ha encontrado el DNI del trabajador"
+      mensaje: "No se ha encontrado el DNI/NIF del trabajador"
     }
   }
   
@@ -59,9 +59,9 @@ export function validateDNI(dni: string): NominaRevision {
   if (!match) {
     return {
       id: "N1",
-      titulo: "DNI trabajador",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
-      mensaje: `Formato de DNI incorrecto: ${dni}`
+      mensaje: `Formato de DNI/NIF incorrecto: ${dni}`
     }
   }
   
@@ -72,7 +72,7 @@ export function validateDNI(dni: string): NominaRevision {
   if (letter !== expectedLetter) {
     return {
       id: "N1",
-      titulo: "DNI trabajador",
+      titulo: "DNI/NIF válido",
       severidad: "ERROR",
       mensaje: `Letra de control incorrecta (esperada: ${expectedLetter}, encontrada: ${letter})`
     }
@@ -80,9 +80,9 @@ export function validateDNI(dni: string): NominaRevision {
   
   return {
     id: "N1",
-    titulo: "DNI trabajador",
+    titulo: "DNI/NIF válido",
     severidad: "OK",
-    mensaje: "DNI valido con letra de control correcta"
+    mensaje: "DNI/NIF válido con letra de control correcta"
   }
 }
 
@@ -295,9 +295,9 @@ export function validateNominaReciente(periodo: string): NominaRevision {
   if (!periodo || periodo === "N/D" || periodo === "N/A") {
     return {
       id: "N5",
-      titulo: "Nomina reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
-      mensaje: "No se puede verificar la antiguedad sin periodo"
+      mensaje: "No se puede verificar la actualidad sin periodo"
     }
   }
   
@@ -308,7 +308,7 @@ export function validateNominaReciente(periodo: string): NominaRevision {
   if (!match) {
     return {
       id: "N5",
-      titulo: "Nomina reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: "No se puede parsear el periodo"
     }
@@ -318,7 +318,7 @@ export function validateNominaReciente(periodo: string): NominaRevision {
   if (!endDate) {
     return {
       id: "N5",
-      titulo: "Nomina reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: "No se puede parsear la fecha fin del periodo"
     }
@@ -330,21 +330,21 @@ export function validateNominaReciente(periodo: string): NominaRevision {
   if (monthsOld <= 6) {
     return {
       id: "N5",
-      titulo: "Nómina reciente",
+      titulo: "Actualidad del documento",
       severidad: "OK",
       mensaje: `Nómina de los últimos 6 meses (${monthsOld} meses)`
     }
   } else if (monthsOld <= 12) {
     return {
       id: "N5",
-      titulo: "Nómina reciente",
+      titulo: "Actualidad del documento",
       severidad: "WARNING",
       mensaje: `Nómina con ${monthsOld} meses de antigüedad`
     }
   } else {
     return {
       id: "N5",
-      titulo: "Nómina reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: `Nómina antigua (más de 12 meses: ${monthsOld} meses)`
     }
@@ -356,16 +356,16 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (!fechaAntiguedad || fechaAntiguedad === "N/D" || fechaAntiguedad === "N/A") {
     return {
       id: "N6",
-      titulo: "Antigüedad suficiente",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "WARNING",
-      mensaje: "No se ha encontrado la fecha de antigüedad"
+      mensaje: "No se ha encontrado la fecha de inicio laboral"
     }
   }
   
   if (!periodo || periodo === "N/D" || periodo === "N/A") {
     return {
       id: "N6",
-      titulo: "Antigüedad suficiente",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "ERROR",
       mensaje: "No se puede verificar sin periodo"
     }
@@ -375,9 +375,9 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (!antiguedadDate) {
     return {
       id: "N6",
-      titulo: "Antigüedad suficiente",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "ERROR",
-      mensaje: "No se puede parsear la fecha de antigüedad"
+      mensaje: "No se puede parsear la fecha de inicio laboral"
     }
   }
   
@@ -388,7 +388,7 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (!match) {
     return {
       id: "N6",
-      titulo: "Antigüedad suficiente",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "ERROR",
       mensaje: "No se puede parsear el periodo"
     }
@@ -398,7 +398,7 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (!endDate) {
     return {
       id: "N6",
-      titulo: "Antigüedad suficiente",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "ERROR",
       mensaje: "No se puede parsear la fecha fin del periodo"
     }
@@ -407,9 +407,9 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   if (antiguedadDate > endDate) {
     return {
       id: "N6",
-      titulo: "Antigüedad suficiente",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "ERROR",
-      mensaje: "La fecha de antigüedad es posterior al periodo de la nómina"
+      mensaje: "La fecha de inicio laboral es posterior al periodo de la nómina"
     }
   }
   
@@ -420,7 +420,7 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
     const months = monthsEmployed % 12
     return {
       id: "N6",
-      titulo: "Antigüedad suficiente",
+      titulo: "Antigüedad laboral suficiente",
       severidad: "WARNING",
       mensaje: `Menos de un año de antigüedad. Antigüedad de ${years} año(s) y ${months} mes(es)`
     }
@@ -431,7 +431,7 @@ export function validateAntiguedad(fechaAntiguedad: string, periodo: string): No
   
   return {
     id: "N6",
-    titulo: "Antigüedad suficiente",
+    titulo: "Antigüedad laboral suficiente",
     severidad: "OK",
     mensaje: `Más de un año de antigüedad. Antigüedad de ${years} año(s) y ${months} mes(es)`
   }
@@ -452,9 +452,9 @@ export function validateCuadreTotalDevengado(
   if (totalDoc === null) {
     return {
       id: "N7",
-      titulo: "Cuadre total devengado",
+      titulo: "Coherencia total devengado",
       severidad: "WARNING",
-      mensaje: "Total devengado no presente en documento; no se puede validar el cuadre"
+      mensaje: "Total devengado no presente en documento; no se puede validar la coherencia"
     }
   }
   
@@ -464,7 +464,7 @@ export function validateCuadreTotalDevengado(
   } catch {
     return {
       id: "N7",
-      titulo: "Cuadre total devengado",
+      titulo: "Coherencia total devengado",
       severidad: "ERROR",
       mensaje: "No se pueden parsear los devengos"
     }
@@ -480,7 +480,7 @@ export function validateCuadreTotalDevengado(
   if (difference > 1) {
     return {
       id: "N7",
-      titulo: "Cuadre total devengado",
+      titulo: "Coherencia total devengado",
       severidad: "ERROR",
       mensaje: `Descuadre: documento ${formatAmountSpanish(totalDoc)} vs suma ${formatAmountSpanish(sumaDevengos)} (diferencia: ${formatAmountSpanish(difference)})`
     }
@@ -488,7 +488,7 @@ export function validateCuadreTotalDevengado(
   
   return {
     id: "N7",
-    titulo: "Cuadre total devengado",
+    titulo: "Coherencia total devengado",
     severidad: "OK",
     mensaje: `Total devengado es igual a la suma de todos los devengos (${formatAmountSpanish(totalDoc)})`
   }
@@ -504,9 +504,9 @@ export function validateCuadreTotalRetenciones(
   if (totalDoc === null) {
     return {
       id: "N8",
-      titulo: "Cuadre total retenciones",
+      titulo: "Coherencia total retenciones",
       severidad: "WARNING",
-      mensaje: "Total retenciones no presente en documento; no se puede validar el cuadre"
+      mensaje: "Total retenciones no presente en documento; no se puede validar la coherencia"
     }
   }
   
@@ -516,7 +516,7 @@ export function validateCuadreTotalRetenciones(
   } catch {
     return {
       id: "N8",
-      titulo: "Cuadre total retenciones",
+      titulo: "Coherencia total retenciones",
       severidad: "ERROR",
       mensaje: "No se pueden parsear las retenciones"
     }
@@ -532,7 +532,7 @@ export function validateCuadreTotalRetenciones(
   if (difference > 1) {
     return {
       id: "N8",
-      titulo: "Cuadre total retenciones",
+      titulo: "Coherencia total retenciones",
       severidad: "ERROR",
       mensaje: `Descuadre: documento ${formatAmountSpanish(totalDoc)} vs suma ${formatAmountSpanish(sumaRetenciones)} (diferencia: ${formatAmountSpanish(difference)})`
     }
@@ -540,7 +540,7 @@ export function validateCuadreTotalRetenciones(
   
   return {
     id: "N8",
-    titulo: "Cuadre total retenciones",
+    titulo: "Coherencia total retenciones",
     severidad: "OK",
     mensaje: `Total retenciones es igual a la suma de todas las retenciones (${formatAmountSpanish(totalDoc)})`
   }
@@ -559,9 +559,9 @@ export function validateCuadreLiquido(
   if (liquido === null) {
     return {
       id: "N9",
-      titulo: "Cuadre del liquido",
+      titulo: "Coherencia del líquido neto",
       severidad: "ERROR",
-      mensaje: "No se ha encontrado el liquido a percibir"
+      mensaje: "No se ha encontrado el líquido neto mensual"
     }
   }
   
@@ -595,17 +595,17 @@ export function validateCuadreLiquido(
   if (difference > 1) {
     return {
       id: "N9",
-      titulo: "Cuadre del líquido",
+      titulo: "Coherencia del líquido neto",
       severidad: "ERROR",
-      mensaje: `Descuadre: Líquido a percibir = Total devengado - Total retenciones: ${formatAmountSpanish(liquido)} != ${formatAmountSpanish(devengadoFinal)} - ${formatAmountSpanish(retencionesFinal)}`
+      mensaje: `Descuadre: Líquido neto = Total devengado - Total retenciones: ${formatAmountSpanish(liquido)} != ${formatAmountSpanish(devengadoFinal)} - ${formatAmountSpanish(retencionesFinal)}`
     }
   }
   
   return {
     id: "N9",
-    titulo: "Cuadre del líquido",
+    titulo: "Coherencia del líquido neto",
     severidad: "OK",
-    mensaje: `Líquido a percibir = Total devengado - Total retenciones: ${formatAmountSpanish(liquido)} = ${formatAmountSpanish(devengadoFinal)} - ${formatAmountSpanish(retencionesFinal)}`
+    mensaje: `Líquido neto = Total devengado - Total retenciones: ${formatAmountSpanish(liquido)} = ${formatAmountSpanish(devengadoFinal)} - ${formatAmountSpanish(retencionesFinal)}`
   }
 }
 
@@ -615,12 +615,12 @@ export function runNominaValidations(
 ): NominaRevision[] {
   const revisiones: NominaRevision[] = []
   
-  const dni = extractedData["DNI"]?.value || ""
+  const dni = extractedData["DNI/NIF"]?.value || extractedData["DNI"]?.value || ""
   const cif = extractedData["CIF empresa"]?.value || ""
   const naf = extractedData["Nº Seguridad Social trabajador"]?.value || ""
   const periodo = extractedData["Periodo"]?.value || ""
-  const fechaAntiguedad = extractedData["Fecha antigüedad"]?.value || ""
-  const liquido = extractedData["Líquido a percibir"]?.value || ""
+  const fechaAntiguedad = extractedData["Fecha de inicio laboral"]?.value || extractedData["Fecha antigüedad"]?.value || ""
+  const liquido = extractedData["Líquido neto mensual"]?.value || extractedData["Líquido a percibir"]?.value || ""
   const devengos = extractedData["Devengos"]?.value || "[]"
   const retenciones = extractedData["Retenciones"]?.value || "[]"
   const totalDevengadoDoc = extractedData["Total devengado"]?.value || ""

@@ -42,7 +42,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
   if (!fechaNota || fechaNota === "N/D" || fechaNota === "N/A") {
     return {
       id: "NS2",
-      titulo: "Nota reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: "Nota simple desactualizada: fecha no encontrada"
     }
@@ -52,7 +52,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
   if (!fechaDate) {
     return {
       id: "NS2",
-      titulo: "Nota reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: "Nota simple desactualizada: formato de fecha inválido"
     }
@@ -68,7 +68,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
   if (fechaDate > today) {
     return {
       id: "NS2",
-      titulo: "Nota reciente",
+      titulo: "Actualidad del documento",
       severidad: "ERROR",
       mensaje: `Nota simple desactualizada: fecha ${fechaNota} es futura`
     }
@@ -80,7 +80,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
   if (monthsAgo < 3) {
     return {
       id: "NS2",
-      titulo: "Nota reciente",
+      titulo: "Actualidad del documento",
       severidad: "OK",
       mensaje: `Nota simple reciente (fecha: ${fechaNota})`
     }
@@ -90,7 +90,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
   if (monthsAgo >= 3 && monthsAgo <= 6) {
     return {
       id: "NS2",
-      titulo: "Nota reciente",
+      titulo: "Actualidad del documento",
       severidad: "WARNING",
       mensaje: `Nota simple con antigüedad superior a 3 meses (fecha: ${fechaNota})`
     }
@@ -99,7 +99,7 @@ export function validateNotaReciente(fechaNota: string): NotaSimpleRevision {
   // ERROR if more than 6 months
   return {
     id: "NS2",
-    titulo: "Nota reciente",
+    titulo: "Actualidad del documento",
     severidad: "ERROR",
     mensaje: `Nota simple desactualizada: fecha ${fechaNota}, validez esperada posterior a ${formatSpanishDate(minValidDate)}`
   }
@@ -362,9 +362,9 @@ export function validateDNITitulares(titularidadesJson: string): NotaSimpleRevis
   if (!titularidadesJson || titularidadesJson === "N/D" || titularidadesJson === "N/A") {
     return {
       id: "NS8",
-      titulo: "DNI titulares válido",
+      titulo: "DNI/NIF titulares válido",
       severidad: "WARNING",
-      mensaje: "Alguno de los titulares no tiene DNI informado"
+      mensaje: "Alguno de los titulares no tiene DNI/NIF informado"
     }
   }
   
@@ -374,18 +374,18 @@ export function validateDNITitulares(titularidadesJson: string): NotaSimpleRevis
   } catch {
     return {
       id: "NS8",
-      titulo: "DNI titulares válido",
+      titulo: "DNI/NIF titulares válido",
       severidad: "WARNING",
-      mensaje: "Alguno de los titulares no tiene DNI informado"
+      mensaje: "Alguno de los titulares no tiene DNI/NIF informado"
     }
   }
   
   if (!Array.isArray(titularidades) || titularidades.length === 0) {
     return {
       id: "NS8",
-      titulo: "DNI titulares válido",
+      titulo: "DNI/NIF titulares válido",
       severidad: "WARNING",
-      mensaje: "Alguno de los titulares no tiene DNI informado"
+      mensaje: "Alguno de los titulares no tiene DNI/NIF informado"
     }
   }
   
@@ -428,26 +428,26 @@ export function validateDNITitulares(titularidadesJson: string): NotaSimpleRevis
   if (hasInvalidDNI) {
     return {
       id: "NS8",
-      titulo: "DNI titulares válido",
+      titulo: "DNI/NIF titulares válido",
       severidad: "ERROR",
-      mensaje: "DNI de titular inválido"
+      mensaje: "DNI/NIF de titular inválido"
     }
   }
   
   if (hasMissingDNI) {
     return {
       id: "NS8",
-      titulo: "DNI titulares válido",
+      titulo: "DNI/NIF titulares válido",
       severidad: "WARNING",
-      mensaje: "Alguno de los titulares no tiene DNI informado"
+      mensaje: "Alguno de los titulares no tiene DNI/NIF informado"
     }
   }
   
   return {
     id: "NS8",
-    titulo: "DNI titulares válido",
+    titulo: "DNI/NIF titulares válido",
     severidad: "OK",
-    mensaje: "DNIs de titulares válidos"
+    mensaje: "DNI/NIF de titulares válidos"
   }
 }
 
