@@ -165,7 +165,7 @@ export function validateDNIConsistente(documents: Document[]): Cotejo {
       id: "ID1",
       titulo: "DNI consistente",
       severidad: "OK",
-      mensaje: `DNI consistente en todos los documentos (${uniqueDNIs[0]})`
+      mensaje: `El DNI coincide en todos los documentos (${uniqueDNIs[0]})`
     }
   }
   
@@ -257,7 +257,7 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
             id: "EMP1",
             titulo: "Empresa coherente",
             severidad: "OK",
-            mensaje: `Empresa coherente entre nómina y vida laboral (${empresaNomina})`
+            mensaje: `La empresa indicada en nómina coincide con la vida laboral (${empresaNomina})`
           }
         }
         
@@ -289,7 +289,7 @@ export function validateEmpresaCoherente(documents: Document[]): Cotejo {
           id: "EMP1",
           titulo: "Empresa coherente",
           severidad: "OK",
-          mensaje: `Empresa coherente entre nómina y contrato (${empresaNomina})`
+          mensaje: `La empresa indicada en nómina coincide con el contrato (${empresaNomina})`
         }
       }
       
@@ -387,7 +387,7 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
               id: "EMP2",
               titulo: "Antigüedad coherente",
               severidad: "OK",
-              mensaje: `Antigüedad coherente entre documentos (diferencia: ${diffDays} días)`
+              mensaje: `La fecha de antigüedad coincide entre nómina y vida laboral (diferencia de ${diffDays} días)`
             }
           }
           
@@ -396,7 +396,7 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
               id: "EMP2",
               titulo: "Antigüedad coherente",
               severidad: "WARNING",
-              mensaje: `Antigüedad presenta ligera discrepancia (diferencia: ${diffDays} días). Nómina: ${antiguedadNomina}, Vida Laboral: ${empleoVigente.fechaAlta}`
+              mensaje: `Discrepancia leve en fecha de antigüedad (${diffDays} días). Nómina: ${antiguedadNomina}, Vida Laboral: ${empleoVigente.fechaAlta}`
             }
           }
           
@@ -404,7 +404,7 @@ export function validateAntiguedadCoherente(documents: Document[]): Cotejo {
             id: "EMP2",
             titulo: "Antigüedad coherente",
             severidad: "ERROR",
-            mensaje: `Antigüedad incoherente entre documentos (diferencia: ${diffDays} días). Nómina: ${antiguedadNomina}, Vida Laboral: ${empleoVigente.fechaAlta}`
+            mensaje: `Discrepancia significativa en fecha de antigüedad (${diffDays} días). Nómina: ${antiguedadNomina}, Vida Laboral: ${empleoVigente.fechaAlta}`
           }
         }
       }
@@ -509,7 +509,7 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
       id: "ING1",
       titulo: "Coherencia de ingresos",
       severidad: "OK",
-      mensaje: `Ingresos coherentes entre nóminas y declaración. Estimación anual: ${formatAmount(estimacionAnual)}, IRPF: ${formatAmount(rendimientoValue)} (${(diferencia * 100).toFixed(1)}% diferencia)`
+      mensaje: `Estimación anual según nóminas: ${formatAmount(estimacionAnual)}. Declarado en IRPF: ${formatAmount(rendimientoValue)}. Diferencia: ${(diferencia * 100).toFixed(1)}% (dentro del rango aceptable)`
     }
   }
   
@@ -518,7 +518,7 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
       id: "ING1",
       titulo: "Coherencia de ingresos",
       severidad: "WARNING",
-      mensaje: `Ingresos presentan desviación significativa. Estimación anual: ${formatAmount(estimacionAnual)}, IRPF: ${formatAmount(rendimientoValue)} (${(diferencia * 100).toFixed(1)}% diferencia)`
+      mensaje: `Estimación anual según nóminas: ${formatAmount(estimacionAnual)}. Declarado en IRPF: ${formatAmount(rendimientoValue)}. Diferencia: ${(diferencia * 100).toFixed(1)}% (desviación significativa)`
     }
   }
   
@@ -526,7 +526,7 @@ export function validateIngresosCoherentes(documents: Document[]): Cotejo {
     id: "ING1",
     titulo: "Coherencia de ingresos",
     severidad: "ERROR",
-    mensaje: `Ingresos incoherentes entre nóminas y declaración. Estimación anual: ${formatAmount(estimacionAnual)}, IRPF: ${formatAmount(rendimientoValue)} (${(diferencia * 100).toFixed(1)}% diferencia)`
+    mensaje: `Estimación anual según nóminas: ${formatAmount(estimacionAnual)}. Declarado en IRPF: ${formatAmount(rendimientoValue)}. Diferencia: ${(diferencia * 100).toFixed(1)}% (incoherencia detectada)`
   }
 }
 

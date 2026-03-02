@@ -1,8 +1,8 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Cotejo, CotejoChecklistItem } from "@/lib/types"
-import { CheckCircle2, AlertTriangle, XCircle, FileStack, Check, X } from "lucide-react"
+import type { Cotejo } from "@/lib/types"
+import { CheckCircle2, AlertTriangle, XCircle, ClipboardCheck, Check, X } from "lucide-react"
 
 interface CotejosInterdocumentalesProps {
   cotejos: Cotejo[]
@@ -29,13 +29,13 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
   const getSeverityBgColor = (severidad: string) => {
     switch (severidad) {
       case "OK":
-        return "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+        return "bg-green-50/50 dark:bg-green-950/10 border-green-200/60 dark:border-green-800/40"
       case "WARNING":
-        return "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800"
+        return "bg-yellow-50/50 dark:bg-yellow-950/10 border-yellow-200/60 dark:border-yellow-800/40"
       case "ERROR":
-        return "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+        return "bg-red-50/50 dark:bg-red-950/10 border-red-200/60 dark:border-red-800/40"
       default:
-        return "bg-muted"
+        return "bg-muted/50"
     }
   }
 
@@ -57,41 +57,72 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
   const warningCount = cotejos.filter(c => c.severidad === "WARNING").length
   const errorCount = cotejos.filter(c => c.severidad === "ERROR").length
 
+  // Summary message
+  const getSummaryMessage = () => {
+    if (errorCount > 0) {
+      return "Se detectan incoherencias que requieren revisión."
+    }
+    if (warningCount > 0) {
+      return "Se detectan incidencias leves."
+    }
+    return "No se detectan incoherencias relevantes."
+  }
+
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow">
-      <CardHeader className="border-b px-6 py-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shadow-sm">
-              <FileStack className="h-6 w-6 text-primary" />
+    <>
+      {/* Visual separator */}
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-muted-foreground/20" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-background px-4 text-xs uppercase tracking-wider text-muted-foreground">
+            Análisis del expediente
+          </span>
+        </div>
+      </div>
+
+      <Card className="border-dashed border-2 border-muted-foreground/20 bg-muted/30">
+        <CardHeader className="px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 shadow-sm">
+                <ClipboardCheck className="h-6 w-6 text-slate-600 dark:text-slate-300" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-semibold">
+                  Análisis de coherencia del expediente
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {getSummaryMessage()}
+                </p>
+              </div>
             </div>
-            <CardTitle className="text-lg font-semibold">
-              Análisis de coherencia del expediente
-            </CardTitle>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            {okCount > 0 && (
-              <span className="flex items-center gap-1 text-green-600">
-                <CheckCircle2 className="h-4 w-4" />
-                {okCount}
-              </span>
-            )}
-            {warningCount > 0 && (
-              <span className="flex items-center gap-1 text-yellow-600">
-                <AlertTriangle className="h-4 w-4" />
-                {warningCount}
-              </span>
-            )}
-            {errorCount > 0 && (
-              <span className="flex items-center gap-1 text-red-600">
-                <XCircle className="h-4 w-4" />
-                {errorCount}
-              </span>
-            )}
+        </CardHeader>
+
+        {/* Summary bar */}
+        <div className="px-6 pb-4">
+          <div className="flex items-center gap-4 text-sm bg-background/80 rounded-lg px-4 py-2.5 border">
+            <span className="text-muted-foreground font-medium">Resumen:</span>
+            <span className="flex items-center gap-1.5 text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              {okCount} OK
+            </span>
+            <span className="text-muted-foreground/40">·</span>
+            <span className="flex items-center gap-1.5 text-yellow-600">
+              <AlertTriangle className="h-4 w-4" />
+              {warningCount} WARNING
+            </span>
+            <span className="text-muted-foreground/40">·</span>
+            <span className="flex items-center gap-1.5 text-red-600">
+              <XCircle className="h-4 w-4" />
+              {errorCount} ERROR
+            </span>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+
+        <CardContent className="space-y-3 pt-0">
         {cotejos.map((cotejo) => (
           <div
             key={cotejo.id}
@@ -126,6 +157,7 @@ export function CotejosInterdocumentales({ cotejos }: CotejosInterdocumentalesPr
           </div>
         ))}
       </CardContent>
-    </Card>
+      </Card>
+    </>
   )
 }
