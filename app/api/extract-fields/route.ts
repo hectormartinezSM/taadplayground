@@ -124,7 +124,7 @@ IMPORTANTE: No confundir con el CIF de la empresa (empieza por letra como B, A, 
   "Empresa":
     "Nombre de la empresa contratante. Primera letra en MAYÚSCULA y el resto en minúsculas. Mantén siglas societarias en mayúsculas (S.A., S.L., S.L.U.).",
   "CIF empresa":
-    "C��digo identificador del contratador. Generalmente se trata de un CIF que hace referencia a la empresa que contrata al trabajador. Formato: letra + 8 dígitos (ej: B12345678).",
+    "Código identificador del contratador. Generalmente se trata de un CIF que hace referencia a la empresa que contrata al trabajador. Formato: letra + 8 dígitos (ej: B12345678).",
   Periodo:
     "Periodo de liquidación al cual hace referencia la nómina. En formato DD/MM/AAAA - DD/MM/AAAA. Si solo aparece mes y año, indica el primer y último día de ese mes.",
   "Líquido neto mensual":
@@ -413,7 +413,7 @@ async function apiExtract(markdown: string, schema: string): Promise<ExtractResp
   const formData = new FormData()
   formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
   formData.append("schema", schema)
-  formData.append("model", "extract-20251024")
+  formData.append("model", "extract-latest")
 
   try {
     const response = await fetch(`${API_BASE_URL}/v1/ade/extract`, {

@@ -119,7 +119,7 @@ async function apiExtract(markdown: string, schema: string): Promise<ExtractResp
   const formData = new FormData()
   formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
   formData.append("schema", schema)
-  formData.append("model", "extract-20251024")
+  formData.append("model", "extract-latest")
 
   try {
     const response = await fetch(`${API_BASE_URL}/v1/ade/extract`, {

@@ -29,7 +29,7 @@ async function apiParse(imageBase64: string): Promise<string> {
 
   const formData = new FormData()
   formData.append("document", new Blob([buffer]), "image.jpg")
-  formData.append("model", "dpt-2-20251103")
+  formData.append("model", "dpt-2-latest")
 
   const response = await fetch(`${API_BASE_URL}/v1/ade/parse`, {
     method: "POST",
@@ -66,7 +66,7 @@ async function apiExtract(markdown: string, schema: string): Promise<ExtractResp
   const formData = new FormData()
   formData.append("markdown", new Blob([markdown], { type: "text/markdown" }), "documento.md")
   formData.append("schema", schema)
-  formData.append("model", "extract-20251024")
+  formData.append("model", "extract-latest")
 
   const response = await fetch(`${API_BASE_URL}/v1/ade/extract`, {
     method: "POST",

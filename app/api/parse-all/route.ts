@@ -18,7 +18,7 @@ async function apiParse(imageBase64: string): Promise<string> {
   
   const formData = new FormData();
   formData.append('document', new Blob([buffer]), 'image.jpg');
-  formData.append('model', 'dpt-2-20251103');
+  formData.append('model', 'dpt-2-latest');
 
   const response = await fetch(`${API_BASE_URL}/v1/ade/parse`, {
     method: 'POST',
