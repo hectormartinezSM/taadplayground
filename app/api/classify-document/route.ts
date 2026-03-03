@@ -106,6 +106,26 @@ function joinMarkdowns(markdowns: string[]): string {
   return finalText
 }
 
+/**
+ * Normalizes classification types by mapping equivalent document types.
+ * "Certificación Registral" and similar variants are treated as "Nota Simple"
+ * since they have the same fields, validations, and purpose.
+ */
+function normalizeClassification(classification: string): string {
+  const normalized = classification.toLowerCase().trim()
+  
+  // Map Certificación Registral variants to Nota Simple
+  if (
+    normalized.includes("certificación registral") ||
+    normalized.includes("certificacion registral") ||
+    normalized.includes("certificado registral")
+  ) {
+    return "Nota Simple"
+  }
+  
+  return classification
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { imageUrls } = await request.json()
@@ -265,10 +285,13 @@ Citación judicial`,
       }
     }
 
-    console.log("[v0] API: Document classified as:", classification)
+    // Normalize classification: map equivalent types
+    const normalizedClassification = normalizeClassification(classification)
+    
+    console.log("[v0] API: Document classified as:", normalizedClassification)
 
     return NextResponse.json({
-      type: classification,
+      type: normalizedClassification,
       confidence: 1,
       markdown: joinedMarkdown,
     })
