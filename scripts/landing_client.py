@@ -47,7 +47,7 @@ def is_blank_page(image_bytes: bytes) -> bool:
     parse_url = 'https://api.va.eu-west-1.landing.ai/v1/ade/parse'
     
     parse_data = {
-        'model': 'dpt-2-latest'
+        'model': 'dpt-2-20251103'
     }
     
     files = {'document': image_bytes}
@@ -67,7 +67,7 @@ def is_blank_page(image_bytes: bytes) -> bool:
         extract_files = {'markdown': md_upload}
         extract_data = {
             'schema': schemaBlanca,
-            'model': 'extract-latest'
+            'model': 'extract-20251024'
         }
         
         extract_response = requests.post(extract_url, files=extract_files, data=extract_data, headers=headers)
