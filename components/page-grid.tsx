@@ -360,7 +360,7 @@ export function PageGrid({
 
     await new Promise((resolve) => setTimeout(resolve, 300))
 
-    let documentType = { type: "undefined" }
+    let documentType = { type: "Unclassified" }
 
     try {
       const classificationPromise = fetch("/api/classify-document", {
@@ -370,17 +370,20 @@ export function PageGrid({
       })
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Classification timeout after 60s")), 60000),
+        setTimeout(() => reject(new Error("Classification timeout after 90s")), 90000),
       )
 
       const classificationResponse = (await Promise.race([classificationPromise, timeoutPromise])) as Response
 
       if (!classificationResponse.ok) {
+        const errorBody = await classificationResponse.text()
+        console.error("[v0] Classification HTTP error:", classificationResponse.status, errorBody)
         throw new Error(`Classification failed with status ${classificationResponse.status}`)
       }
 
       const classificationData = await classificationResponse.json()
-      documentType = { type: classificationData.type || "undefined" }
+      console.log("[v0] Classification result for doc", docIndex + 1, ":", JSON.stringify(classificationData))
+      documentType = { type: classificationData.type || "Unclassified" }
 
       allDocs[docIndex] = {
         ...allDocs[docIndex],
@@ -393,7 +396,9 @@ export function PageGrid({
         message: t(`Documento ${docIndex + 1} clasificado como ${documentType.type}`, `Document ${docIndex + 1} classified as ${documentType.type}`),
       })
     } catch (error) {
-      console.error("[v0] Classification error for document", docIndex + 1, error)
+      console.error("[v0] Classification error for document", docIndex + 1, ":", error instanceof Error ? error.message : error)
+
+      documentType = { type: "Unclassified" }
 
       allDocs[docIndex] = {
         ...allDocs[docIndex],

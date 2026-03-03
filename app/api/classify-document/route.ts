@@ -74,6 +74,7 @@ async function apiExtract(markdown: string, schema: string): Promise<ExtractResp
       Authorization: `Bearer ${LANDING_API_KEY}`,
     },
     body: formData,
+    signal: AbortSignal.timeout(90000),
   })
 
   if (!response.ok) {
@@ -207,12 +208,15 @@ Photograph`,
     try {
       console.log("[v0] API: Trying general classification schema...")
       const result1 = await apiExtract(joinedMarkdown, schemaClasGeneral)
+      console.log("[v0] API: General classification raw result:", JSON.stringify(result1))
 
       if (result1.extraction && result1.extraction.Clasify) {
         classification = result1.extraction.Clasify
+      } else {
+        console.log("[v0] API: Clasify field was null/empty, will try fallback")
       }
     } catch (error) {
-      console.log("[v0] API: General classification failed, defaulting to Other")
+      console.log("[v0] API: General classification failed:", error instanceof Error ? error.message : error)
       classification = "Other"
     }
 
